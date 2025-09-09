@@ -9,11 +9,14 @@ const getAiClient = (): GoogleGenAI => {
     if (!ai) {
         // This will throw a specific, user-friendly error if the API key is missing.
         // This is the most common issue on deployment.
-        if (!process.env.API_KEY) {
-             throw new Error("API Key not found. Please ensure the API_KEY environment variable is configured in your deployment settings.");
+        // For client-side apps, build tools typically require a prefix like REACT_APP_
+        // to expose the variable to the browser for security reasons.
+        const apiKey = process.env.REACT_APP_API_KEY;
+        if (!apiKey) {
+             throw new Error("API Key not found. Please ensure the REACT_APP_API_KEY environment variable is configured in your deployment settings.");
         }
         try {
-            ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            ai = new GoogleGenAI({ apiKey });
         } catch (e) {
             // Catch other potential initialization errors from the library
             console.error("GoogleGenAI initialization failed:", e);
