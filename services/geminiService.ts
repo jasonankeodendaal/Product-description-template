@@ -2,14 +2,35 @@ import { GoogleGenAI, GroundingChunk } from "@google/genai";
 import { GenerationResult } from "../components/OutputPanel";
 import { blobToBase64 } from "../utils/dataUtils";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazy initialization of the GoogleGenAI instance
+let ai: GoogleGenAI | null = null;
+
+const getAiClient = (): GoogleGenAI => {
+    if (!ai) {
+        // This will throw a specific, user-friendly error if the API key is missing.
+        // This is the most common issue on deployment.
+        if (!process.env.API_KEY) {
+             throw new Error("API Key not found. Please ensure the API_KEY environment variable is configured in your deployment settings.");
+        }
+        try {
+            ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        } catch (e) {
+            // Catch other potential initialization errors from the library
+            console.error("GoogleGenAI initialization failed:", e);
+            throw new Error("Failed to initialize the AI Client. Please check the console for more details.");
+        }
+    }
+    return ai;
+};
+
 
 export async function generateProductDescription(productInfo: string, promptTemplate: string, tone: string): Promise<GenerationResult> {
   const toneInstruction = `Adopt a ${tone} tone of voice.`;
   const fullPrompt = `${promptTemplate}\n\n${toneInstruction}\n\n---\nHere is the product information to reformat:\n---\n\n${productInfo}`;
 
   try {
-    const response = await ai.models.generateContent({
+    const aiClient = getAiClient();
+    const response = await aiClient.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: fullPrompt,
       config: {
@@ -29,14 +50,16 @@ export async function generateProductDescription(productInfo: string, promptTemp
 
   } catch (error) {
     console.error("Error generating product description:", error);
-    throw new Error("Failed to generate description. Please check the console for details.");
+    // Re-throw the error so it can be caught and displayed by the calling component (App.tsx)
+    throw error;
   }
 }
 
 export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   const base64Audio = await blobToBase64(audioBlob);
   try {
-    const response = await ai.models.generateContent({
+    const aiClient = getAiClient();
+    const response = await aiClient.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: {
         parts: [
@@ -58,6 +81,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
     return text;
   } catch (error) {
     console.error("Error transcribing audio:", error);
-    throw new Error("Failed to transcribe audio. The model may not support this audio format or the content may be inaudible.");
+    // Re-throw for the UI
+    throw error;
   }
 }
