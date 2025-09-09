@@ -1,84 +1,78 @@
-const CACHE_NAME = 'ai-product-gen-cache-v3'; // Bumped version to ensure update
-const URLS_TO_CACHE = [
-  '/',
-  '/index.html'
-  // Other assets like CDN scripts will be cached dynamically on first fetch.
-];
+const CACHE_NAME = 'ai-product-gen-cache-v4';
+const APP_SHELL_URL = '/index.html';
 
-// Install the service worker and cache the app shell
+// Install event: cache the application shell and force the new service worker to activate.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache and caching app shell');
-        return cache.addAll(URLS_TO_CACHE);
+        console.log('Service Worker: Caching App Shell');
+        return cache.add(APP_SHELL_URL);
+      })
+      .then(() => {
+        // Force the waiting service worker to become the active service worker.
+        return self.skipWaiting();
       })
   );
 });
 
-// Serve content with a robust cache-first, network-fallback strategy for SPAs
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(cachedResponse => {
-        // If the resource is in the cache, return it
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // If the resource is not in the cache, try the network
-        return fetch(event.request.clone()).then(
-          networkResponse => {
-            // Check if we received a valid response
-            if (!networkResponse || networkResponse.status !== 200) {
-                // For opaque responses (like from CDNs), we can't check status, but still cache them.
-                if (networkResponse.type === 'opaque') {
-                     const responseToCache = networkResponse.clone();
-                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
-                }
-                return networkResponse;
-            }
-
-            // Clone the response and cache it
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return networkResponse;
-          }
-        ).catch(error => {
-          // The network request failed, likely due to being offline
-          console.log('Network request failed:', error);
-
-          // For navigation requests (loading the app page), serve the cached index.html
-          if (event.request.mode === 'navigate') {
-            console.log('Serving cached index.html as offline fallback.');
-            return caches.match('/index.html');
-          }
-
-          // For other asset types (e.g., failed API calls), we don't provide a fallback
-          // and let the browser handle the error.
-        });
-      })
-  );
-});
-
-
-// Delete old caches on activation
+// Activate event: clean up old caches and take immediate control of all clients.
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames
+          .filter(name => name !== CACHE_NAME)
+          .map(name => {
+            console.log('Service Worker: Deleting old cache', name);
+            return caches.delete(name);
+          })
       );
+    }).then(() => {
+      // Take control of all open pages without waiting for a reload.
+      return self.clients.claim();
     })
+  );
+});
+
+// Fetch event: handle requests with appropriate strategies.
+self.addEventListener('fetch', event => {
+  const { request } = event;
+
+  // Strategy for navigation requests (the app itself): Network-first, falling back to cache.
+  // This ensures the user gets the latest version if online, but the app still loads offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .catch(() => {
+          console.log('Service Worker: Network failed for navigation. Serving cached app shell.');
+          return caches.match(APP_SHELL_URL);
+        })
+    );
+    return;
+  }
+
+  // Strategy for all other requests (assets like scripts, styles, images): Cache-first.
+  // This provides the fastest possible response.
+  event.respondWith(
+    caches.match(request)
+      .then(cachedResponse => {
+        // Return the cached response if it exists.
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        
+        // If not in cache, fetch from the network.
+        return fetch(request.clone()).then(networkResponse => {
+          // Check for a valid, cacheable response.
+          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        });
+      })
   );
 });
