@@ -1,4 +1,5 @@
 import { Template, Recording } from '../App';
+import { SiteSettings } from '../constants';
 
 /**
  * Converts a Blob object to a Base64 encoded string.
@@ -56,6 +57,7 @@ export const dataURLtoBlob = (dataurl: string): Blob => {
  * Creates and triggers a download for a JSON backup file of all application data.
  */
 export const createBackup = async (
+    siteSettings: SiteSettings,
     templates: Template[],
     recordings: Recording[]
 ): Promise<void> => {
@@ -74,6 +76,7 @@ export const createBackup = async (
     );
     
     const backupData = {
+        siteSettings,
         templates,
         recordings: recordingsForBackup
     };

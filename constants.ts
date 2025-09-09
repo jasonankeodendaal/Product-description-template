@@ -1,4 +1,5 @@
 
+
 export interface CreatorDetails {
   name:string;
   slogan: string;
@@ -19,7 +20,7 @@ export interface SiteSettings {
   creator: CreatorDetails;
 }
 
-export const SITE_SETTINGS: SiteSettings = {
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'AI Product Description Generator',
   slogan: 'Instantly format raw product data into a professional, structured description.',
   logoSrc: null,

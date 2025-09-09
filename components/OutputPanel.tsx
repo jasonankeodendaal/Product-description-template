@@ -200,20 +200,6 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                 <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{outputText}</pre>
             )}
         </div>
-        {output?.sources && output.sources.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-[var(--theme-border)]">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Sources</h3>
-                <ul className="space-y-1">
-                    {output.sources.map((source, index) => (
-                        source.web && <li key={index}>
-                            <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--theme-blue)] hover:underline truncate block">
-                                {source.web.title || source.web.uri}
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        )}
       </div>
     </div>
   );

@@ -12,20 +12,21 @@
 
   <style>
     :root {
-      --theme-bg: #0f172a;
-      --theme-card-bg: #1e293b;
-      --theme-dark-bg: #020617;
-      --theme-border: #334155;
-      --theme-blue: #38bdf8;
-      --theme-green: #34d399;
-      --theme-yellow: #facc15;
-      --theme-red: #f87171;
+      --theme-bg: #1a1a1a;
+      --theme-card-bg: #2a2a2a;
+      --theme-dark-bg: #101010;
+      --theme-border: #444444;
+      --theme-blue: #5f7b9b;
+      --theme-green: #6c7f4c;
+      --theme-yellow: #dd9f3f;
+      --theme-red: #bb5548;
     }
     body {
       background-color: var(--theme-bg);
-      color: #cbd5e1; /* slate-300 */
+      color: #e0e0e0;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACJSURBVHja7dJBCQAwEAOx//907aKBQ2TNEaECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAL8B2YwAASs5QKcAAAAASUVORK5CYII=');
     }
     
     @keyframes float {
@@ -54,6 +55,13 @@
     @keyframes modal-scale-in {
         from { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
         to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    .animate-flex-modal-scale-in {
+        animation: flex-modal-scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes flex-modal-scale-in {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
     }
     .animate-fade-in-down {
         animation: fade-in-down 0.2s ease-out forwards;

@@ -8,7 +8,7 @@ import { CreatorInfo } from './components/CreatorInfo';
 import { DownloadManager } from './components/DownloadManager';
 import { Hero } from './components/Hero';
 import { generateProductDescription, transcribeAudio } from './services/geminiService';
-import { DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, SITE_SETTINGS, SiteSettings } from './constants';
+import { DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, DEFAULT_SITE_SETTINGS, SiteSettings } from './constants';
 import { db } from './services/db';
 import { base64ToBlob } from './utils/dataUtils';
 import { fileSystemService } from './services/fileSystemService';
@@ -42,6 +42,7 @@ export interface Recording {
 
 // For backup/restore functionality
 export interface BackupData {
+    siteSettings?: SiteSettings;
     templates: Template[];
     recordings: Omit<Recording, 'audioBlob'> & { audioBase64: string, audioMimeType: string };
 }
@@ -57,8 +58,7 @@ const App: React.FC = () => {
 
   const [downloadQueue, setDownloadQueue] = useState<QueuedItem[]>([]);
 
-  // Site settings are now a static constant, not state.
-  const siteSettings = SITE_SETTINGS;
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
 
   const [isDashboardLocked, setIsDashboardLocked] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -74,6 +74,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadDataFromLocalStorage = async () => {
         try {
+            // Load settings
+            const savedSettings = localStorage.getItem('siteSettings');
+            if (savedSettings) setSiteSettings(JSON.parse(savedSettings));
+
             const savedTemplates = localStorage.getItem('productGenTemplates');
             if (savedTemplates) {
                 const parsedTemplates = JSON.parse(savedTemplates) as Template[];
@@ -101,21 +105,22 @@ const App: React.FC = () => {
       const handle = await db.getDirectoryHandle();
       if (handle) {
         try {
-          // Check if we still have permission. This will throw an error if the handle is stale (e.g., folder deleted/moved).
           if ((await (handle as any).queryPermission({ mode: 'readwrite' })) === 'granted') {
             console.log("Loading all data from connected directory...");
             setDirectoryHandle(handle);
-            // Settings are static, no need to load them.
+            
+            const loadedSettings = await fileSystemService.loadSettings(handle);
+            if (loadedSettings) setSiteSettings(loadedSettings);
+
             const loadedTemplates = await fileSystemService.loadTemplates(handle);
             if (loadedTemplates) setTemplates(loadedTemplates);
+
             const { recordings: fileRecordings } = await fileSystemService.loadRecordingsFromDirectory(handle);
             setRecordings(fileRecordings);
           } else {
-            // This case is unlikely as queryPermission would throw, but included for completeness.
             throw new Error("Permission to access the directory was not granted.");
           }
         } catch (e) {
-          // This block catches stale handles or permission denials, indicating a "disconnect".
           console.warn("Could not connect to the synchronized folder:", e);
           const localDataExists = localStorage.getItem('productGenTemplates');
           if (localDataExists) {
@@ -125,23 +130,29 @@ const App: React.FC = () => {
               await loadDataFromLocalStorage();
               alert("Loaded local data and disconnected from folder.");
             } else {
-              // User chose not to load, they can try to reconnect later. We load defaults.
               await loadDataFromLocalStorage();
             }
           } else {
-            // No handle and no local data, just load defaults.
             await loadDataFromLocalStorage();
           }
         }
       } else {
-        // No handle stored, normal startup using local storage.
         await loadDataFromLocalStorage();
       }
     };
     
     loadInitialData();
-  }, []); // Intentionally empty to run once on mount
+  }, []);
 
+
+  const handleUpdateSettings = useCallback(async (newSettings: SiteSettings) => {
+    setSiteSettings(newSettings);
+    if (directoryHandle) {
+        await fileSystemService.saveSettings(directoryHandle, newSettings);
+    } else {
+        localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+    }
+  }, [directoryHandle]);
 
   const handleAddTemplate = useCallback(async (name: string, prompt: string) => {
     const newTemplate: Template = { id: crypto.randomUUID(), name, prompt };
@@ -215,7 +226,6 @@ const App: React.FC = () => {
   
   const handleRestoreBackup = useCallback(async (data: any) => {
     try {
-        // This function restores to localStorage/IndexedDB, disconnecting any sync folder.
         if (directoryHandle) {
             if (!window.confirm("Restoring a backup will disconnect the synchronized local folder. Are you sure you want to continue?")) {
                 return;
@@ -223,8 +233,12 @@ const App: React.FC = () => {
             setDirectoryHandle(null);
             await db.clearDirectoryHandle();
         }
-
-        // Settings are code-based and are not restored.
+        
+        // Restore Settings
+        if (data.siteSettings) {
+            setSiteSettings(data.siteSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(data.siteSettings));
+        }
 
         // Restore Templates
         const newTemplates = data.templates as Template[];
@@ -254,11 +268,11 @@ const App: React.FC = () => {
   }, [directoryHandle]);
   
    const handleClearLocalData = useCallback(async () => {
-    if (window.confirm("Are you sure you want to delete ALL locally stored templates and recordings? This action cannot be undone.")) {
+    if (window.confirm("Are you sure you want to delete ALL locally stored settings, templates and recordings? This action cannot be undone.")) {
+        localStorage.removeItem('siteSettings');
         localStorage.removeItem('productGenTemplates');
         localStorage.removeItem('dashboardLocked');
         await db.clearAllRecordings();
-        // Disconnect folder if connected, as we are clearing local state
         if (directoryHandle) {
              setDirectoryHandle(null);
              await db.clearDirectoryHandle();
@@ -283,18 +297,19 @@ const App: React.FC = () => {
     try {
         const handle = await fileSystemService.getDirectoryHandle();
 
-        const localDataExists = localStorage.getItem('productGenTemplates');
+        const localDataExists = localStorage.getItem('productGenTemplates') || localStorage.getItem('siteSettings');
         const folderDataExists = await fileSystemService.directoryHasData(handle);
 
         if (folderDataExists) {
              if (window.confirm("This folder contains existing data. Do you want to load it, overwriting your current app data?")) {
-                // Load from folder
+                 const loadedSettings = await fileSystemService.loadSettings(handle);
+                 if (loadedSettings) setSiteSettings(loadedSettings);
                  const loadedTemplates = await fileSystemService.loadTemplates(handle);
                  if (loadedTemplates) setTemplates(loadedTemplates);
              }
         } else if (localDataExists) {
             if (window.confirm("This folder appears to be empty. Would you like to save your current app data to this folder?")) {
-                // Save current data to folder
+                await fileSystemService.saveSettings(handle, siteSettings);
                 await fileSystemService.saveTemplates(handle, templates);
             }
         }
@@ -302,7 +317,7 @@ const App: React.FC = () => {
         const { recordings: fileRecordings } = await fileSystemService.loadRecordingsFromDirectory(handle);
         setRecordings(fileRecordings);
         
-        // Clear local storage for user data if we are now syncing
+        localStorage.removeItem('siteSettings');
         localStorage.removeItem('productGenTemplates');
         await db.clearAllRecordings();
 
@@ -314,7 +329,7 @@ const App: React.FC = () => {
       console.error("Failed to connect to directory:", error);
       alert(`Could not connect to directory: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [templates]);
+  }, [templates, siteSettings]);
   
   const handleDisconnectDirectory = useCallback(async () => {
     if (window.confirm("Are you sure you want to disconnect from the synchronized folder? The app will switch to using local browser storage, and you will need to reconnect to access your synced files again. Your data will remain safe in the folder.")) {
@@ -429,6 +444,8 @@ const App: React.FC = () => {
             onLock={handleLock}
             templates={templates}
             recordings={recordings}
+            siteSettings={siteSettings}
+            onUpdateSettings={handleUpdateSettings}
             onRestore={handleRestoreBackup}
             directoryHandle={directoryHandle}
             onSyncDirectory={handleSyncDirectory}
