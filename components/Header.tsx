@@ -6,6 +6,8 @@ import { CompanyInfoDropdown } from './CompanyInfoDropdown';
 import { ImageIcon } from './icons/ImageIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
+import { HamburgerIcon } from './icons/HamburgerIcon';
+import { CloudIcon } from './icons/CloudIcon';
 
 interface HeaderProps {
   onSettingsClick: () => void;
@@ -14,6 +16,7 @@ interface HeaderProps {
   onPhotoManagerClick: () => void;
   onNotepadClick: () => void;
   siteSettings: SiteSettings;
+  isApiConnected: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = React.memo(({ 
@@ -22,20 +25,31 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     onImageToolClick, 
     onPhotoManagerClick,
     onNotepadClick,
-    siteSettings 
+    siteSettings,
+    isApiConnected
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  
+  const handleMenuClick = (action: () => void) => {
+    action();
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className="bg-[var(--theme-card-bg)]/50 backdrop-blur-sm border-b border-[var(--theme-border)]/50 sticky top-0 z-20">
@@ -59,11 +73,36 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             {isDropdownOpen && <CompanyInfoDropdown settings={siteSettings} onClose={() => setIsDropdownOpen(false)} />}
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
-            <button onClick={onNotepadClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Notepad"><NotepadIcon /></button>
-            <button onClick={onPhotoManagerClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Photo Manager"><PhotoIcon /></button>
-            <button onClick={onImageToolClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Image Squarer"><ImageIcon /></button>
-            <button onClick={onRecordingsClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Recordings"><MicIcon /></button>
+            {siteSettings.syncMode === 'api' && (
+              <div className="relative group">
+                <CloudIcon isConnected={isApiConnected} />
+                <div className="absolute top-full right-0 mt-2 w-max bg-black/80 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    {isApiConnected ? 'Connected to API' : 'API Connection Failed'}
+                </div>
+              </div>
+            )}
             <button onClick={onSettingsClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Settings"><SettingsIcon /></button>
+            <div className="relative" ref={menuRef}>
+                <button 
+                    onClick={() => setIsMenuOpen(prev => !prev)} 
+                    className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" 
+                    aria-label="Open tools menu"
+                    aria-haspopup="true"
+                    aria-expanded={isMenuOpen}
+                >
+                    <HamburgerIcon />
+                </button>
+                {isMenuOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-60 bg-[var(--theme-card-bg)] rounded-lg shadow-xl border border-[var(--theme-border)] z-30 origin-top-right animate-fade-in-down">
+                        <ul className="p-2 space-y-1">
+                            <li><button onClick={() => handleMenuClick(onNotepadClick)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[var(--theme-bg)] transition-colors text-left text-[var(--theme-text-primary)]"><NotepadIcon /><span>Notepad</span></button></li>
+                            <li><button onClick={() => handleMenuClick(onPhotoManagerClick)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[var(--theme-bg)] transition-colors text-left text-[var(--theme-text-primary)]"><PhotoIcon /><span>Photo Manager</span></button></li>
+                            <li><button onClick={() => handleMenuClick(onImageToolClick)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[var(--theme-bg)] transition-colors text-left text-[var(--theme-text-primary)]"><ImageIcon /><span>Image Squarer</span></button></li>
+                            <li><button onClick={() => handleMenuClick(onRecordingsClick)} className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-[var(--theme-bg)] transition-colors text-left text-[var(--theme-text-primary)]"><MicIcon /><span>Recordings</span></button></li>
+                        </ul>
+                    </div>
+                )}
+            </div>
         </div>
       </div>
     </header>

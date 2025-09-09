@@ -11,6 +11,8 @@ import { TemplateIcon } from './icons/TemplateIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
+import { SiteSettings } from '../constants';
+import { CloudIcon } from './icons/CloudIcon';
 
 interface DataManagementProps {
     templates: Template[];
@@ -23,6 +25,12 @@ interface DataManagementProps {
     onClearLocalData: () => void;
     onSyncDirectory: () => void;
     onDisconnectDirectory: () => void;
+    siteSettings: SiteSettings;
+    onUpdateSettings: (newSettings: SiteSettings) => Promise<void>;
+    onApiConnect: (apiUrl: string, apiKey: string) => Promise<void>;
+    onApiDisconnect: () => void;
+    isApiConnecting: boolean;
+    isApiConnected: boolean;
 }
 
 const InfoCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
@@ -33,6 +41,21 @@ const InfoCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <h3 className="text-lg font-semibold text-[var(--theme-text-primary)] mb-4">{children}</h3>
+);
+
+const InputField: React.FC<{ label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; type?: string }> = 
+    ({ label, id, value, onChange, placeholder, type="text" }) => (
+    <div>
+        <label htmlFor={id} className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">{label}</label>
+        <input
+            type={type}
+            id={id}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200"
+        />
+    </div>
 );
 
 
@@ -46,10 +69,44 @@ export const DataManagement: React.FC<DataManagementProps> = ({
     directoryHandle,
     onClearLocalData,
     onSyncDirectory,
-    onDisconnectDirectory
+    onDisconnectDirectory,
+    siteSettings,
+    onUpdateSettings,
+    onApiConnect,
+    onApiDisconnect,
+    isApiConnecting,
+    isApiConnected,
 }) => {
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
     const [restoreError, setRestoreError] = useState('');
+
+    const [apiSettings, setApiSettings] = useState({
+        customApiEndpoint: siteSettings.customApiEndpoint || '',
+        customApiAuthKey: siteSettings.customApiAuthKey || '',
+    });
+    
+    const handleApiSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setApiSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleApiSettingsSave = async () => {
+        await onUpdateSettings({ 
+            ...siteSettings, 
+            customApiEndpoint: apiSettings.customApiEndpoint,
+            customApiAuthKey: apiSettings.customApiAuthKey
+        });
+        alert("API settings saved locally. Click 'Connect & Sync' to establish a connection.");
+    };
+    
+    const handleConnectClick = () => {
+        if (apiSettings.customApiEndpoint && apiSettings.customApiAuthKey) {
+            onApiConnect(apiSettings.customApiEndpoint, apiSettings.customApiAuthKey);
+        } else {
+            alert("Please enter both an API URL and an Auth Key.");
+        }
+    };
+
 
     const handleRestoreFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -81,7 +138,21 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <InfoCard className="md:col-span-2">
                     <SectionTitle>Connection Status</SectionTitle>
-                    {directoryHandle ? (
+                    {siteSettings.syncMode === 'api' ? (
+                         <div className="flex items-start gap-4">
+                           <CloudIcon isConnected={isApiConnected} />
+                           <div>
+                               <p className={`font-semibold flex items-center gap-2 ${isApiConnected ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'}`}>
+                                   <span className="w-2.5 h-2.5 bg-current rounded-full"></span>
+                                   {isApiConnected ? "Live Sync Active" : "API Connection Failed"}
+                               </p>
+                               <p className="text-sm text-[var(--theme-text-secondary)] mt-1">Data is synced with: <span className="font-mono bg-[var(--theme-bg)] px-1.5 py-0.5 rounded-md text-[var(--theme-text-primary)] break-all">{siteSettings.customApiEndpoint}</span>.</p>
+                               <button onClick={onApiDisconnect} className="mt-3 text-sm font-semibold text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors flex items-center gap-1">
+                                   <XIcon /> Disconnect
+                               </button>
+                           </div>
+                       </div>
+                    ) : directoryHandle ? (
                         <div className="flex items-start gap-4">
                             <FolderSyncIcon />
                             <div>
@@ -122,6 +193,36 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                     </div>
                 </InfoCard>
             </div>
+            
+            <InfoCard>
+                <SectionTitle>Sync & API Settings</SectionTitle>
+                <div className="space-y-4">
+                    <InputField 
+                        id="customApiEndpoint" 
+                        label="Custom API URL" 
+                        value={apiSettings.customApiEndpoint} 
+                        onChange={handleApiSettingsChange} 
+                        placeholder="https://your-backend-url.com" 
+                    />
+                    <InputField 
+                        id="customApiAuthKey" 
+                        label="Custom API Auth Key" 
+                        value={apiSettings.customApiAuthKey} 
+                        onChange={handleApiSettingsChange} 
+                        placeholder="Enter your secret API key" 
+                        type="password"
+                    />
+                    <p className="text-xs text-[var(--theme-text-secondary)]/70 -mt-2">
+                        Configure a self-hosted backend for multi-device sync. See the 'Setup Guide' tab for instructions.
+                    </p>
+                    <div className="flex justify-end items-center gap-3 pt-2">
+                        <button onClick={handleApiSettingsSave} className="bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-4 rounded-md text-sm">Save Settings</button>
+                        <button onClick={handleConnectClick} disabled={isApiConnecting} className="bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)]">
+                           {isApiConnecting ? 'Connecting...' : 'Connect & Sync'}
+                        </button>
+                    </div>
+                </div>
+            </InfoCard>
 
             <InfoCard>
                 <SectionTitle>Backup & Restore</SectionTitle>

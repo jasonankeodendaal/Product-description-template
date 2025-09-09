@@ -4,7 +4,6 @@ import { BuildingIcon } from './icons/BuildingIcon';
 import { UserIcon } from './icons/UserIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { TrashIcon } from './icons/TrashIcon';
-import { FolderSyncIcon } from './icons/FolderSyncIcon';
 
 interface SiteSettingsEditorProps {
     settings: SiteSettings;
@@ -115,29 +114,6 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
     return (
        <form onSubmit={handleSubmit} className="h-full flex flex-col animate-fade-in-down">
             <div className="flex-grow space-y-6 pb-24">
-                 <SectionCard title="Sync & API Settings" icon={<FolderSyncIcon />}>
-                    <InputField 
-                        id="customApiEndpoint" 
-                        label="Custom API URL" 
-                        value={formData.customApiEndpoint || ''} 
-                        onChange={handleFormChange} 
-                        placeholder="https://your-backend-url.com" 
-                        fullWidth 
-                    />
-                    <InputField 
-                        id="customApiAuthKey" 
-                        label="Custom API Auth Key" 
-                        value={formData.customApiAuthKey || ''} 
-                        onChange={handleFormChange} 
-                        placeholder="Enter your secret API key" 
-                        fullWidth 
-                        type="password"
-                    />
-                    <p className="text-xs text-[var(--theme-text-secondary)]/70 md:col-span-2 -mt-2">
-                        Configure a self-hosted backend for multi-device sync. See the 'Setup Guide' tab for instructions.
-                    </p>
-                </SectionCard>
-
                 <SectionCard title="Company Details" icon={<BuildingIcon />}>
                     <InputField id="companyName" label="Company Name" value={formData.companyName} onChange={handleFormChange} fullWidth />
                     <InputField id="slogan" label="Slogan" value={formData.slogan} onChange={handleFormChange} fullWidth />

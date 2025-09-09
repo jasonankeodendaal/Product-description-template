@@ -1,4 +1,5 @@
 
+
 export interface CreatorDetails {
   name:string;
   slogan: string;
@@ -20,6 +21,7 @@ export interface SiteSettings {
   creator: CreatorDetails;
   customApiEndpoint?: string | null;
   customApiAuthKey?: string | null;
+  syncMode?: 'local' | 'folder' | 'api';
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -41,6 +43,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   },
   customApiEndpoint: null,
   customApiAuthKey: null,
+  syncMode: 'local',
 };
 
 export const DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE = `

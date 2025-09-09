@@ -12,7 +12,7 @@ import { Hero } from './components/Hero';
 import { generateProductDescription, transcribeAudio } from './services/geminiService';
 import { DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, DEFAULT_SITE_SETTINGS, SiteSettings } from './constants';
 import { db } from './services/db';
-import { base64ToBlob, dataURLtoBlob } from './utils/dataUtils';
+import { base64ToBlob, dataURLtoBlob, blobToBase64, apiSyncService } from './utils/dataUtils';
 import { fileSystemService } from './services/fileSystemService';
 import { FullScreenLoader } from './components/FullScreenLoader';
 
@@ -68,11 +68,12 @@ export interface Note {
 
 
 // For backup/restore functionality
+// FIX: Updated `recordings` and `photos` to be arrays of objects to resolve TypeScript type mismatch errors.
 export interface BackupData {
     siteSettings?: SiteSettings;
     templates: Template[];
-    recordings: Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string };
-    photos: Omit<Photo, 'imageBlob'> & { imageBase64: string };
+    recordings: (Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string })[];
+    photos: (Omit<Photo, 'imageBlob'> & { imageBase64: string })[];
     notes: Note[];
 }
 
@@ -135,6 +136,10 @@ const App: React.FC = () => {
   
   const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [isPermissionPromptVisible, setIsPermissionPromptVisible] = useState<boolean>(false);
+  
+  // API Sync State
+  const [isApiConnecting, setIsApiConnecting] = useState(false);
+  const [isApiConnected, setIsApiConnected] = useState(false);
 
 
   // Effect to load data on mount
@@ -145,6 +150,10 @@ const App: React.FC = () => {
             if (savedSettings) {
                 const parsedSettings = JSON.parse(savedSettings);
                 setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...parsedSettings });
+                 if (parsedSettings.syncMode === 'api' && parsedSettings.customApiEndpoint && parsedSettings.customApiAuthKey) {
+                    handleApiConnect(parsedSettings.customApiEndpoint, parsedSettings.customApiAuthKey, true);
+                    return; // API connect will handle data loading
+                }
             }
 
             const savedTemplates = localStorage.getItem('productGenTemplates');
@@ -181,7 +190,7 @@ const App: React.FC = () => {
           console.log("Loading all data from connected directory...");
           try {
             const loadedSettings = await fileSystemService.loadSettings(handle);
-             if (loadedSettings) setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...loadedSettings });
+             if (loadedSettings) setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...loadedSettings, syncMode: 'folder' });
 
             setTemplates(await fileSystemService.loadTemplates(handle) || []);
             setRecordings((await fileSystemService.loadRecordingsFromDirectory(handle)).recordings);
@@ -215,7 +224,7 @@ const App: React.FC = () => {
           await db.clearAllData();
 
           const loadedSettings = await fileSystemService.loadSettings(directoryHandle);
-          if (loadedSettings) setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...loadedSettings });
+          if (loadedSettings) setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...loadedSettings, syncMode: 'folder' });
           setTemplates(await fileSystemService.loadTemplates(directoryHandle) || []);
           setRecordings((await fileSystemService.loadRecordingsFromDirectory(directoryHandle)).recordings);
           setPhotos(await fileSystemService.loadPhotosFromDirectory(directoryHandle));
@@ -229,13 +238,35 @@ const App: React.FC = () => {
         setIsPermissionPromptVisible(false);
         await db.clearDirectoryHandle();
         setDirectoryHandle(null);
+        await handleUpdateSettings({...siteSettings, syncMode: 'local'});
         alert("Disconnected from folder. The app is now using local storage.");
       }
-  }, []);
+  }, [siteSettings]);
+
+  const syncAllData = useCallback(async () => {
+    if (siteSettings.syncMode !== 'api' || !siteSettings.customApiEndpoint || !siteSettings.customApiAuthKey) return;
+    
+    try {
+        const recordingsForBackup = await Promise.all(recordings.map(async (r) => ({ ...r, audioBase64: await blobToBase64(r.audioBlob), audioMimeType: r.audioBlob.type })));
+        const photosForBackup = await Promise.all(photos.map(async (p) => ({ ...p, imageBase64: await blobToBase64(p.imageBlob) })));
+
+        await apiSyncService.saveData(siteSettings.customApiEndpoint, siteSettings.customApiAuthKey, {
+            siteSettings, templates, notes,
+            recordings: recordingsForBackup.map(({ audioBlob, ...r }) => r),
+            photos: photosForBackup.map(({ imageBlob, ...p }) => p),
+        });
+    } catch (error) {
+        console.error("Auto-sync failed:", error);
+        setIsApiConnected(false); // Visual feedback that sync is broken
+        alert("Failed to sync data with the server. Please check your connection and API settings.");
+    }
+  }, [siteSettings, templates, recordings, photos, notes]);
 
   const handleUpdateSettings = useCallback(async (newSettings: SiteSettings) => {
     setSiteSettings(newSettings);
-    if (directoryHandle) {
+    if (newSettings.syncMode === 'api') {
+        localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+    } else if (directoryHandle) {
         await fileSystemService.saveSettings(directoryHandle, newSettings);
     } else {
         localStorage.setItem('siteSettings', JSON.stringify(newSettings));
@@ -247,24 +278,26 @@ const App: React.FC = () => {
     const updatedTemplates = [...templates, newTemplate];
     setTemplates(updatedTemplates);
     setSelectedTemplateId(newTemplate.id);
-    if (directoryHandle) {
+    if (siteSettings.syncMode === 'folder' && directoryHandle) {
         await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
-    } else {
+    } else if (siteSettings.syncMode !== 'api') {
         localStorage.setItem('productGenTemplates', JSON.stringify(updatedTemplates));
     }
-  }, [templates, directoryHandle]);
+    if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [templates, directoryHandle, siteSettings, syncAllData]);
   
   const handleEditTemplate = useCallback(async (id: string, newName: string) => {
     const updatedTemplates = templates.map(t => 
       t.id === id ? { ...t, name: newName } : t
     );
     setTemplates(updatedTemplates);
-     if (directoryHandle) {
+     if (siteSettings.syncMode === 'folder' && directoryHandle) {
         await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
-    } else {
+    } else if (siteSettings.syncMode !== 'api') {
         localStorage.setItem('productGenTemplates', JSON.stringify(updatedTemplates));
     }
-  }, [templates, directoryHandle]);
+     if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [templates, directoryHandle, siteSettings, syncAllData]);
 
   const handleGenerate = useCallback(async () => {
     if (!userInput.trim()) {
@@ -332,8 +365,9 @@ const App: React.FC = () => {
         localStorage.clear();
 
         if (data.siteSettings) {
-            setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...data.siteSettings });
-            localStorage.setItem('siteSettings', JSON.stringify(data.siteSettings));
+            const newSettings = { ...DEFAULT_SITE_SETTINGS, ...data.siteSettings, syncMode: 'local' };
+            setSiteSettings(newSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
         }
 
         const newTemplates = data.templates as Template[];
@@ -418,6 +452,7 @@ const App: React.FC = () => {
         await db.clearAllData();
         setDirectoryHandle(handle);
         await db.setDirectoryHandle(handle);
+        await handleUpdateSettings({ ...siteSettings, syncMode: 'folder' });
         alert(`Successfully connected to folder '${handle.name}'. The app will now reload to sync.`);
         window.location.reload();
 
@@ -425,22 +460,24 @@ const App: React.FC = () => {
       console.error("Failed to connect to directory:", error);
       alert(`Could not connect to directory: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [templates, siteSettings, recordings, photos, notes]);
+  }, [templates, siteSettings, recordings, photos, notes, handleUpdateSettings]);
   
   const handleDisconnectDirectory = useCallback(async () => {
     if (window.confirm("Are you sure you want to disconnect? The app will switch to using local browser storage.")) {
         setDirectoryHandle(null);
         await db.clearDirectoryHandle();
+        await handleUpdateSettings({ ...siteSettings, syncMode: 'local' });
         alert("Disconnected from folder. The application will now reload and use local storage.");
         window.location.reload();
     }
-  }, []);
+  }, [siteSettings, handleUpdateSettings]);
   
   const handleUpdateRecording = useCallback(async (updated: Recording) => {
     setRecordings(prev => prev.map(r => r.id === updated.id ? updated : r));
-    if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, updated);
-    else await db.saveRecording(updated);
-  }, [directoryHandle]);
+    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, updated);
+    else if (siteSettings.syncMode !== 'api') await db.saveRecording(updated);
+    if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [directoryHandle, siteSettings, syncAllData]);
 
   const handleTranscribe = useCallback(async (id: string) => {
     const rec = recordings.find(r => r.id === id);
@@ -459,16 +496,18 @@ const App: React.FC = () => {
 
   const handleSaveRecording = useCallback(async (rec: Recording) => {
     setRecordings(prev => [...prev, rec].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, rec);
-    else await db.saveRecording(rec);
+    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, rec);
+    else if (siteSettings.syncMode !== 'api') await db.saveRecording(rec);
+    if (siteSettings.syncMode === 'api') await syncAllData();
     handleTranscribe(rec.id);
-  }, [recordings, directoryHandle, handleTranscribe]);
+  }, [directoryHandle, siteSettings, handleTranscribe, syncAllData]);
   
   const handleDeleteRecording = useCallback(async (id: string) => {
     setRecordings(prev => prev.filter(r => r.id !== id));
-    if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
-    else await db.deleteRecording(id);
-  }, [directoryHandle]);
+    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
+    else if (siteSettings.syncMode !== 'api') await db.deleteRecording(id);
+    if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [directoryHandle, siteSettings, syncAllData]);
 
   const handleSavePhoto = useCallback(async (photo: Photo) => {
     setPhotos(prev => {
@@ -476,15 +515,17 @@ const App: React.FC = () => {
         if (existing) return prev.map(p => p.id === photo.id ? photo : p);
         return [photo, ...prev].sort((a,b) => b.date.localeCompare(a.date));
     });
-    if (directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
-    else await db.savePhoto(photo);
-  }, [directoryHandle]);
+    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
+    else if (siteSettings.syncMode !== 'api') await db.savePhoto(photo);
+    if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [directoryHandle, siteSettings, syncAllData]);
 
   const handleDeletePhoto = useCallback(async (photo: Photo) => {
     setPhotos(prev => prev.filter(p => p.id !== photo.id));
-    if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
-    else await db.deletePhoto(photo.id);
-  }, [directoryHandle]);
+    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
+    else if (siteSettings.syncMode !== 'api') await db.deletePhoto(photo.id);
+    if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [directoryHandle, siteSettings, syncAllData]);
 
   const handleSaveNote = useCallback(async (note: Note) => {
     setNotes(prev => {
@@ -492,15 +533,69 @@ const App: React.FC = () => {
         if(existing) return prev.map(n => n.id === note.id ? note : n);
         return [note, ...prev].sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
     });
-    if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
-    else await db.saveNote(note);
-  }, [directoryHandle]);
+    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
+    else if (siteSettings.syncMode !== 'api') await db.saveNote(note);
+    if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [directoryHandle, siteSettings, syncAllData]);
 
   const handleDeleteNote = useCallback(async (id: string) => {
     setNotes(prev => prev.filter(n => n.id !== id));
-    if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
-    else await db.deleteNote(id);
-  }, [directoryHandle]);
+    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
+    else if (siteSettings.syncMode !== 'api') await db.deleteNote(id);
+    if (siteSettings.syncMode === 'api') await syncAllData();
+  }, [directoryHandle, siteSettings, syncAllData]);
+
+  const handleApiConnect = useCallback(async (apiUrl: string, apiKey: string, silent = false) => {
+    setIsApiConnecting(true);
+    setIsApiConnected(false);
+    try {
+        const isConnected = await apiSyncService.connect(apiUrl, apiKey);
+        if (!isConnected) throw new Error("Connection test failed.");
+
+        if (!silent) {
+            if (!window.confirm("Connection successful. Overwrite local data with data from the server?")) {
+                setIsApiConnecting(false);
+                return;
+            }
+        }
+        
+        const serverData = await apiSyncService.fetchAllData(apiUrl, apiKey);
+        
+        // Overwrite local state with server data
+        const newSettings = { ...DEFAULT_SITE_SETTINGS, ...serverData.siteSettings, syncMode: 'api' as const, customApiEndpoint: apiUrl, customApiAuthKey: apiKey };
+        setSiteSettings(newSettings);
+        localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+
+        setTemplates(serverData.templates || []);
+        setNotes(serverData.notes || []);
+
+        const restoredRecordings = await Promise.all((serverData.recordings || []).map(async rec => ({ ...rec, audioBlob: base64ToBlob(rec.audioBase64, rec.audioMimeType) })));
+        setRecordings(restoredRecordings);
+
+        const restoredPhotos = await Promise.all((serverData.photos || []).map(async photo => ({ ...photo, imageBlob: base64ToBlob(photo.imageBase64, photo.imageMimeType) })));
+        setPhotos(restoredPhotos);
+
+        setIsApiConnected(true);
+        if (!silent) alert("Successfully connected and synced with API server.");
+    } catch (error) {
+        console.error("API Connection Error:", error);
+        setIsApiConnected(false);
+        if (!silent) alert(`Failed to connect to API: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Revert to local mode if connection fails
+        await handleUpdateSettings({ ...siteSettings, syncMode: 'local' });
+    } finally {
+        setIsApiConnecting(false);
+    }
+  }, [handleUpdateSettings]);
+
+  const handleApiDisconnect = useCallback(async () => {
+    if (window.confirm("Disconnect from the API server? The app will revert to using local browser storage.")) {
+        await handleUpdateSettings({ ...siteSettings, syncMode: 'local', customApiEndpoint: '', customApiAuthKey: '' });
+        setIsApiConnected(false);
+        alert("Disconnected. The app will now reload.");
+        window.location.reload();
+    }
+  }, [siteSettings, handleUpdateSettings]);
 
   return (
     <div className="min-h-screen font-sans flex flex-col">
@@ -514,6 +609,7 @@ const App: React.FC = () => {
         onPhotoManagerClick={() => setIsPhotoManagerOpen(true)}
         onNotepadClick={() => setIsNotepadOpen(true)}
         siteSettings={siteSettings}
+        isApiConnected={isApiConnected}
       />
       <main className="container mx-auto px-4 py-8 flex-grow flex flex-col">
         <Hero heroImageSrc={siteSettings.heroImageSrc} />
@@ -550,6 +646,10 @@ const App: React.FC = () => {
             onSyncDirectory={handleSyncDirectory}
             onDisconnectDirectory={handleDisconnectDirectory}
             onClearLocalData={handleClearLocalData}
+            onApiConnect={handleApiConnect}
+            onApiDisconnect={handleApiDisconnect}
+            isApiConnecting={isApiConnecting}
+            isApiConnected={isApiConnected}
           />
         )}
         {isRecordingManagerOpen && (

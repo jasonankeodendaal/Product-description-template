@@ -1,5 +1,6 @@
 
-import { Template, Recording, Photo, Note } from '../App';
+
+import { Template, Recording, Photo, Note, BackupData } from '../App';
 import { SiteSettings } from '../constants';
 
 export const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -80,4 +81,47 @@ export const createBackup = async (
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
+};
+
+
+// --- API Sync Service ---
+
+const getHeaders = (key: string) => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${key}`
+});
+
+const handleApiResponse = async (response: Response) => {
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `Request failed with status ${response.status}` }));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+};
+
+type ApiBackupData = Omit<BackupData, 'recordings' | 'photos'> & {
+    recordings: (Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string })[];
+    photos: (Omit<Photo, 'imageBlob'> & { imageBase64: string })[];
+}
+
+export const apiSyncService = {
+    async connect(apiUrl: string, apiKey: string): Promise<boolean> {
+        // A simple health check endpoint is assumed to exist on the server.
+        const response = await fetch(`${apiUrl}/api/health`, { headers: getHeaders(apiKey) });
+        return response.ok;
+    },
+
+    async fetchAllData(apiUrl: string, apiKey: string): Promise<ApiBackupData> {
+        const response = await fetch(`${apiUrl}/api/data`, { headers: getHeaders(apiKey) });
+        return handleApiResponse(response);
+    },
+
+    async saveData(apiUrl: string, apiKey: string, data: BackupData): Promise<any> {
+        const response = await fetch(`${apiUrl}/api/data`, {
+            method: 'POST',
+            headers: getHeaders(apiKey),
+            body: JSON.stringify(data),
+        });
+        return handleApiResponse(response);
+    }
 };
