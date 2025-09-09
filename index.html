@@ -83,6 +83,39 @@
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
     }
+    
+    /* New animations for responsive creator modal */
+    @keyframes slide-in-up {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes slide-out-down {
+      from { transform: translateY(0); }
+      to { transform: translateY(100%); }
+    }
+    @keyframes flex-modal-scale-out {
+        from { transform: scale(1); opacity: 1; }
+        to { transform: scale(0.9); opacity: 0; }
+    }
+
+    .creator-modal-animate-in {
+        animation: slide-in-up 0.3s ease-out forwards;
+    }
+    .creator-modal-animate-out {
+        animation: slide-out-down 0.3s ease-in forwards;
+    }
+
+    /* md breakpoint: 768px */
+    @media (min-width: 768px) {
+        .creator-modal-animate-in {
+            animation-name: flex-modal-scale-in;
+            animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .creator-modal-animate-out {
+            animation-name: flex-modal-scale-out;
+            animation-timing-function: ease-in;
+        }
+    }
   </style>
 
   <script type="importmap">
