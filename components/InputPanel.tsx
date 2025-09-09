@@ -40,7 +40,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             value={selectedTemplateId}
             onChange={onTemplateChange}
             disabled={isLoading}
-            className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
             >
             {templates.map(template => (
                 <option key={template.id} value={template.id}>
@@ -58,7 +58,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             value={tone}
             onChange={onToneChange}
             disabled={isLoading}
-            className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
             >
                 <option>Professional</option>
                 <option>Casual</option>
@@ -76,7 +76,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         value={value}
         onChange={onChange}
         placeholder="e.g., Brand: Defy, Model: HB 7721 X, Power: 600W, a hand blender with whisk..."
-        className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200 min-h-[200px] resize-y flex-grow"
+        className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200 min-h-[200px] resize-y flex-grow"
         rows={10}
         disabled={isLoading}
       />
@@ -88,7 +88,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
       >
         {isLoading ? (
           <>
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>

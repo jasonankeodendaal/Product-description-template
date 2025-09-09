@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Template, Recording } from '../App';
+import { Template, Recording, Photo, Note } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RestoreIcon } from './icons/RestoreIcon';
 import { FolderSyncIcon } from './icons/FolderSyncIcon';
@@ -9,10 +9,14 @@ import { FolderIcon } from './icons/FolderIcon';
 import { XIcon } from './icons/XIcon';
 import { TemplateIcon } from './icons/TemplateIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
+import { PhotoIcon } from './icons/PhotoIcon';
+import { NotepadIcon } from './icons/NotepadIcon';
 
 interface DataManagementProps {
     templates: Template[];
     recordings: Recording[];
+    photos: Photo[];
+    notes: Note[];
     onBackup: () => void;
     onRestore: (data: any) => void;
     directoryHandle: FileSystemDirectoryHandle | null;
@@ -35,6 +39,8 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 export const DataManagement: React.FC<DataManagementProps> = ({
     templates,
     recordings,
+    photos,
+    notes,
     onBackup,
     onRestore,
     directoryHandle,
@@ -108,21 +114,11 @@ export const DataManagement: React.FC<DataManagementProps> = ({
 
                 <InfoCard>
                     <SectionTitle>Data Summary</SectionTitle>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <TemplateIcon />
-                            <div>
-                                <p className="font-semibold text-[var(--theme-text-primary)]">{templates.length}</p>
-                                <p className="text-xs text-[var(--theme-text-secondary)]">Saved Template{templates.length !== 1 && 's'}</p>
-                            </div>
-                        </div>
-                         <div className="flex items-center gap-3">
-                            <RecordingIcon />
-                            <div>
-                                <p className="font-semibold text-[var(--theme-text-primary)]">{recordings.length}</p>
-                                <p className="text-xs text-[var(--theme-text-secondary)]">Audio Recording{recordings.length !== 1 && 's'}</p>
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-2 gap-y-3">
+                        <div className="flex items-center gap-3"><TemplateIcon /><p>{templates.length} Template{templates.length !== 1 && 's'}</p></div>
+                        <div className="flex items-center gap-3"><RecordingIcon /><p>{recordings.length} Recording{recordings.length !== 1 && 's'}</p></div>
+                        <div className="flex items-center gap-3"><PhotoIcon /><p>{photos.length} Photo{photos.length !== 1 && 's'}</p></div>
+                        <div className="flex items-center gap-3"><NotepadIcon /><p>{notes.length} Note{notes.length !== 1 && 's'}</p></div>
                     </div>
                 </InfoCard>
             </div>
@@ -131,7 +127,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                 <SectionTitle>Backup & Restore</SectionTitle>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                        <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Save all settings, templates, and recordings to a single backup file.</p>
+                        <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Save all app data to a single backup file.</p>
                         <button onClick={onBackup} className="bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
                             <DownloadIcon /> Download Full Backup
                         </button>
@@ -152,7 +148,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                 <div className="flex justify-between items-center">
                     <div>
                         <p className="font-semibold text-[var(--theme-red)]">Clear All Local Data</p>
-                        <p className="text-sm text-[var(--theme-red)]/80 mt-1">This will permanently delete all templates, settings, and recordings from your browser. This action cannot be undone.</p>
+                        <p className="text-sm text-[var(--theme-red)]/80 mt-1">This will permanently delete all data from your browser. This action cannot be undone.</p>
                     </div>
                     <button onClick={onClearLocalData} className="bg-[var(--theme-red)]/80 hover:bg-[var(--theme-red)] text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 flex-shrink-0">
                         <TrashIcon /> Clear All Data

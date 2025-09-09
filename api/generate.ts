@@ -1,15 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-// Define the structure for grounding metadata from the REST API
-interface GroundingChunk {
-  web?: {
-    uri: string;
-    title: string;
-  };
-}
+import { GoogleGenAI } from "@google/genai";
 
 // Main handler for the serverless function
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Authentication Check
+  if (process.env.API_SECRET_KEY) {
+      const authHeader = req.headers.authorization;
+      const expectedAuthKey = `Bearer ${process.env.API_SECRET_KEY}`;
+      if (authHeader !== expectedAuthKey) {
+          return res.status(401).json({ error: 'Unauthorized' });
+      }
+  }
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -29,36 +31,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const toneInstruction = `Adopt a ${tone} tone of voice.`;
   const fullPrompt = `${promptTemplate}\n\n${toneInstruction}\n\n---\nHere is the product information to reformat:\n---\n\n${productInfo}`;
   
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
   try {
-    const apiResponse = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: fullPrompt }] }],
-        generationConfig: { temperature: 0.3 },
-        tools: [{ googleSearch: {} }],
-      }),
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: fullPrompt,
+        config: {
+            temperature: 0.3,
+            tools: [{ googleSearch: {} }],
+        },
     });
-
-    if (!apiResponse.ok) {
-      const errorBody = await apiResponse.json();
-      console.error('Gemini API Error:', errorBody);
-      const errorMessage = errorBody.error?.message || 'Failed to fetch from Gemini API';
-      return res.status(apiResponse.status).json({ error: errorMessage });
-    }
-
-    const data = await apiResponse.json();
     
-    // Extract text and sources from the REST API response structure
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const sources: GroundingChunk[] = data.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const text = response.text;
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
 
     res.status(200).json({ text, sources });
 
   } catch (error) {
     console.error('Server-side error in /api/generate:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : 'An unknown server error occurred.' });
+    const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
+    // Check for specific API-related error structures if the SDK provides them
+    const statusCode = (error as any)?.status || 500;
+    res.status(statusCode).json({ error: errorMessage });
   }
 }

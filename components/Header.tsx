@@ -4,19 +4,29 @@ import { MicIcon } from './icons/MicIcon';
 import { SiteSettings } from '../constants';
 import { CompanyInfoDropdown } from './CompanyInfoDropdown';
 import { ImageIcon } from './icons/ImageIcon';
+import { PhotoIcon } from './icons/PhotoIcon';
+import { NotepadIcon } from './icons/NotepadIcon';
 
 interface HeaderProps {
   onSettingsClick: () => void;
   onRecordingsClick: () => void;
   onImageToolClick: () => void;
+  onPhotoManagerClick: () => void;
+  onNotepadClick: () => void;
   siteSettings: SiteSettings;
 }
 
-export const Header: React.FC<HeaderProps> = React.memo(({ onSettingsClick, onRecordingsClick, onImageToolClick, siteSettings }) => {
+export const Header: React.FC<HeaderProps> = React.memo(({ 
+    onSettingsClick, 
+    onRecordingsClick, 
+    onImageToolClick, 
+    onPhotoManagerClick,
+    onNotepadClick,
+    siteSettings 
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -24,9 +34,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onSettingsClick, onRe
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -48,32 +56,14 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onSettingsClick, onRe
             )}
             <span className="hidden sm:inline text-xl font-semibold text-[var(--theme-text-primary)]">{siteSettings.companyName}</span>
             </button>
-            {isDropdownOpen && (
-                <CompanyInfoDropdown settings={siteSettings} onClose={() => setIsDropdownOpen(false)} />
-            )}
+            {isDropdownOpen && <CompanyInfoDropdown settings={siteSettings} onClose={() => setIsDropdownOpen(false)} />}
         </div>
-        <div className="flex items-center gap-2">
-            <button 
-              onClick={onImageToolClick} 
-              className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors"
-              aria-label="Open Image Tool"
-            >
-              <ImageIcon />
-            </button>
-            <button 
-              onClick={onRecordingsClick} 
-              className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors"
-              aria-label="Open Recordings"
-            >
-              <MicIcon />
-            </button>
-            <button 
-              onClick={onSettingsClick} 
-              className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors"
-              aria-label="Open Settings"
-            >
-              <SettingsIcon />
-            </button>
+        <div className="flex items-center gap-1 sm:gap-2">
+            <button onClick={onNotepadClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Notepad"><NotepadIcon /></button>
+            <button onClick={onPhotoManagerClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Photo Manager"><PhotoIcon /></button>
+            <button onClick={onImageToolClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Image Squarer"><ImageIcon /></button>
+            <button onClick={onRecordingsClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Recordings"><MicIcon /></button>
+            <button onClick={onSettingsClick} className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors" aria-label="Open Settings"><SettingsIcon /></button>
         </div>
       </div>
     </header>

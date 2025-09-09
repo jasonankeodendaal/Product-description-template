@@ -1,144 +1,175 @@
-import { Recording, Template } from "../App";
-// FIX: SiteSettings is exported from constants.ts, while Recording and Template are from App.tsx.
+
+import { Recording, Template, Photo, Note } from "../App";
 import { SiteSettings } from "../constants";
+import { blobToBase64 } from "../utils/dataUtils";
 
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
-    if (!('showDirectoryPicker' in window)) {
-        throw new Error('File System Access API is not supported in this browser.');
-    }
-    const handle = await (window as any).showDirectoryPicker({
-        mode: 'readwrite'
-    });
-    return handle;
+    if (!('showDirectoryPicker' in window)) throw new Error('File System Access API is not supported.');
+    return await (window as any).showDirectoryPicker({ mode: 'readwrite' });
 };
 
-const directoryHasData = async (dirHandle: FileSystemDirectoryHandle): Promise<boolean> => {
+const writeFile = async (dirHandle: FileSystemDirectoryHandle, fileName: string, content: Blob | string) => {
+    const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+};
+
+const readFile = async (dirHandle: FileSystemDirectoryHandle, fileName: string): Promise<string | null> => {
     try {
-        await dirHandle.getFileHandle('settings.json');
-        return true;
+        const fileHandle = await dirHandle.getFileHandle(fileName);
+        const file = await fileHandle.getFile();
+        return await file.text();
     } catch (e) {
-        // settings.json not found, check for templates
+        if (e instanceof DOMException && e.name === 'NotFoundError') return null;
+        throw e;
     }
-     try {
-        await dirHandle.getFileHandle('templates.json');
-        return true;
-    } catch (e) {
-        // neither settings nor templates found
-    }
+}
+
+const getOrCreateDirectory = async (parentHandle: FileSystemDirectoryHandle, name: string): Promise<FileSystemDirectoryHandle> => {
+    return await parentHandle.getDirectoryHandle(name, { create: true });
+}
+
+// --- Generic Checks ---
+const directoryHasData = async (dirHandle: FileSystemDirectoryHandle): Promise<boolean> => {
+    for await (const entry of dirHandle.values()) return true;
     return false;
 }
 
 // --- Settings ---
-const saveSettings = async (dirHandle: FileSystemDirectoryHandle, settings: SiteSettings): Promise<void> => {
-    const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
-    const fileHandle = await dirHandle.getFileHandle('settings.json', { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-};
-
-const loadSettings = async (dirHandle: FileSystemDirectoryHandle): Promise<SiteSettings | null> => {
-    try {
-        const fileHandle = await dirHandle.getFileHandle('settings.json');
-        const file = await fileHandle.getFile();
-        const text = await file.text();
-        return JSON.parse(text);
-    } catch (error) {
-        // @ts-ignore
-        if (error.name === 'NotFoundError') return null;
-        console.error("Failed to load settings.json:", error);
-        return null;
-    }
-};
+const saveSettings = async (dirHandle: FileSystemDirectoryHandle, settings: SiteSettings) => writeFile(dirHandle, 'settings.json', JSON.stringify(settings, null, 2));
+const loadSettings = async (dirHandle: FileSystemDirectoryHandle): Promise<SiteSettings | null> => JSON.parse(await readFile(dirHandle, 'settings.json') || 'null');
 
 // --- Templates ---
-const saveTemplates = async (dirHandle: FileSystemDirectoryHandle, templates: Template[]): Promise<void> => {
-    const blob = new Blob([JSON.stringify(templates, null, 2)], { type: 'application/json' });
-    const fileHandle = await dirHandle.getFileHandle('templates.json', { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-};
-
-const loadTemplates = async (dirHandle: FileSystemDirectoryHandle): Promise<Template[] | null> => {
-    try {
-        const fileHandle = await dirHandle.getFileHandle('templates.json');
-        const file = await fileHandle.getFile();
-        const text = await file.text();
-        return JSON.parse(text);
-    } catch (error) {
-         // @ts-ignore
-        if (error.name === 'NotFoundError') return null;
-        console.error("Failed to load templates.json:", error);
-        return null;
-    }
-};
-
+const saveTemplates = async (dirHandle: FileSystemDirectoryHandle, templates: Template[]) => writeFile(dirHandle, 'templates.json', JSON.stringify(templates, null, 2));
+const loadTemplates = async (dirHandle: FileSystemDirectoryHandle): Promise<Template[] | null> => JSON.parse(await readFile(dirHandle, 'templates.json') || 'null');
 
 // --- Recordings ---
-const saveRecordingToDirectory = async (dirHandle: FileSystemDirectoryHandle, recording: Recording): Promise<void> => {
-    // Save metadata
+const saveRecordingToDirectory = async (dirHandle: FileSystemDirectoryHandle, recording: Recording) => {
+    const recsDir = await getOrCreateDirectory(dirHandle, 'recordings');
     const metadata: Omit<Recording, 'audioBlob' | 'isTranscribing'> = { ...recording };
     delete (metadata as any).audioBlob;
     delete (metadata as any).isTranscribing;
-    
-    const jsonBlob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
-    const jsonFileHandle = await dirHandle.getFileHandle(`${recording.id}.json`, { create: true });
-    const jsonWritable = await jsonFileHandle.createWritable();
-    await jsonWritable.write(jsonBlob);
-    await jsonWritable.close();
-
-    // Save audio file
-    const audioFileHandle = await dirHandle.getFileHandle(`${recording.id}.webm`, { create: true });
-    const audioWritable = await audioFileHandle.createWritable();
-    await audioWritable.write(recording.audioBlob);
-    await audioWritable.close();
+    await writeFile(recsDir, `${recording.id}.json`, JSON.stringify(metadata, null, 2));
+    await writeFile(recsDir, `${recording.id}.webm`, recording.audioBlob);
 };
 
-const deleteRecordingFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string): Promise<void> => {
-    try {
-        await dirHandle.removeEntry(`${id}.json`);
-        await dirHandle.removeEntry(`${id}.webm`);
-    } catch (error) {
-        // @ts-ignore
-        if (error.name !== 'NotFoundError') {
-            console.error(`Failed to delete files for recording ${id}:`, error);
-        }
-    }
+const deleteRecordingFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
+    const recsDir = await getOrCreateDirectory(dirHandle, 'recordings');
+    try { await recsDir.removeEntry(`${id}.json`); } catch(e) {}
+    try { await recsDir.removeEntry(`${id}.webm`); } catch(e) {}
 };
 
 const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<{ recordings: Recording[], errors: string[] }> => {
     const recordings: Recording[] = [];
     const errors: string[] = [];
-    const jsonFiles: FileSystemFileHandle[] = [];
-
-    for await (const entry of dirHandle.values()) {
-        if (entry.kind === 'file' && entry.name.endsWith('.json') && !['settings.json', 'templates.json'].includes(entry.name)) {
-           jsonFiles.push(entry as FileSystemFileHandle);
+    try {
+        const recsDir = await dirHandle.getDirectoryHandle('recordings');
+        for await (const entry of recsDir.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    const metadata = JSON.parse(await file.text());
+                    const audioHandle = await recsDir.getFileHandle(`${metadata.id}.webm`);
+                    const audioBlob = await audioHandle.getFile();
+                    recordings.push({ ...metadata, audioBlob });
+                } catch (e) { errors.push(`Failed to load recording ${entry.name}: ${e}`); }
+            }
         }
-    }
-    
-    for (const fileHandle of jsonFiles) {
-        try {
-            const file = await fileHandle.getFile();
-            const text = await file.text();
-            const metadata = JSON.parse(text) as Omit<Recording, 'audioBlob'>;
-
-            // Find corresponding audio file
-            const audioFileHandle = await dirHandle.getFileHandle(`${metadata.id}.webm`);
-            const audioFile = await audioFileHandle.getFile();
-            const audioBlob = new Blob([audioFile], { type: 'audio/webm' });
-
-            recordings.push({ ...metadata, audioBlob });
-
-        } catch (error) {
-            errors.push(`Failed to load recording from ${fileHandle.name}: ${error}`);
-        }
-    }
-
+    } catch (e) { /* recordings dir doesn't exist, return empty */ }
     return { recordings, errors };
 };
 
+// --- Photos ---
+const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
+    const photosDir = await getOrCreateDirectory(dirHandle, 'photos');
+    const folderDir = await getOrCreateDirectory(photosDir, photo.folder || '_uncategorized');
+    
+    const metadata: Omit<Photo, 'imageBlob'> = { ...photo };
+    delete (metadata as any).imageBlob;
+    
+    const ext = photo.imageMimeType.split('/')[1] || 'png';
+    await writeFile(folderDir, `${photo.id}.json`, JSON.stringify(metadata, null, 2));
+    await writeFile(folderDir, `${photo.id}.${ext}`, photo.imageBlob);
+};
+
+const deletePhotoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
+    try {
+        const photosDir = await dirHandle.getDirectoryHandle('photos');
+        const folderDir = await photosDir.getDirectoryHandle(photo.folder || '_uncategorized');
+        const ext = photo.imageMimeType.split('/')[1] || 'png';
+        try { await folderDir.removeEntry(`${photo.id}.json`); } catch(e) {}
+        try { await folderDir.removeEntry(`${photo.id}.${ext}`); } catch(e) {}
+    } catch (e) { /* Folder might not exist, ignore */ }
+};
+
+const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Photo[]> => {
+    const photos: Photo[] = [];
+    try {
+        const photosDir = await dirHandle.getDirectoryHandle('photos');
+        for await (const folderEntry of photosDir.values()) {
+            if (folderEntry.kind === 'directory') {
+                const subFolderHandle = folderEntry as FileSystemDirectoryHandle;
+                for await (const fileEntry of subFolderHandle.values()) {
+                    // Load image files first to ensure we can handle any type
+                    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(fileEntry.name);
+                    if (fileEntry.kind === 'file' && isImage) {
+                         try {
+                            const imageFileHandle = fileEntry as FileSystemFileHandle;
+                            const imageBlob = await imageFileHandle.getFile();
+                            const photoId = imageFileHandle.name.substring(0, imageFileHandle.name.lastIndexOf('.'));
+                            
+                            // Now find the corresponding metadata
+                            const jsonHandle = await subFolderHandle.getFileHandle(`${photoId}.json`);
+                            const jsonFile = await jsonHandle.getFile();
+                            const metadata = JSON.parse(await jsonFile.text());
+
+                            // Construct the full Photo object, ensuring mime type is present for future saves
+                            photos.push({ ...metadata, imageBlob, imageMimeType: imageBlob.type });
+
+                         } catch (e) { console.error(`Skipping photo ${fileEntry.name} in folder ${subFolderHandle.name} due to missing/corrupt metadata or other error.`, e); }
+                     }
+                 }
+            }
+        }
+    } catch(e) { /* photos dir doesn't exist */ }
+    return photos;
+}
+
+// --- Notes ---
+const saveNoteToDirectory = async (dirHandle: FileSystemDirectoryHandle, note: Note) => {
+    const notesDir = await getOrCreateDirectory(dirHandle, 'notes');
+    await writeFile(notesDir, `${note.id}.json`, JSON.stringify(note, null, 2));
+};
+
+const deleteNoteFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
+    try {
+        const notesDir = await dirHandle.getDirectoryHandle('notes');
+        await notesDir.removeEntry(`${id}.json`);
+    } catch(e) {}
+}
+
+const loadNotesFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Note[]> => {
+    const notes: Note[] = [];
+    try {
+        const notesDir = await dirHandle.getDirectoryHandle('notes');
+        for await (const entry of notesDir.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    notes.push(JSON.parse(await file.text()));
+                } catch(e) { console.error(`Failed to load note ${entry.name}`, e); }
+            }
+        }
+    } catch(e) { /* notes dir doesn't exist */ }
+    return notes;
+}
+
+const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data: { recordings: Recording[], photos: Photo[], notes: Note[] }) => {
+    for (const rec of data.recordings) await saveRecordingToDirectory(dirHandle, rec);
+    for (const photo of data.photos) await savePhotoToDirectory(dirHandle, photo);
+    for (const note of data.notes) await saveNoteToDirectory(dirHandle, note);
+}
 
 export const fileSystemService = {
     getDirectoryHandle,
@@ -150,4 +181,11 @@ export const fileSystemService = {
     saveRecordingToDirectory,
     loadRecordingsFromDirectory,
     deleteRecordingFromDirectory,
+    savePhotoToDirectory,
+    loadPhotosFromDirectory,
+    deletePhotoFromDirectory,
+    saveNoteToDirectory,
+    loadNotesFromDirectory,
+    deleteNoteFromDirectory,
+    saveAllDataToDirectory,
 };

@@ -179,7 +179,7 @@ export const ImageTool: React.FC<ImageToolProps> = ({ onClose }) => {
                                     type="text"
                                     value={img.newName}
                                     onChange={(e) => handleRename(img.id, e.target.value)}
-                                    className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded p-1.5 text-sm text-[var(--theme-text-primary)] focus:ring-1 focus:ring-[var(--theme-yellow)]"
+                                    className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded p-1.5 text-sm text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"
                                     aria-label="Rename image"
                                 />
                                 <div className="grid grid-cols-2 gap-2 text-sm">

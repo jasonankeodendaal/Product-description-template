@@ -18,6 +18,8 @@ export interface SiteSettings {
   email: string;
   website: string;
   creator: CreatorDetails;
+  customApiEndpoint?: string | null;
+  customApiAuthKey?: string | null;
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -37,6 +39,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     whatsapp: 'https://wa.link/nohogl',
     whatsapp2: 'https://wa.link/j3b9yn',
   },
+  customApiEndpoint: null,
+  customApiAuthKey: null,
 };
 
 export const DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE = `

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { MicIcon } from './icons/MicIcon';
@@ -7,14 +7,19 @@ import { PlayIcon } from './icons/PlayIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
+import { CameraIcon } from './icons/CameraIcon';
+import { UploadIcon } from './icons/UploadIcon';
 import { useRecorder } from '../hooks/useRecorder';
 import { formatTime } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
+import { resizeImage } from '../utils/imageUtils';
+import { CameraCapture } from './CameraCapture';
+
 
 interface RecordingManagerProps {
   onClose: () => void;
   recordings: Recording[];
-  onSave: (recording: Omit<Recording, 'transcript' | 'isTranscribing'>) => Promise<void>;
+  onSave: (recording: Recording) => Promise<void>;
   onUpdate: (recording: Recording) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   directoryHandle: FileSystemDirectoryHandle | null;
@@ -27,7 +32,6 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
   onSave,
   onUpdate,
   onDelete,
-  directoryHandle,
   onTranscribe
 }) => {
   const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
@@ -35,18 +39,29 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
   const [sortOrder, setSortOrder] = useState<'date' | 'name'>('date');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  const [formState, setFormState] = useState({ name: '', notes: '' });
+
+  const [formState, setFormState] = useState<{
+    name: string;
+    notes: string;
+    tags: string;
+    images: { id: string; dataUrl: string; }[];
+  }>({ name: '', notes: '', tags: '', images: [] });
+  
   const { isRecording, recordingTime, audioBlob, startRecording, stopRecording } = useRecorder();
   
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioPlayerRef = React.useRef<HTMLAudioElement | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredAndSortedRecordings = useMemo(() => {
     const lowercasedQuery = debouncedSearchQuery.toLowerCase();
     const filtered = recordings.filter(rec => 
         rec.name.toLowerCase().includes(lowercasedQuery) ||
         rec.notes.toLowerCase().includes(lowercasedQuery) ||
-        rec.transcript?.toLowerCase().includes(lowercasedQuery)
+        rec.transcript?.toLowerCase().includes(lowercasedQuery) ||
+        rec.tags?.some(tag => tag.toLowerCase().includes(lowercasedQuery))
     );
 
     return filtered.sort((a, b) => {
@@ -59,10 +74,15 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
 
   useEffect(() => {
     if (selectedRecording) {
-      setFormState({ name: selectedRecording.name, notes: selectedRecording.notes });
+      setFormState({ 
+        name: selectedRecording.name, 
+        notes: selectedRecording.notes,
+        tags: (selectedRecording.tags || []).join(', '),
+        images: selectedRecording.images || []
+      });
       setIsEditing(true);
     } else {
-      setFormState({ name: '', notes: '' });
+      setFormState({ name: '', notes: '', tags: '', images: [] });
       setIsEditing(false);
     }
   }, [selectedRecording]);
@@ -75,6 +95,8 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
       setFormState({
         name: `Recording ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
         notes: '',
+        tags: '',
+        images: []
       });
     }
   }, [audioBlob]);
@@ -83,21 +105,31 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
     const blobToSave = selectedRecording?.audioBlob || audioBlob;
     if (!blobToSave) return;
 
+    const finalTags = formState.tags.split(',').map(t => t.trim()).filter(Boolean);
+
     if (isEditing && selectedRecording) {
-      const updatedRecording = { ...selectedRecording, ...formState };
+      const updatedRecording: Recording = { 
+          ...selectedRecording, 
+          name: formState.name,
+          notes: formState.notes,
+          tags: finalTags,
+          images: formState.images,
+      };
       await onUpdate(updatedRecording);
       setSelectedRecording(updatedRecording);
     } else {
-      const newRecording = {
+      const newRecording: Recording = {
         id: crypto.randomUUID(),
         date: new Date().toISOString(),
         name: formState.name.trim() || 'Untitled Recording',
         notes: formState.notes,
         audioBlob: blobToSave,
         duration: recordingTime,
+        tags: finalTags,
+        images: formState.images,
       };
       await onSave(newRecording);
-      setFormState({ name: '', notes: ''});
+      setFormState({ name: '', notes: '', tags: '', images: []});
     }
   };
   
@@ -118,11 +150,8 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
       player.onended = () => setIsPlaying(false);
   };
   
-  // Cleanup audio player
   useEffect(() => {
-    return () => {
-        audioPlayerRef.current?.pause();
-    }
+    return () => { audioPlayerRef.current?.pause(); }
   }, []);
 
   const handleDelete = async () => {
@@ -133,14 +162,49 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
     }
   };
 
+  const handleAttachmentsUpload = useCallback(async (files: FileList | null) => {
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      try {
+        const resizedDataUrl = await resizeImage(file);
+        setFormState(s => ({
+          ...s,
+          images: [...s.images, { id: crypto.randomUUID(), dataUrl: resizedDataUrl }]
+        }));
+      } catch (error) {
+        console.error("Failed to process image:", error);
+        alert("Failed to process an image. It might be corrupted or in an unsupported format.");
+      }
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
+
+  const handleCameraCapture = (dataUrl: string) => {
+    setFormState(s => ({
+      ...s,
+      images: [...s.images, { id: crypto.randomUUID(), dataUrl }]
+    }));
+    setIsCameraOpen(false);
+  };
+
+  const handleRemoveImage = (idToRemove: string) => {
+    setFormState(s => ({
+      ...s,
+      images: s.images.filter(img => img.id !== idToRemove)
+    }));
+  };
+
+  const tags = useMemo(() => formState.tags.split(',').map(t => t.trim()).filter(Boolean), [formState.tags]);
 
   return (
+    <>
+    {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} />}
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-4" aria-modal="true" role="dialog">
       <div className="bg-[var(--theme-card-bg)] w-full h-full md:max-w-4xl md:h-[90vh] rounded-none md:rounded-lg shadow-xl border-t md:border border-[var(--theme-border)] flex flex-col">
         <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-[var(--theme-yellow)]">Recording Manager</h2>
-            <p className="text-sm text-[var(--theme-text-secondary)]">Record, search, and transcribe your audio notes.</p>
+            <p className="text-sm text-[var(--theme-text-secondary)]">Record, tag, and attach images to your audio notes.</p>
           </div>
           <button onClick={onClose} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]" aria-label="Close">
             <XIcon />
@@ -153,18 +217,12 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
             <div className="p-4 border-b border-[var(--theme-border)] flex-shrink-0 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold">Recordings ({recordings.length})</h3>
-                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'date' | 'name')} className="bg-[var(--theme-bg)] text-sm rounded p-1 border border-[var(--theme-border)]">
+                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'date' | 'name')} className="bg-[var(--theme-text-primary)] text-sm rounded p-1 border border-[var(--theme-border)] text-[var(--theme-dark-bg)]">
                   <option value="date">Sort by Date</option>
                   <option value="name">Sort by Name</option>
                 </select>
               </div>
-               <input
-                    type="search"
-                    placeholder="Search recordings..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md py-2 px-3 text-sm focus:ring-1 focus:ring-[var(--theme-yellow)]"
-                />
+               <input type="search" placeholder="Search recordings..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md py-2 px-3 text-sm text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
             </div>
             <ul className="overflow-y-auto flex-grow p-2">
               {filteredAndSortedRecordings.map(rec => (
@@ -196,17 +254,48 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                              <div className="flex-grow space-y-4 pr-2">
                                 <div>
                                     <label htmlFor="rec-name" className="text-sm text-[var(--theme-text-secondary)]">Name</label>
-                                    <input id="rec-name" type="text" value={formState.name} onChange={e => setFormState(s => ({...s, name: e.target.value}))} className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md p-2 mt-1 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
+                                    <input id="rec-name" type="text" value={formState.name} onChange={e => setFormState(s => ({...s, name: e.target.value}))} className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 mt-1 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
+                                </div>
+                                 <div>
+                                    <label htmlFor="rec-tags" className="text-sm text-[var(--theme-text-secondary)]">Tags (comma-separated)</label>
+                                    <input id="rec-tags" type="text" value={formState.tags} onChange={e => setFormState(s => ({...s, tags: e.target.value}))} placeholder="e.g. idea, new-product, draft" className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 mt-1 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
+                                     {tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {tags.map(tag => <span key={tag} className="bg-[var(--theme-blue)]/20 text-[var(--theme-blue)] text-xs font-semibold px-2 py-1 rounded-full">{tag}</span>)}
+                                        </div>
+                                     )}
                                 </div>
                                 <div>
                                     <label htmlFor="rec-notes" className="text-sm text-[var(--theme-text-secondary)]">Notes</label>
-                                    <textarea id="rec-notes" value={formState.notes} onChange={e => setFormState(s => ({...s, notes: e.target.value}))} rows={3} className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md p-2 mt-1 resize-y focus:ring-1 focus:ring-[var(--theme-yellow)]"></textarea>
+                                    <textarea id="rec-notes" value={formState.notes} onChange={e => setFormState(s => ({...s, notes: e.target.value}))} rows={3} className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 mt-1 resize-y text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"></textarea>
                                 </div>
-                                 <div className="flex items-center gap-4 bg-[var(--theme-bg)]/50 p-3 rounded-md">
+                                <div className="flex items-center gap-4 bg-[var(--theme-bg)]/50 p-3 rounded-md">
                                     <button onClick={togglePlay} className="p-2 bg-[var(--theme-blue)] rounded-full text-white hover:opacity-90 flex-shrink-0">
                                         {isPlaying ? <PauseIcon /> : <PlayIcon />}
                                     </button>
                                     <p className="text-sm text-[var(--theme-text-secondary)]">Duration: {formatTime(selectedRecording?.duration || recordingTime)}</p>
+                                </div>
+                                 <div>
+                                    <label className="text-sm text-[var(--theme-text-secondary)]">Attachments</label>
+                                     <div className="mt-2 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                                        {formState.images.map(img => (
+                                            <div key={img.id} className="relative aspect-square bg-[var(--theme-bg)] rounded-md overflow-hidden group">
+                                                <img src={img.dataUrl} alt="attachment" className="w-full h-full object-cover" />
+                                                <button onClick={() => handleRemoveImage(img.id)} className="absolute top-1 right-1 bg-black/50 hover:bg-black/80 rounded-full p-0.5 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <XIcon />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-2">
+                                         <input type="file" ref={fileInputRef} className="sr-only" onChange={(e) => handleAttachmentsUpload(e.target.files)} accept="image/*" multiple/>
+                                         <button onClick={() => fileInputRef.current?.click()} className="text-sm flex items-center gap-2 bg-[var(--theme-bg)] hover:bg-[var(--theme-dark-bg)] text-[var(--theme-text-secondary)] font-semibold py-1.5 px-3 rounded-md">
+                                            <UploadIcon /> Upload
+                                         </button>
+                                          <button onClick={() => setIsCameraOpen(true)} className="text-sm flex items-center gap-2 bg-[var(--theme-bg)] hover:bg-[var(--theme-dark-bg)] text-[var(--theme-text-secondary)] font-semibold py-1.5 px-3 rounded-md">
+                                            <CameraIcon /> Camera
+                                         </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="text-sm text-[var(--theme-text-secondary)] flex items-center gap-2">
@@ -248,5 +337,6 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
         </main>
       </div>
     </div>
+    </>
   );
 };

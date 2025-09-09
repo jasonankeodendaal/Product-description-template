@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { SiteSettings } from '../constants';
 import { BuildingIcon } from './icons/BuildingIcon';
 import { UserIcon } from './icons/UserIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { FolderSyncIcon } from './icons/FolderSyncIcon';
 
 interface SiteSettingsEditorProps {
     settings: SiteSettings;
@@ -22,17 +23,17 @@ const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: Re
     </div>
 );
 
-const InputField: React.FC<{ label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; fullWidth?: boolean }> = 
-    ({ label, id, value, onChange, placeholder, fullWidth }) => (
+const InputField: React.FC<{ label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; fullWidth?: boolean; type?: string }> = 
+    ({ label, id, value, onChange, placeholder, fullWidth, type="text" }) => (
     <div className={fullWidth ? 'md:col-span-2' : ''}>
         <label htmlFor={id} className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">{label}</label>
         <input
-            type="text"
+            type={type}
             id={id}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200"
         />
     </div>
 );
@@ -44,12 +45,10 @@ const ImageUploader: React.FC<{ label: string; id: string; src: string | null; o
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                onImageChange(reader.result as string);
-            };
+            reader.onloadend = () => onImageChange(reader.result as string);
             reader.readAsDataURL(file);
         }
-        e.target.value = ''; // Reset file input
+        e.target.value = '';
     };
 
     return (
@@ -116,11 +115,34 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
     return (
        <form onSubmit={handleSubmit} className="h-full flex flex-col animate-fade-in-down">
             <div className="flex-grow space-y-6 pb-24">
+                 <SectionCard title="Sync & API Settings" icon={<FolderSyncIcon />}>
+                    <InputField 
+                        id="customApiEndpoint" 
+                        label="Custom API URL" 
+                        value={formData.customApiEndpoint || ''} 
+                        onChange={handleFormChange} 
+                        placeholder="https://your-backend-url.com" 
+                        fullWidth 
+                    />
+                    <InputField 
+                        id="customApiAuthKey" 
+                        label="Custom API Auth Key" 
+                        value={formData.customApiAuthKey || ''} 
+                        onChange={handleFormChange} 
+                        placeholder="Enter your secret API key" 
+                        fullWidth 
+                        type="password"
+                    />
+                    <p className="text-xs text-[var(--theme-text-secondary)]/70 md:col-span-2 -mt-2">
+                        Configure a self-hosted backend for multi-device sync. See the 'Setup Guide' tab for instructions.
+                    </p>
+                </SectionCard>
+
                 <SectionCard title="Company Details" icon={<BuildingIcon />}>
                     <InputField id="companyName" label="Company Name" value={formData.companyName} onChange={handleFormChange} fullWidth />
                     <InputField id="slogan" label="Slogan" value={formData.slogan} onChange={handleFormChange} fullWidth />
-                    <ImageUploader id="logoSrc" label="Company Logo" src={formData.logoSrc} onImageChange={handleImageChange('logoSrc')} description="Recommended: Square aspect ratio (e.g., 256x256px)." />
-                    <ImageUploader id="heroImageSrc" label="Hero Image" src={formData.heroImageSrc} onImageChange={handleImageChange('heroImageSrc')} description="Recommended: 1600x400px or similar wide aspect ratio." />
+                    <ImageUploader id="logoSrc" label="Company Logo" src={formData.logoSrc} onImageChange={handleImageChange('logoSrc')} description="Recommended: Square (e.g., 256x256px)." />
+                    <ImageUploader id="heroImageSrc" label="Hero Image" src={formData.heroImageSrc} onImageChange={handleImageChange('heroImageSrc')} description="Recommended: Wide (e.g., 1600x400px)." />
                     <InputField id="tel" label="Telephone" value={formData.tel} onChange={handleFormChange} />
                     <InputField id="email" label="Email" value={formData.email} onChange={handleFormChange} />
                     <InputField id="website" label="Website URL" value={formData.website} onChange={handleFormChange} fullWidth />
@@ -129,7 +151,7 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
                 <SectionCard title="Creator Info" icon={<UserIcon />}>
                     <InputField id="creator-name" label="Creator Name" value={formData.creator.name} onChange={handleCreatorFormChange} fullWidth />
                     <InputField id="creator-slogan" label="Creator Slogan" value={formData.creator.slogan} onChange={handleCreatorFormChange} fullWidth />
-                    <ImageUploader id="creator-logoSrc" label="Creator Logo" src={formData.creator.logoSrc} onImageChange={handleCreatorImageChange('logoSrc')} description="Recommended: Square aspect ratio (e.g., 256x256px)." />
+                    <ImageUploader id="creator-logoSrc" label="Creator Logo" src={formData.creator.logoSrc} onImageChange={handleCreatorImageChange('logoSrc')} description="Recommended: Square (e.g., 256x256px)." />
                     <div></div>
                     <InputField id="creator-tel" label="Creator Telephone" value={formData.creator.tel} onChange={handleCreatorFormChange} />
                     <InputField id="creator-email" label="Creator Email" value={formData.creator.email} onChange={handleCreatorFormChange} />
@@ -140,20 +162,10 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
             
             <footer className="sticky bottom-0 -mx-6 -mb-6 mt-6 bg-[var(--theme-dark-bg)]/80 backdrop-blur-sm p-4 border-t border-[var(--theme-border)]/50">
                 <div className="flex justify-end items-center gap-4 max-w-6xl mx-auto pr-60">
-                    {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Settings saved successfully!</p>}
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="bg-[var(--theme-green)] hover:opacity-90 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed"
-                    >
+                    {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Settings saved!</p>}
+                    <button type="submit" disabled={isSaving} className="bg-[var(--theme-green)] hover:opacity-90 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed">
                         {isSaving ? (
-                            <>
-                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Saving...
-                            </>
+                            <><svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Saving...</>
                         ) : "Save All Changes" }
                     </button>
                 </div>

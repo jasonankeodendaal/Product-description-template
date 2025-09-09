@@ -40,7 +40,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onUnlock }) => {
                   setError('');
                 }}
                 placeholder="****"
-                className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md p-3 text-center text-lg tracking-widest font-mono text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-blue)] focus:border-[var(--theme-blue)] transition-shadow duration-200"
+                className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-center text-lg tracking-widest font-mono text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-blue)] focus:border-[var(--theme-blue)] transition-shadow duration-200"
                 autoFocus
               />
             </div>
