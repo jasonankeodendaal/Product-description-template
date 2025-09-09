@@ -1,59 +1,32 @@
-import { GoogleGenAI, GroundingChunk } from "@google/genai";
 import { GenerationResult } from "../components/OutputPanel";
 import { blobToBase64 } from "../utils/dataUtils";
 
-// Lazy initialization of the GoogleGenAI instance
-let ai: GoogleGenAI | null = null;
-
-const getAiClient = (): GoogleGenAI => {
-    if (!ai) {
-        // This will throw a specific, user-friendly error if the API key is missing.
-        // This is the most common issue on deployment.
-        // For client-side apps, build tools typically require a prefix like REACT_APP_
-        // to expose the variable to the browser for security reasons.
-        const apiKey = process.env.REACT_APP_API_KEY;
-        if (!apiKey) {
-             throw new Error("API Key not found. Please ensure the REACT_APP_API_KEY environment variable is configured in your deployment settings.");
-        }
-        try {
-            ai = new GoogleGenAI({ apiKey });
-        } catch (e) {
-            // Catch other potential initialization errors from the library
-            console.error("GoogleGenAI initialization failed:", e);
-            throw new Error("Failed to initialize the AI Client. Please check the console for more details.");
-        }
-    }
-    return ai;
+// Helper to handle fetch errors and parse the JSON response.
+const handleFetchErrors = async (response: Response) => {
+  if (!response.ok) {
+    // Try to parse a specific error message from the API, otherwise provide a fallback.
+    const errorData = await response.json().catch(() => ({ error: `Request failed with status ${response.status}` }));
+    throw new Error(errorData.error || 'An unknown network error occurred.');
+  }
+  return response.json();
 };
 
-
 export async function generateProductDescription(productInfo: string, promptTemplate: string, tone: string): Promise<GenerationResult> {
-  const toneInstruction = `Adopt a ${tone} tone of voice.`;
-  const fullPrompt = `${promptTemplate}\n\n${toneInstruction}\n\n---\nHere is the product information to reformat:\n---\n\n${productInfo}`;
-
   try {
-    const aiClient = getAiClient();
-    const response = await aiClient.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: fullPrompt,
-      config: {
-        temperature: 0.3, // Slightly increased for tonal variation
-        tools: [{googleSearch: {}}],
-      }
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productInfo, promptTemplate, tone }),
     });
-
-    const text = response.text;
-    if (!text) {
-      throw new Error("Received an empty response from the API.");
-    }
     
-    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingChunk[] | undefined;
-
-    return { text, sources };
+    const data = await handleFetchErrors(response);
+    
+    // The serverless function now returns the data in the exact format we need.
+    return data as GenerationResult;
 
   } catch (error) {
-    console.error("Error generating product description:", error);
-    // Re-throw the error so it can be caught and displayed by the calling component (App.tsx)
+    console.error("Error calling /api/generate:", error);
+    // Re-throw the error so it can be caught and displayed by the UI.
     throw error;
   }
 }
@@ -61,30 +34,21 @@ export async function generateProductDescription(productInfo: string, promptTemp
 export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   const base64Audio = await blobToBase64(audioBlob);
   try {
-    const aiClient = getAiClient();
-    const response = await aiClient.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: {
-        parts: [
-          { text: "Transcribe the following audio recording accurately." },
-          {
-            inlineData: {
-              mimeType: audioBlob.type,
-              data: base64Audio,
-            },
-          },
-        ],
-      },
+    const response = await fetch('/api/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64Audio, mimeType: audioBlob.type }),
     });
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("Received an empty transcription from the API.");
+    const data = await handleFetchErrors(response);
+
+    if (!data.transcript) {
+      throw new Error("Received an empty transcription from the backend.");
     }
-    return text;
+    return data.transcript;
+
   } catch (error) {
-    console.error("Error transcribing audio:", error);
-    // Re-throw for the UI
+    console.error("Error calling /api/transcribe:", error);
     throw error;
   }
 }

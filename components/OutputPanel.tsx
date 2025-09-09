@@ -3,7 +3,14 @@ import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { PlusIcon } from './icons/PlusIcon';
 import { QueuedItem } from '../App';
-import type { GroundingChunk } from '@google/genai';
+
+// Define GroundingChunk locally to remove dependency on @google/genai types on the client
+export interface GroundingChunk {
+  web?: {
+    uri: string;
+    title: string;
+  };
+}
 
 export interface ParsedProductData {
   brand: string;
