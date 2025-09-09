@@ -27,7 +27,7 @@ export interface SiteSettings {
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'Ai tools',
   slogan: 'Ai your friend!',
-  logoSrc: 'https://iili.io/KxiiZMb.png',
+  logoSrc: 'https://iili.io/KzJYHF9.png',
   heroImageSrc: 'https://iili.io/Kxi4CTg.webp',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
