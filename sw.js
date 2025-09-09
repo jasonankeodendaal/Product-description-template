@@ -1,13 +1,13 @@
-const CACHE_NAME = 'ai-product-gen-cache-v4';
+const CACHE_NAME = 'ai-product-gen-cache-v5';
 const APP_SHELL_URL = '/index.html';
 
-// Install event: cache the application shell and force the new service worker to activate.
+// Install event: cache the application shell and manifest, then force activation.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching App Shell');
-        return cache.add(APP_SHELL_URL);
+        console.log('Service Worker: Caching App Shell and Manifest');
+        return cache.addAll([APP_SHELL_URL, '/manifest.json']);
       })
       .then(() => {
         // Force the waiting service worker to become the active service worker.
@@ -38,9 +38,33 @@ self.addEventListener('activate', event => {
 // Fetch event: handle requests with appropriate strategies.
 self.addEventListener('fetch', event => {
   const { request } = event;
+  const url = new URL(request.url);
+
+  // Strategy for manifest.json: Network-first, falling back to cache.
+  // This ensures the app manifest is always up-to-date.
+  if (url.pathname === '/manifest.json') {
+    event.respondWith(
+      fetch(request)
+        .then(networkResponse => {
+          // If fetch is successful, cache the new manifest
+          if (networkResponse.ok) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // If network fails, serve from cache
+          console.log('Service Worker: Network failed for manifest. Serving from cache.');
+          return caches.match(request);
+        })
+    );
+    return;
+  }
 
   // Strategy for navigation requests (the app itself): Network-first, falling back to cache.
-  // This ensures the user gets the latest version if online, but the app still loads offline.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -53,7 +77,6 @@ self.addEventListener('fetch', event => {
   }
 
   // Strategy for all other requests (assets like scripts, styles, images): Cache-first.
-  // This provides the fastest possible response.
   event.respondWith(
     caches.match(request)
       .then(cachedResponse => {
