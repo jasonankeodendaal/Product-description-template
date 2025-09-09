@@ -31,7 +31,7 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
         className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold rounded-lg transition-colors duration-200 relative ${
             active 
                 ? 'bg-[var(--theme-blue)]/10 text-[var(--theme-blue)]' 
-                : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-card-bg)]/50 hover:text-[var(--theme-text-primary)]'
         }`}
         role="tab"
         aria-selected={active}
@@ -43,8 +43,8 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
 );
 
 const AboutThisApp: React.FC = () => (
-    <div className="space-y-6 text-slate-300 leading-relaxed animate-fade-in-down max-w-3xl">
-        <h2 className="text-2xl font-bold text-slate-100">About This Application</h2>
+    <div className="space-y-6 text-[var(--theme-text-primary)] leading-relaxed animate-fade-in-down max-w-3xl">
+        <h2 className="text-2xl font-bold text-[var(--theme-text-primary)]">About This Application</h2>
         
         <div className="space-y-4">
             <div>
@@ -57,7 +57,7 @@ const AboutThisApp: React.FC = () => (
             <div>
                 <h3 className="text-lg font-semibold text-[var(--theme-yellow)] mb-2">How It Works: Reformatting, Not Rewriting</h3>
                 <p>
-                    The AI's primary role is to act as an expert copy-editor focusing on structure. It will <strong className="text-slate-100">preserve the original wording and details you provide</strong>, ensuring your brand voice and technical accuracy are maintained. The content is simply reorganized to fit the template's defined sections (e.g., Brand, SKU, Key Features).
+                    The AI's primary role is to act as an expert copy-editor focusing on structure. It will <strong className="text-[var(--theme-text-primary)]">preserve the original wording and details you provide</strong>, ensuring your brand voice and technical accuracy are maintained. The content is simply reorganized to fit the template's defined sections (e.g., Brand, SKU, Key Features).
                 </p>
             </div>
 
@@ -66,7 +66,7 @@ const AboutThisApp: React.FC = () => (
                 <p>
                     To ensure descriptions are as comprehensive as possible, the AI is instructed to perform a targeted web search for specific fields if they are missing from your input. This primarily applies to:
                 </p>
-                <ul className="list-disc list-inside mt-2 pl-4 text-slate-400 space-y-1">
+                <ul className="list-disc list-inside mt-2 pl-4 text-[var(--theme-text-secondary)] space-y-1">
                     <li>Terms & Conditions</li>
                     <li>What’s in the Box</li>
                     <li>Material Used</li>
@@ -113,21 +113,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
   
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
-      <div className="bg-[var(--theme-dark-bg)]/80 border border-[var(--theme-border)] w-full max-w-6xl h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
+      <div className="bg-[var(--theme-dark-bg)]/80 border-t md:border border-[var(--theme-border)] w-full h-full md:max-w-6xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in">
         <header className="p-5 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-slate-100">Dashboard</h2>
-            <p className="text-slate-400 mt-1 text-sm">Manage your application's data, settings, and local folder connection.</p>
+            <h2 className="text-xl font-bold text-[var(--theme-text-primary)]">Dashboard</h2>
+            <p className="text-[var(--theme-text-secondary)] mt-1 text-sm">Manage your application's data, settings, and local folder connection.</p>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={onLock} className="text-sm font-semibold text-[var(--theme-red)] hover:opacity-80 transition-opacity">Lock Dashboard</button>
-            <button onClick={onClose} className="text-slate-500 hover:text-slate-300" aria-label="Close"><XIcon /></button>
+            <button onClick={onClose} className="text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
           </div>
         </header>
         
-        <div className="flex-grow flex overflow-hidden">
-            <aside className="w-64 p-4 border-r border-[var(--theme-border)] flex-shrink-0">
+        <div className="flex-grow flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+            <aside className="w-full md:w-64 p-4 border-b md:border-b-0 md:border-r border-[var(--theme-border)] flex-shrink-0">
                 <nav className="space-y-2">
                     <NavButton active={activeSection === 'data'} onClick={() => setActiveSection('data')} icon={<DatabaseIcon />}>Data Management</NavButton>
                     <NavButton active={activeSection === 'settings'} onClick={() => setActiveSection('settings')} icon={<SettingsIcon />}>Site & Creator Settings</NavButton>
@@ -135,7 +135,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </nav>
             </aside>
 
-            <main className="flex-grow overflow-y-auto p-6 bg-[var(--theme-bg)]/30">
+            <main className="flex-grow md:overflow-y-auto p-6 bg-[var(--theme-bg)]/30">
                 {activeSection === 'data' && (
                     <DataManagement 
                         templates={templates}

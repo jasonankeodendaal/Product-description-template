@@ -135,25 +135,25 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
 
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
-      <div className="bg-[var(--theme-card-bg)] w-full max-w-4xl h-[90vh] rounded-lg shadow-xl border border-[var(--theme-border)] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-4" aria-modal="true" role="dialog">
+      <div className="bg-[var(--theme-card-bg)] w-full h-full md:max-w-4xl md:h-[90vh] rounded-none md:rounded-lg shadow-xl border-t md:border border-[var(--theme-border)] flex flex-col">
         <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-[var(--theme-yellow)]">Recording Manager</h2>
-            <p className="text-sm text-slate-400">Record, search, and transcribe your audio notes.</p>
+            <p className="text-sm text-[var(--theme-text-secondary)]">Record, search, and transcribe your audio notes.</p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300" aria-label="Close">
+          <button onClick={onClose} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]" aria-label="Close">
             <XIcon />
           </button>
         </header>
 
-        <main className="flex-grow flex overflow-hidden">
+        <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
           {/* Recordings List */}
-          <div className="w-1/3 border-r border-[var(--theme-border)] flex flex-col">
+          <div className="w-full md:w-1/3 border-b md:border-r md:border-b-0 border-[var(--theme-border)] flex flex-col h-1/3 md:h-full flex-shrink-0">
             <div className="p-4 border-b border-[var(--theme-border)] flex-shrink-0 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="font-semibold">Recordings ({recordings.length})</h3>
-                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'date' | 'name')} className="bg-slate-900 text-sm rounded p-1 border border-slate-600">
+                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'date' | 'name')} className="bg-[var(--theme-bg)] text-sm rounded p-1 border border-[var(--theme-border)]">
                   <option value="date">Sort by Date</option>
                   <option value="name">Sort by Name</option>
                 </select>
@@ -163,15 +163,15 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                     placeholder="Search recordings..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-900/50 border border-slate-600 rounded-md py-2 px-3 text-sm focus:ring-1 focus:ring-[var(--theme-yellow)]"
+                    className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md py-2 px-3 text-sm focus:ring-1 focus:ring-[var(--theme-yellow)]"
                 />
             </div>
             <ul className="overflow-y-auto flex-grow p-2">
               {filteredAndSortedRecordings.map(rec => (
                 <li key={rec.id}>
-                  <button onClick={() => setSelectedRecording(rec)} className={`w-full text-left p-3 rounded-md transition-colors ${selectedRecording?.id === rec.id ? 'bg-[var(--theme-blue)]/30' : 'hover:bg-slate-700/50'}`}>
-                    <p className="font-medium text-slate-200 truncate">{rec.name}</p>
-                    <p className="text-xs text-slate-400">{new Date(rec.date).toLocaleString()} - {formatTime(rec.duration)}</p>
+                  <button onClick={() => setSelectedRecording(rec)} className={`w-full text-left p-3 rounded-md transition-colors ${selectedRecording?.id === rec.id ? 'bg-[var(--theme-blue)]/20' : 'hover:bg-[var(--theme-bg)]/50'}`}>
+                    <p className="font-medium text-[var(--theme-text-primary)] truncate">{rec.name}</p>
+                    <p className="text-xs text-[var(--theme-text-secondary)]">{new Date(rec.date).toLocaleString()} - {formatTime(rec.duration)}</p>
                   </button>
                 </li>
               ))}
@@ -179,12 +179,12 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
           </div>
 
           {/* Details / Recording Panel */}
-          <div className="w-2/3 p-6 flex flex-col justify-start">
+          <div className="w-full md:w-2/3 p-6 flex flex-col overflow-y-auto">
               {isRecording ? (
                   <div className="text-center flex-grow flex flex-col items-center justify-center">
                     <div className="relative h-24 w-24 flex items-center justify-center">
-                        <div className="absolute inset-0 bg-red-500/30 rounded-full animate-pulse"></div>
-                        <MicIcon className="h-10 w-10 text-red-400" />
+                        <div className="absolute inset-0 bg-[var(--theme-red)]/30 rounded-full animate-pulse"></div>
+                        <MicIcon className="h-10 w-10 text-[var(--theme-red)]" />
                     </div>
                     <p className="text-2xl font-mono mt-4">{formatTime(recordingTime)}</p>
                     <button onClick={stopRecording} className="mt-6 bg-[var(--theme-red)] hover:opacity-90 text-white font-bold py-2 px-6 rounded-full">Stop</button>
@@ -193,28 +193,28 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                   <>
                     {(selectedRecording || audioBlob) ? (
                         <div className="w-full h-full flex flex-col">
-                             <div className="flex-grow space-y-4 overflow-y-auto pr-2">
+                             <div className="flex-grow space-y-4 pr-2">
                                 <div>
-                                    <label htmlFor="rec-name" className="text-sm text-slate-400">Name</label>
-                                    <input id="rec-name" type="text" value={formState.name} onChange={e => setFormState(s => ({...s, name: e.target.value}))} className="w-full bg-slate-900/50 border border-[var(--theme-border)] rounded-md p-2 mt-1 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
+                                    <label htmlFor="rec-name" className="text-sm text-[var(--theme-text-secondary)]">Name</label>
+                                    <input id="rec-name" type="text" value={formState.name} onChange={e => setFormState(s => ({...s, name: e.target.value}))} className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md p-2 mt-1 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
                                 </div>
                                 <div>
-                                    <label htmlFor="rec-notes" className="text-sm text-slate-400">Notes</label>
-                                    <textarea id="rec-notes" value={formState.notes} onChange={e => setFormState(s => ({...s, notes: e.target.value}))} rows={3} className="w-full bg-slate-900/50 border border-[var(--theme-border)] rounded-md p-2 mt-1 resize-y focus:ring-1 focus:ring-[var(--theme-yellow)]"></textarea>
+                                    <label htmlFor="rec-notes" className="text-sm text-[var(--theme-text-secondary)]">Notes</label>
+                                    <textarea id="rec-notes" value={formState.notes} onChange={e => setFormState(s => ({...s, notes: e.target.value}))} rows={3} className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md p-2 mt-1 resize-y focus:ring-1 focus:ring-[var(--theme-yellow)]"></textarea>
                                 </div>
-                                 <div className="flex items-center gap-4 bg-slate-900/50 p-3 rounded-md">
+                                 <div className="flex items-center gap-4 bg-[var(--theme-bg)]/50 p-3 rounded-md">
                                     <button onClick={togglePlay} className="p-2 bg-[var(--theme-blue)] rounded-full text-white hover:opacity-90 flex-shrink-0">
                                         {isPlaying ? <PauseIcon /> : <PlayIcon />}
                                     </button>
-                                    <p className="text-sm text-slate-400">Duration: {formatTime(selectedRecording?.duration || recordingTime)}</p>
+                                    <p className="text-sm text-[var(--theme-text-secondary)]">Duration: {formatTime(selectedRecording?.duration || recordingTime)}</p>
                                 </div>
                                 <div>
-                                    <label className="text-sm text-slate-400 flex items-center gap-2">
+                                    <label className="text-sm text-[var(--theme-text-secondary)] flex items-center gap-2">
                                         AI Transcript
                                         {selectedRecording?.isTranscribing && <div className="w-3 h-3 bg-[var(--theme-yellow)] rounded-full animate-pulse"></div>}
                                     </label>
-                                    <div className="w-full bg-slate-900/50 border border-[var(--theme-border)] rounded-md p-3 mt-1 min-h-[120px] text-sm text-slate-300">
-                                        {selectedRecording?.isTranscribing ? "Transcription in progress..." : (selectedRecording?.transcript || <span className="text-slate-500">No transcript available.</span>)}
+                                    <div className="w-full bg-[var(--theme-bg)]/50 border border-[var(--theme-border)] rounded-md p-3 mt-1 min-h-[120px] text-sm text-[var(--theme-text-primary)]">
+                                        {selectedRecording?.isTranscribing ? "Transcription in progress..." : (selectedRecording?.transcript || <span className="text-[var(--theme-text-secondary)]/50">No transcript available.</span>)}
                                     </div>
                                     {selectedRecording && !selectedRecording.transcript && !selectedRecording.isTranscribing && (
                                         <button onClick={() => onTranscribe(selectedRecording.id)} className="text-sm mt-2 flex items-center gap-2 text-[var(--theme-yellow)] hover:underline">
@@ -239,7 +239,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                              <button onClick={startRecording} style={{backgroundColor: 'var(--theme-blue)'}} className="hover:opacity-90 text-white font-bold py-3 px-5 rounded-full flex items-center gap-2">
                                 <MicIcon /> Start Recording
                             </button>
-                            <p className="mt-4 text-slate-500">Or select a recording from the list.</p>
+                            <p className="mt-4 text-[var(--theme-text-secondary)]/70">Or select a recording from the list.</p>
                         </div>
                     )}
                   </>

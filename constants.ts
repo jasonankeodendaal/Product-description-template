@@ -1,5 +1,4 @@
 
-
 export interface CreatorDetails {
   name:string;
   slogan: string;
@@ -7,6 +6,7 @@ export interface CreatorDetails {
   tel: string;
   email: string;
   whatsapp: string;
+  whatsapp2?: string;
 }
 
 export interface SiteSettings {
@@ -21,20 +21,21 @@ export interface SiteSettings {
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  companyName: 'AI Product Description Generator',
-  slogan: 'Instantly format raw product data into a professional, structured description.',
-  logoSrc: null,
-  heroImageSrc: null,
-  tel: '555-0101',
-  email: 'contact@example.com',
-  website: 'https://example.com',
+  companyName: 'Ai tools',
+  slogan: 'Ai your friend!',
+  logoSrc: 'https://iili.io/KxiiZMb.png',
+  heroImageSrc: 'https://iili.io/Kxi4CTg.webp',
+  tel: '0695989427',
+  email: 'odendaaljason454@gmail.com',
+  website: '',
   creator: {
-    name: 'JSTyp',
-    slogan: 'Building innovative AI solutions',
-    logoSrc: null,
-    tel: '555-0102',
-    email: 'creator@example.com',
-    whatsapp: '+15550102',
+    name: 'JSTYP.me',
+    slogan: 'Jason solution to your problems, Yes me!!',
+    logoSrc: 'https://iili.io/KxPZTT7.png',
+    tel: '0695989427',
+    email: 'odendaaljason454@gmail.com',
+    whatsapp: 'https://wa.link/nohogl',
+    whatsapp2: 'https://wa.link/j3b9yn',
   },
 };
 

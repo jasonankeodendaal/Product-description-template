@@ -11,10 +11,10 @@ interface SiteSettingsEditorProps {
 }
 
 const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
-    <div className="bg-slate-800/50 p-6 rounded-lg border border-slate-700/50">
+    <div className="bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50">
         <div className="flex items-center gap-3">
-            <div className="text-yellow-400">{icon}</div>
-            <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
+            <div className="text-[var(--theme-yellow)]">{icon}</div>
+            <h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">{title}</h3>
         </div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {children}
@@ -25,14 +25,14 @@ const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: Re
 const InputField: React.FC<{ label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; fullWidth?: boolean }> = 
     ({ label, id, value, onChange, placeholder, fullWidth }) => (
     <div className={fullWidth ? 'md:col-span-2' : ''}>
-        <label htmlFor={id} className="block text-sm font-medium text-slate-300 mb-2">{label}</label>
+        <label htmlFor={id} className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">{label}</label>
         <input
             type="text"
             id={id}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full bg-slate-900/80 border border-slate-700 rounded-md p-2 text-slate-300 focus:ring-2 focus:ring-yellow-500 transition-shadow duration-200"
+            className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200"
         />
     </div>
 );
@@ -54,18 +54,18 @@ const ImageUploader: React.FC<{ label: string; id: string; src: string | null; o
 
     return (
         <div className={fullWidth ? 'md:col-span-2' : ''}>
-            <label className="block text-sm font-medium text-slate-300 mb-1">{label}</label>
-            {description && <p className="text-xs text-slate-500 mb-2">{description}</p>}
+            <label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-1">{label}</label>
+            {description && <p className="text-xs text-[var(--theme-text-secondary)]/70 mb-2">{description}</p>}
             <div className="flex items-center gap-4">
-                <div className="w-20 h-20 bg-slate-900/80 border border-slate-700 rounded-md flex items-center justify-center">
-                    {src ? <img src={src} alt={`${label} preview`} className="max-w-full max-h-full object-contain"/> : <span className="text-slate-500 text-xs">None</span>}
+                <div className="w-20 h-20 bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md flex items-center justify-center">
+                    {src ? <img src={src} alt={`${label} preview`} className="max-w-full max-h-full object-contain"/> : <span className="text-[var(--theme-text-secondary)]/50 text-xs">None</span>}
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor={id} className="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
+                    <label htmlFor={id} className="cursor-pointer bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
                         <UploadIcon /> Change
                     </label>
                     <input type="file" id={id} className="sr-only" onChange={handleFileChange} accept="image/*" />
-                    {src && <button type="button" onClick={() => onImageChange(null)} className="text-xs text-red-400 hover:underline flex items-center gap-1"><TrashIcon /> Remove</button>}
+                    {src && <button type="button" onClick={() => onImageChange(null)} className="text-xs text-[var(--theme-red)] hover:underline flex items-center gap-1"><TrashIcon /> Remove</button>}
                 </div>
             </div>
         </div>
@@ -133,17 +133,18 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
                     <div></div>
                     <InputField id="creator-tel" label="Creator Telephone" value={formData.creator.tel} onChange={handleCreatorFormChange} />
                     <InputField id="creator-email" label="Creator Email" value={formData.creator.email} onChange={handleCreatorFormChange} />
-                    <InputField id="creator-whatsapp" label="Creator WhatsApp" value={formData.creator.whatsapp} onChange={handleCreatorFormChange} placeholder="+15550123" />
+                    <InputField id="creator-whatsapp" label="Creator WhatsApp 1" value={formData.creator.whatsapp} onChange={handleCreatorFormChange} placeholder="Full URL or phone number" />
+                    <InputField id="creator-whatsapp2" label="Creator WhatsApp 2" value={formData.creator.whatsapp2 || ''} onChange={handleCreatorFormChange} placeholder="Full URL or phone number" />
                 </SectionCard>
             </div>
             
-            <footer className="sticky bottom-0 -mx-6 -mb-6 mt-6 bg-slate-900/80 backdrop-blur-sm p-4 border-t border-slate-700/50">
+            <footer className="sticky bottom-0 -mx-6 -mb-6 mt-6 bg-[var(--theme-dark-bg)]/80 backdrop-blur-sm p-4 border-t border-[var(--theme-border)]/50">
                 <div className="flex justify-end items-center gap-4 max-w-6xl mx-auto pr-60">
-                    {saveSuccess && <p className="text-sm text-emerald-400 animate-fade-in-down">Settings saved successfully!</p>}
+                    {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Settings saved successfully!</p>}
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-slate-600 disabled:cursor-not-allowed"
+                        className="bg-[var(--theme-green)] hover:opacity-90 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed"
                     >
                         {isSaving ? (
                             <>

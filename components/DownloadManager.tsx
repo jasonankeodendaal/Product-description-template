@@ -77,7 +77,7 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
         aria-label={`Open download queue with ${queue.length} items`}
       >
         <DownloadIcon />
-        <span className="absolute -top-1 -right-1 bg-[var(--theme-blue)] text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-[var(--theme-green)]">
+        <span className="absolute -top-1 -right-1 bg-[var(--theme-blue)] text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-[var(--theme-bg)]">
             {queue.length}
         </span>
       </button>
@@ -88,9 +88,9 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
             <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
                 <div>
                     <h2 className="text-lg font-bold text-[var(--theme-yellow)]">Download Queue ({queue.length})</h2>
-                    <p className="text-sm text-slate-400">Review items before downloading.</p>
+                    <p className="text-sm text-[var(--theme-text-secondary)]">Review items before downloading.</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-500 hover:text-slate-300" aria-label="Close">
+                <button onClick={() => setIsModalOpen(false)} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]" aria-label="Close">
                     <XIcon />
                 </button>
             </header>
@@ -99,31 +99,31 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
                 {queue.length > 0 ? (
                     <ul className="space-y-2">
                         {queue.map(item => (
-                            <li key={item.id} className="bg-slate-900/50 p-3 rounded-md flex justify-between items-center text-sm">
+                            <li key={item.id} className="bg-[var(--theme-bg)]/50 p-3 rounded-md flex justify-between items-center text-sm">
                                 <div>
-                                    <p className="font-semibold text-slate-200">{item.name}</p>
-                                    <p className="text-slate-400">Brand: {item.brand} | SKU: {item.sku}</p>
+                                    <p className="font-semibold text-[var(--theme-text-primary)]">{item.name}</p>
+                                    <p className="text-[var(--theme-text-secondary)]">Brand: {item.brand} | SKU: {item.sku}</p>
                                 </div>
-                                <button onClick={() => onRemove(item.id)} className="p-2 text-slate-500 hover:text-[var(--theme-red)]" aria-label={`Remove ${item.name}`}>
+                                <button onClick={() => onRemove(item.id)} className="p-2 text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-red)]" aria-label={`Remove ${item.name}`}>
                                     <TrashIcon />
                                 </button>
                             </li>
                         ))}
                     </ul>
                 ) : (
-                    <p className="text-slate-500 text-center py-8">The queue is empty.</p>
+                    <p className="text-[var(--theme-text-secondary)]/70 text-center py-8">The queue is empty.</p>
                 )}
             </div>
             
             {error && <p className="text-[var(--theme-red)] text-sm px-4">{error}</p>}
 
             <footer className="p-4 border-t border-[var(--theme-border)] bg-black/20 flex justify-between items-center">
-                 <button onClick={onClear} className="text-sm text-slate-400 hover:text-[var(--theme-red)] transition-colors">Clear Queue</button>
+                 <button onClick={onClear} className="text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] transition-colors">Clear Queue</button>
                  <button 
                     onClick={handleDownloadZip} 
                     disabled={isZipping}
                     style={{ backgroundColor: 'var(--theme-green)' }}
-                    className="text-white font-bold py-2 px-6 rounded-md hover:opacity-90 transition-colors duration-200 flex items-center gap-2 disabled:bg-slate-600"
+                    className="text-white font-bold py-2 px-6 rounded-md hover:opacity-90 transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)]"
                 >
                      {isZipping ? (
                         <>

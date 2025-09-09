@@ -476,8 +476,9 @@ const App: React.FC = () => {
         onRemove={handleRemoveFromQueue}
         onClear={handleClearQueue}
       />
-      <footer className="text-center py-4 text-slate-500 text-sm border-t border-[var(--theme-border)]">
+      <footer className="text-center py-4 text-[var(--theme-text-secondary)] text-sm border-t border-[var(--theme-border)]/50">
         <p>Powered by Google Gemini API</p>
+        <p className="mt-1">© 2025 JSTYP.me — All Rights Reserved.</p>
       </footer>
     </div>
   );

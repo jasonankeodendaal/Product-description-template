@@ -4,23 +4,57 @@ interface HeroProps {
   heroImageSrc: string | null;
 }
 
-export const Hero: React.FC<HeroProps> = React.memo(({ heroImageSrc }) => {
-  const heroStyle: React.CSSProperties = heroImageSrc
-    ? { backgroundImage: `url(${heroImageSrc})` }
-    : {};
+const HeroIllustration: React.FC = () => (
+    <svg 
+        width="100%" 
+        height="100%" 
+        viewBox="0 0 400 150" 
+        preserveAspectRatio="xMidYMid slice"
+        className="absolute inset-0 w-full h-full text-[var(--theme-yellow)] opacity-10"
+    >
+        <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.5"/>
+            </pattern>
+        </defs>
+        <rect width="400" height="150" fill="url(#grid)" />
+        <g stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M 50 120 Q 80 40, 150 75 T 250 90" strokeOpacity="0.3"/>
+            <path d="M 80 140 Q 110 60, 180 85 T 280 105" strokeOpacity="0.3"/>
+            <path d="M 150 130 Q 180 50, 250 85 T 350 100" strokeOpacity="0.3"/>
+        </g>
+    </svg>
+);
 
+
+export const Hero: React.FC<HeroProps> = React.memo(({ heroImageSrc }) => {
   return (
     <div 
-      className="relative bg-gradient-to-b from-slate-800 to-slate-900/50 h-64 rounded-lg mb-8 text-center overflow-hidden border border-[var(--theme-border)] bg-cover bg-center"
-      style={heroStyle}
+      className="relative rounded-lg mb-8 overflow-hidden border border-[var(--theme-border)] text-center h-80 flex flex-col justify-center items-center p-8"
       role="banner"
     >
-      {!heroImageSrc && (
-         <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-slate-600">No hero image uploaded. Set one in the dashboard.</p>
+      {heroImageSrc ? (
+        <>
+            <div 
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] ease-linear animate-[slow-zoom_15s_ease-in-out_infinite]"
+                style={{ backgroundImage: `url(${heroImageSrc})` }}
+            ></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--theme-bg)] via-[var(--theme-bg)]/70 to-transparent"></div>
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--theme-card-bg)] to-[var(--theme-bg)]">
+            <HeroIllustration />
         </div>
       )}
-       <div className="absolute inset-0 bg-black/30"></div>
+      
+      <div className="relative z-10">
+        <h1 className="text-4xl lg:text-5xl font-bold text-[var(--theme-text-primary)] tracking-tight" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)'}}>
+          Generate Flawless Product Descriptions
+        </h1>
+        <p className="mt-4 text-lg text-[var(--theme-text-secondary)] max-w-3xl mx-auto" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)'}}>
+          Effortlessly transform raw product data into compelling, structured content that converts.
+        </p>
+      </div>
     </div>
   );
 });

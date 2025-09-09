@@ -36,35 +36,35 @@ interface OutputPanelProps {
 const SkeletonLoader: React.FC = () => (
     <div className="space-y-4 font-sans text-sm leading-relaxed animate-pulse">
         <div>
-            <p className="font-bold text-slate-500">Brand:</p>
-            <div className="h-5 bg-slate-700 rounded w-1/3 mt-1"></div>
+            <p className="font-bold text-[var(--theme-text-secondary)]/50">Brand:</p>
+            <div className="h-5 bg-[var(--theme-border)]/20 rounded w-1/3 mt-1"></div>
         </div>
         <div>
-            <p className="font-bold text-slate-500">SKU:</p>
-            <div className="h-5 bg-slate-700 rounded w-1/2 mt-1"></div>
+            <p className="font-bold text-[var(--theme-text-secondary)]/50">SKU:</p>
+            <div className="h-5 bg-[var(--theme-border)]/20 rounded w-1/2 mt-1"></div>
         </div>
         <div>
-            <p className="font-bold text-slate-500">Name:</p>
-            <div className="h-5 bg-slate-700 rounded w-3/4 mt-1"></div>
+            <p className="font-bold text-[var(--theme-text-secondary)]/50">Name:</p>
+            <div className="h-5 bg-[var(--theme-border)]/20 rounded w-3/4 mt-1"></div>
         </div>
         <div>
-            <p className="font-bold text-slate-500">Short Description:</p>
-            <div className="h-5 bg-slate-700 rounded w-full mt-1"></div>
+            <p className="font-bold text-[var(--theme-text-secondary)]/50">Short Description:</p>
+            <div className="h-5 bg-[var(--theme-border)]/20 rounded w-full mt-1"></div>
         </div>
         <div>
-            <p className="font-bold text-slate-500">Description:</p>
+            <p className="font-bold text-[var(--theme-text-secondary)]/50">Description:</p>
             <div className="space-y-2 mt-1">
-                <div className="h-5 bg-slate-700 rounded w-full"></div>
-                <div className="h-5 bg-slate-700 rounded w-full"></div>
-                <div className="h-5 bg-slate-700 rounded w-5/6"></div>
+                <div className="h-5 bg-[var(--theme-border)]/20 rounded w-full"></div>
+                <div className="h-5 bg-[var(--theme-border)]/20 rounded w-full"></div>
+                <div className="h-5 bg-[var(--theme-border)]/20 rounded w-5/6"></div>
             </div>
         </div>
         <div>
-            <p className="font-bold text-slate-500">Key Features:</p>
+            <p className="font-bold text-[var(--theme-text-secondary)]/50">Key Features:</p>
             <div className="space-y-2 mt-1">
-                <div className="h-5 bg-slate-700 rounded w-4/5"></div>
-                <div className="h-5 bg-slate-700 rounded w-4/5"></div>
-                <div className="h-5 bg-slate-700 rounded w-4/5"></div>
+                <div className="h-5 bg-[var(--theme-border)]/20 rounded w-4/5"></div>
+                <div className="h-5 bg-[var(--theme-border)]/20 rounded w-4/5"></div>
+                <div className="h-5 bg-[var(--theme-border)]/20 rounded w-4/5"></div>
             </div>
         </div>
     </div>
@@ -167,7 +167,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
             <div className="flex items-center gap-2">
                 <button
                     onClick={handleCopy}
-                    className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm"
+                    className="flex items-center gap-2 bg-[var(--theme-bg)] hover:bg-[var(--theme-dark-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm"
                     aria-label="Copy Description"
                 >
                     {isCopied ? <CheckIcon /> : <CopyIcon />}
@@ -177,7 +177,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                     onClick={handleAddToQueue}
                     disabled={isAlreadyInQueue}
                     style={{ backgroundColor: 'var(--theme-blue)'}}
-                    className="flex items-center gap-2 hover:opacity-90 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm"
+                    className="flex items-center gap-2 hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:text-[var(--theme-text-secondary)]/50 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm"
                     aria-label="Add to Download Queue"
                 >
                     {isAlreadyInQueue ? <CheckIcon /> : <PlusIcon />}
@@ -187,12 +187,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         )}
       </div>
 
-      <div className="bg-slate-900/80 border border-[var(--theme-border)] rounded-md p-4 flex-grow min-h-[300px] text-slate-300 overflow-y-auto flex flex-col">
+      <div className="bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-4 flex-grow min-h-[300px] text-[var(--theme-text-primary)] overflow-y-auto flex flex-col">
         <div className="flex-grow">
             {isLoading && <SkeletonLoader />}
-            {error && <div className="text-red-400 p-4 rounded-md bg-red-900/20 border border-red-500/30" role="alert">{error}</div>}
+            {error && <div className="text-[var(--theme-red)] p-4 rounded-md bg-[var(--theme-red)]/10 border border-[var(--theme-red)]/30" role="alert">{error}</div>}
             {!isLoading && !error && !outputText && (
-                <div className="h-full flex items-center justify-center text-slate-500">
+                <div className="h-full flex items-center justify-center text-[var(--theme-text-secondary)]/70">
                     Your generated product description will appear here.
                 </div>
             )}

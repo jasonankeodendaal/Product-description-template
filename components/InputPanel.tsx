@@ -32,7 +32,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
-            <label htmlFor="template-select" className="block text-sm font-medium text-slate-400 mb-2">
+            <label htmlFor="template-select" className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">
             Choose a Template
             </label>
             <select
@@ -40,7 +40,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             value={selectedTemplateId}
             onChange={onTemplateChange}
             disabled={isLoading}
-            className="w-full bg-slate-900/80 border border-[var(--theme-border)] rounded-md p-3 text-slate-300 focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
             >
             {templates.map(template => (
                 <option key={template.id} value={template.id}>
@@ -50,7 +50,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             </select>
         </div>
         <div>
-            <label htmlFor="tone-select" className="block text-sm font-medium text-slate-400 mb-2">
+            <label htmlFor="tone-select" className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">
             Tone of Voice
             </label>
             <select
@@ -58,7 +58,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             value={tone}
             onChange={onToneChange}
             disabled={isLoading}
-            className="w-full bg-slate-900/80 border border-[var(--theme-border)] rounded-md p-3 text-slate-300 focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
             >
                 <option>Professional</option>
                 <option>Casual</option>
@@ -69,14 +69,14 @@ export const InputPanel: React.FC<InputPanelProps> = ({
       </div>
 
 
-      <p className="text-slate-400 mb-4 text-sm">
+      <p className="text-[var(--theme-text-secondary)] mb-4 text-sm">
         Paste your product details below. The more information you provide, the better the result.
       </p>
       <textarea
         value={value}
         onChange={onChange}
         placeholder="e.g., Brand: Defy, Model: HB 7721 X, Power: 600W, a hand blender with whisk..."
-        className="w-full bg-slate-900/80 border border-[var(--theme-border)] rounded-md p-3 text-slate-300 focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200 min-h-[200px] resize-y flex-grow"
+        className="w-full bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-text-primary)] focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200 min-h-[200px] resize-y flex-grow"
         rows={10}
         disabled={isLoading}
       />
@@ -84,11 +84,11 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         onClick={onGenerate}
         disabled={isLoading || !selectedTemplateId}
         style={{ backgroundColor: 'var(--theme-blue)' }}
-        className="mt-6 w-full flex items-center justify-center gap-2 text-white font-bold py-3 px-4 rounded-md hover:opacity-90 disabled:bg-slate-600 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 disabled:scale-100"
+        className="mt-6 w-full flex items-center justify-center gap-2 text-white font-bold py-3 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:text-[var(--theme-text-secondary)]/50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 disabled:scale-100"
       >
         {isLoading ? (
           <>
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>

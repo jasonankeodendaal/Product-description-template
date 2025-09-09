@@ -9,24 +9,31 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --theme-bg: #1a1a1a;
-      --theme-card-bg: #2a2a2a;
-      --theme-dark-bg: #101010;
-      --theme-border: #444444;
-      --theme-blue: #5f7b9b;
-      --theme-green: #6c7f4c;
-      --theme-yellow: #dd9f3f;
-      --theme-red: #bb5548;
+      --theme-bg: #33302E;
+      --theme-card-bg: #3F3C3A;
+      --theme-dark-bg: #2B2826;
+      --theme-border: #78746F;
+      --theme-blue: #3A6187;
+      --theme-green: #60814A;
+      --theme-yellow: #D49E3C;
+      --theme-red: #AF412C;
+      --theme-text-primary: #E9E2D5;
+      --theme-text-secondary: #D1C1A1;
     }
     body {
       background-color: var(--theme-bg);
-      color: #e0e0e0;
+      color: var(--theme-text-primary);
+      font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACJSURBVHja7dJBCQAwEAOx//907aKBQ2TNEaECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAL8B2YwAASs5QKcAAAAASUVORK5CYII=');
+      background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMzMzMDJFIi8+PHBhdGggZD0iTTAgMjAgQzEwIDIwIDEwIDAgMjAgME0yMCA0MCBDMzAgNDAgMzAgMjAgNDAgMjAiIHN0cm9rZT0iIzc4NzQ2RiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDUiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==');
     }
     
     @keyframes float {
@@ -70,6 +77,10 @@
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes slow-zoom {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
   </style>
 
   <script type="importmap">
@@ -85,7 +96,7 @@
 </script>
 
 </head>
-<body class="bg-slate-900">
+<body>
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

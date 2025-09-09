@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { MicIcon } from './icons/MicIcon';
-// FIX: SiteSettings is exported from constants.ts, not App.tsx.
 import { SiteSettings } from '../constants';
 import { CompanyInfoDropdown } from './CompanyInfoDropdown';
 import { ImageIcon } from './icons/ImageIcon';
@@ -31,23 +30,23 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onSettingsClick, onRe
   }, []);
 
   return (
-    <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-20">
+    <header className="bg-[var(--theme-card-bg)]/50 backdrop-blur-sm border-b border-[var(--theme-border)]/50 sticky top-0 z-20">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="relative" ref={dropdownRef}>
             <button 
                 onClick={() => setIsDropdownOpen(prev => !prev)}
-                className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-md p-1"
+                className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[var(--theme-blue)] rounded-md p-1"
                 aria-haspopup="true"
                 aria-expanded={isDropdownOpen}
             >
             {siteSettings.logoSrc ? (
                 <img src={siteSettings.logoSrc} alt="Company Logo" className="h-12 w-auto rounded-md" />
             ) : (
-                <div className="h-12 w-12 rounded-md bg-slate-700 flex items-center justify-center text-slate-400 text-xl font-bold">
+                <div className="h-12 w-12 rounded-md bg-[var(--theme-bg)] flex items-center justify-center text-[var(--theme-text-secondary)] text-xl font-bold">
                     {siteSettings.companyName ? siteSettings.companyName.charAt(0) : '?'}
                 </div>
             )}
-            <span className="text-xl font-semibold text-slate-200">{siteSettings.companyName}</span>
+            <span className="hidden sm:inline text-xl font-semibold text-[var(--theme-text-primary)]">{siteSettings.companyName}</span>
             </button>
             {isDropdownOpen && (
                 <CompanyInfoDropdown settings={siteSettings} onClose={() => setIsDropdownOpen(false)} />
@@ -56,21 +55,21 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onSettingsClick, onRe
         <div className="flex items-center gap-2">
             <button 
               onClick={onImageToolClick} 
-              className="p-2 rounded-full hover:bg-slate-700 transition-colors"
+              className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors"
               aria-label="Open Image Tool"
             >
               <ImageIcon />
             </button>
             <button 
               onClick={onRecordingsClick} 
-              className="p-2 rounded-full hover:bg-slate-700 transition-colors"
+              className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors"
               aria-label="Open Recordings"
             >
               <MicIcon />
             </button>
             <button 
               onClick={onSettingsClick} 
-              className="p-2 rounded-full hover:bg-slate-700 transition-colors"
+              className="p-2 rounded-full hover:bg-[var(--theme-bg)] transition-colors"
               aria-label="Open Settings"
             >
               <SettingsIcon />
