@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-product-gen-cache-v2'; // Bumped version to ensure update
+const CACHE_NAME = 'ai-product-gen-cache-v3'; // Bumped version to ensure update
 const URLS_TO_CACHE = [
   '/',
   '/index.html'
