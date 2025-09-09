@@ -1,21 +1,23 @@
 {
-  "short_name": "Product Gen",
-  "name": "AI Product Description Generator",
+  "short_name": "Ai tools",
+  "name": "Ai tools - AI Product Description Generator",
   "description": "An AI-powered application to automatically generate structured and professional product descriptions.",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "https://iili.io/KxiiZMb.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "https://iili.io/KxiiZMb.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#1e293b",
-  "background_color": "#0f172a"
+  "theme_color": "#33302E",
+  "background_color": "#33302E"
 }
