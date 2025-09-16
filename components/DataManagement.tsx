@@ -53,7 +53,7 @@ const InputField: React.FC<{ label: string; id: string; value: string; onChange:
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200 h-[42px]"
         />
     </div>
 );
@@ -96,7 +96,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             customApiEndpoint: apiSettings.customApiEndpoint,
             customApiAuthKey: apiSettings.customApiAuthKey
         });
-        alert("Settings saved successfully.");
+        alert("Settings saved. You can now try using the AI features again.");
     };
     
     const handleConnectClick = () => {
@@ -195,34 +195,59 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             </div>
             
             <InfoCard>
-                <SectionTitle>Backend & API Sync Settings</SectionTitle>
-                <div className="space-y-4">
-                    <InputField 
-                        id="customApiEndpoint" 
-                        label="API Server URL (for remote sync)" 
-                        value={apiSettings.customApiEndpoint} 
-                        onChange={handleApiSettingsChange} 
-                        placeholder="Leave blank to use this app's built-in backend" 
-                    />
-                    <InputField 
-                        id="customApiAuthKey" 
-                        label="Backend Auth Key" 
-                        value={apiSettings.customApiAuthKey} 
-                        onChange={handleApiSettingsChange} 
-                        placeholder="Your secret auth key (e.g., API_SECRET_KEY)" 
-                        type="password"
-                    />
-                    <p className="text-xs text-[var(--theme-text-secondary)]/70 -mt-2">
-                        To protect your backend, provide an Auth Key. This is the value you set for <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_SECRET_KEY</code> on Vercel or in your self-hosted server's <code className="bg-black/30 px-1 py-0.5 rounded text-xs">.env</code> file. For multi-device sync, also provide a Server URL.
-                    </p>
-                    <div className="flex justify-end items-center gap-3 pt-2">
-                        <button onClick={handleApiSettingsSave} className="bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-4 rounded-md text-sm">Save Settings</button>
-                        <button 
-                            onClick={handleConnectClick} 
-                            disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
-                            className="bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed"
+                <SectionTitle>Backend &amp; API Settings</SectionTitle>
+                <div className="space-y-6">
+                    {/* Step 1: Auth Key */}
+                    <div className="p-4 bg-[var(--theme-bg)]/50 rounded-md border border-[var(--theme-border)]/30">
+                        <h4 className="font-semibold text-[var(--theme-text-primary)]">Step 1: Set Authentication Key (Required)</h4>
+                        <p className="text-sm text-[var(--theme-text-secondary)]/80 mt-1 mb-3">
+                            To fix <strong className="text-[var(--theme-red)]">'Unauthorized'</strong> errors, you must provide the secret key you configured on your server (e.g., your <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_SECRET_KEY</code> from Vercel).
+                        </p>
+                        <InputField 
+                            id="customApiAuthKey" 
+                            label="Backend Auth Key" 
+                            value={apiSettings.customApiAuthKey} 
+                            onChange={handleApiSettingsChange} 
+                            placeholder="Paste your secret key here" 
+                            type="password"
+                        />
+                    </div>
+
+                    {/* Step 2: API Server URL */}
+                    <div className="p-4 bg-[var(--theme-bg)]/50 rounded-md border border-[var(--theme-border)]/30">
+                        <h4 className="font-semibold text-[var(--theme-text-primary)]">Step 2: Connect to Sync Server (Optional)</h4>
+                        <p className="text-sm text-[var(--theme-text-secondary)]/80 mt-1 mb-3">
+                            For multi-device or team sync, enter your custom API server URL below. If you are just using the app on Vercel, <strong className="text-[var(--theme-yellow)]">leave this field blank.</strong>
+                        </p>
+                        <div className="flex items-end gap-4">
+                            <div className="flex-grow">
+                                <InputField 
+                                    id="customApiEndpoint" 
+                                    label="Custom API Server URL" 
+                                    value={apiSettings.customApiEndpoint} 
+                                    onChange={handleApiSettingsChange} 
+                                    placeholder="Leave blank for standard use" 
+                                />
+                            </div>
+                            <button 
+                                onClick={handleConnectClick} 
+                                disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
+                                className="bg-[var(--theme-green)] hover:opacity-90 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0"
+                            >
+                               {isApiConnecting ? 'Connecting...' : 'Connect & Sync'}
+                            </button>
+                        </div>
+                         {siteSettings.syncMode === 'api' && isApiConnected && (
+                            <p className="text-xs text-[var(--theme-green)] mt-2">Successfully connected and syncing with the server.</p>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                         <button 
+                            onClick={handleApiSettingsSave} 
+                            className="bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-6 rounded-md text-sm"
                         >
-                           {isApiConnecting ? 'Connecting...' : 'Connect & Sync'}
+                            Save All Settings
                         </button>
                     </div>
                 </div>
