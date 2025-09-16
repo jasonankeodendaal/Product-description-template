@@ -14,6 +14,7 @@ import { PlusIcon } from './icons/PlusIcon';
 import { LibraryIcon } from './icons/LibraryIcon';
 import { PhotosIcon } from './icons/PhotosIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import { PhotoThumbnail } from './PhotoThumbnail';
 
 interface PhotoManagerProps {
   onClose: () => void;
@@ -264,33 +265,17 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ onClose, photos, onS
                                <div key={folder.name} className="pt-2">
                                    <h3 className="font-semibold text-sm text-[var(--theme-text-secondary)] px-3 py-1 flex items-center gap-2"><FolderIcon /> {folder.name}</h3>
                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1 p-2">
-                                        {folder.photos.map(photo => {
-                                            const url = URL.createObjectURL(photo.imageBlob);
-                                            return (
-                                                <button key={photo.id} onClick={() => { URL.revokeObjectURL(url); handleSelectPhoto(photo); }} className={`aspect-square bg-black/20 rounded-md overflow-hidden group relative focus:outline-none focus:ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ring-[var(--theme-blue)]`}>
-                                                    <img src={url} alt={photo.name} className="w-full h-full object-cover" onLoad={() => URL.revokeObjectURL(url)} />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
-                                                        <p className="text-white text-xs truncate font-medium">{photo.name}</p>
-                                                    </div>
-                                                </button>
-                                            )
-                                        })}
+                                        {folder.photos.map(photo => (
+                                            <PhotoThumbnail key={photo.id} photo={photo} onSelect={handleSelectPhoto} />
+                                        ))}
                                    </div>
                                </div>
                             ))
                         ) : (
                              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-1 p-2">
-                                {allPhotosSorted.map(photo => {
-                                    const url = URL.createObjectURL(photo.imageBlob);
-                                    return (
-                                        <button key={photo.id} onClick={() => { URL.revokeObjectURL(url); handleSelectPhoto(photo); }} className={`aspect-square bg-black/20 rounded-md overflow-hidden group relative focus:outline-none focus:ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ring-[var(--theme-blue)]`}>
-                                            <img src={url} alt={photo.name} className="w-full h-full object-cover" onLoad={() => URL.revokeObjectURL(url)} />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
-                                                <p className="text-white text-xs truncate font-medium">{photo.name}</p>
-                                            </div>
-                                        </button>
-                                    )
-                                })}
+                                {allPhotosSorted.map(photo => (
+                                    <PhotoThumbnail key={photo.id} photo={photo} onSelect={handleSelectPhoto} />
+                                ))}
                             </div>
                         )}
                     </main>

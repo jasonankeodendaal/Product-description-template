@@ -33,25 +33,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
+    // Switch to streaming API to improve perceived latency
+    const stream = await ai.models.generateContentStream({
         model: 'gemini-2.5-flash',
         contents: fullPrompt,
         config: {
             temperature: 0.3,
             tools: [{ googleSearch: {} }],
+            // Removed thinkingConfig to re-enable thinking for higher quality output.
         },
     });
     
-    const text = response.text;
-    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    // Set headers for a streaming response
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
 
-    res.status(200).json({ text, sources });
+    let finalResponse;
+    for await (const chunk of stream) {
+        if(chunk.text) {
+          res.write(chunk.text);
+        }
+        finalResponse = chunk; // Keep the last response to access metadata
+    }
+    
+    const sources = finalResponse?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+    // To send sources after the text stream, we use a unique delimiter.
+    // The client will parse this to separate the text from the metadata.
+    if (sources.length > 0) {
+        const delimiter = '\n<--SOURCES-->\n';
+        res.write(delimiter);
+        res.write(JSON.stringify(sources));
+    }
+
+    res.end();
 
   } catch (error) {
     console.error('Server-side error in /api/generate:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
-    // Check for specific API-related error structures if the SDK provides them
-    const statusCode = (error as any)?.status || 500;
-    res.status(statusCode).json({ error: errorMessage });
+    // If headers haven't been sent, we can still send a proper JSON error response.
+    if (!res.headersSent) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
+        const statusCode = (error as any)?.status || 500;
+        res.status(statusCode).json({ error: errorMessage });
+    } else {
+        // If headers are already sent (mid-stream), we just have to end the response.
+        res.end();
+    }
   }
 }

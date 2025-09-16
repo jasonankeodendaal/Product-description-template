@@ -1,4 +1,4 @@
-import { GenerationResult } from "../components/OutputPanel";
+import { GenerationResult, GroundingChunk } from "../components/OutputPanel";
 import { blobToBase64 } from "../utils/dataUtils";
 
 // Helper to handle fetch errors and parse the JSON response.
@@ -23,7 +23,8 @@ export async function generateProductDescription(
     promptTemplate: string, 
     tone: string, 
     customApiUrl?: string | null, 
-    customApiAuthKey?: string | null
+    customApiAuthKey?: string | null,
+    onUpdate?: (partialResult: GenerationResult) => void, // Add callback for streaming updates
 ): Promise<GenerationResult> {
   try {
     const baseUrl = customApiUrl || '';
@@ -33,8 +34,57 @@ export async function generateProductDescription(
       body: JSON.stringify({ productInfo, promptTemplate, tone }),
     });
     
-    const data = await handleFetchErrors(response);
-    return data as GenerationResult;
+    if (!response.ok) {
+      // Handle initial error before streaming starts (e.g., 401 Unauthorized)
+      const errorData = await response.json().catch(() => ({ error: `Request failed with status ${response.status}` }));
+      throw new Error(errorData.error || 'An unknown network error occurred.');
+    }
+    
+    if (!response.body) {
+        throw new Error("The response from the server is empty.");
+    }
+    
+    // Process the streaming response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponseText = '';
+    
+    while(true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        fullResponseText += decoder.decode(value, { stream: true });
+        
+        // Provide real-time updates of the text as it arrives.
+        // We don't have the sources yet, so we pass an empty array.
+        if(onUpdate) {
+            onUpdate({ text: fullResponseText, sources: [] });
+        }
+    }
+    
+    // Now that the stream is complete, parse the full response for text and sources
+    let text = fullResponseText;
+    let sources: GroundingChunk[] = [];
+    const delimiter = '\n<--SOURCES-->\n';
+
+    if (fullResponseText.includes(delimiter)) {
+        const parts = fullResponseText.split(delimiter);
+        text = parts[0];
+        try {
+            sources = JSON.parse(parts[1]);
+        } catch (e) {
+            console.error("Failed to parse sources from stream:", e);
+            // The text is still valid, so we can proceed without sources.
+        }
+    }
+
+    const finalResult = { text, sources };
+    // Provide a final update with the sources included
+    if(onUpdate) {
+        onUpdate(finalResult);
+    }
+    
+    return finalResult;
 
   } catch (error) {
     console.error("Error calling /api/generate:", error);

@@ -1,5 +1,4 @@
-
-import { Recording, Template, Photo, Note } from "../App";
+import { Recording, Template, Photo, Note, ParsedProductData } from "../App";
 import { SiteSettings } from "../constants";
 import { blobToBase64 } from "../utils/dataUtils";
 
@@ -81,9 +80,32 @@ const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle)
 };
 
 // --- Photos ---
+const getOrCreateNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle> => {
+    let current = root;
+    const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');
+    for (const part of parts) {
+        current = await current.getDirectoryHandle(part, { create: true });
+    }
+    return current;
+};
+
+const getNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle | null> => {
+    let current = root;
+    const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');
+    try {
+        for (const part of parts) {
+            current = await current.getDirectoryHandle(part);
+        }
+        return current;
+    } catch (e) {
+        return null; // A directory in the path doesn't exist
+    }
+};
+
+
 const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
     const photosDir = await getOrCreateDirectory(dirHandle, 'photos');
-    const folderDir = await getOrCreateDirectory(photosDir, photo.folder || '_uncategorized');
+    const folderDir = await getOrCreateNestedDirectory(photosDir, photo.folder || '_uncategorized');
     
     const metadata: Omit<Photo, 'imageBlob'> = { ...photo };
     delete (metadata as any).imageBlob;
@@ -96,43 +118,46 @@ const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo:
 const deletePhotoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
     try {
         const photosDir = await dirHandle.getDirectoryHandle('photos');
-        const folderDir = await photosDir.getDirectoryHandle(photo.folder || '_uncategorized');
+        const folderDir = await getNestedDirectory(photosDir, photo.folder || '_uncategorized');
+        
+        if (!folderDir) return; // Folder doesn't exist, so nothing to delete.
+
         const ext = photo.imageMimeType.split('/')[1] || 'png';
         try { await folderDir.removeEntry(`${photo.id}.json`); } catch(e) {}
         try { await folderDir.removeEntry(`${photo.id}.${ext}`); } catch(e) {}
-    } catch (e) { /* Folder might not exist, ignore */ }
+    } catch (e) { /* 'photos' dir might not exist, ignore */ }
 };
 
 const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Photo[]> => {
     const photos: Photo[] = [];
     try {
         const photosDir = await dirHandle.getDirectoryHandle('photos');
-        for await (const folderEntry of photosDir.values()) {
-            if (folderEntry.kind === 'directory') {
-                const subFolderHandle = folderEntry as FileSystemDirectoryHandle;
-                for await (const fileEntry of subFolderHandle.values()) {
-                    // Load image files first to ensure we can handle any type
-                    const isImage = /\.(jpe?g|png|gif|webp)$/i.test(fileEntry.name);
-                    if (fileEntry.kind === 'file' && isImage) {
-                         try {
-                            const imageFileHandle = fileEntry as FileSystemFileHandle;
-                            const imageBlob = await imageFileHandle.getFile();
-                            const photoId = imageFileHandle.name.substring(0, imageFileHandle.name.lastIndexOf('.'));
-                            
-                            // Now find the corresponding metadata
-                            const jsonHandle = await subFolderHandle.getFileHandle(`${photoId}.json`);
-                            const jsonFile = await jsonHandle.getFile();
-                            const metadata = JSON.parse(await jsonFile.text());
-
-                            // Construct the full Photo object, ensuring mime type is present for future saves
-                            photos.push({ ...metadata, imageBlob, imageMimeType: imageBlob.type });
-
-                         } catch (e) { console.error(`Skipping photo ${fileEntry.name} in folder ${subFolderHandle.name} due to missing/corrupt metadata or other error.`, e); }
-                     }
-                 }
+        
+        const processDirectory = async (dir: FileSystemDirectoryHandle) => {
+            for await (const entry of dir.values()) {
+                if (entry.kind === 'directory') {
+                    // FIX: TypeScript can fail to narrow the type of `entry` within an async iterator.
+                    // Explicitly cast `entry` to FileSystemDirectoryHandle to fix the type mismatch for the recursive call.
+                    await processDirectory(entry as FileSystemDirectoryHandle);
+                } else if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                    try {
+                        const jsonFile = await (entry as FileSystemFileHandle).getFile();
+                        const metadata = JSON.parse(await jsonFile.text());
+                        
+                        const ext = metadata.imageMimeType?.split('/')[1] || 'png';
+                        const imageHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
+                        const imageBlob = await imageHandle.getFile();
+                        
+                        photos.push({ ...metadata, imageBlob });
+                    } catch (e) {
+                        console.error(`Failed to load photo from ${entry.name} in ${dir.name}:`, e);
+                    }
+                }
             }
-        }
-    } catch(e) { /* photos dir doesn't exist */ }
+        };
+        
+        await processDirectory(photosDir);
+    } catch(e) { /* 'photos' dir doesn't exist */ }
     return photos;
 }
 
@@ -171,6 +196,16 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
     for (const note of data.notes) await saveNoteToDirectory(dirHandle, note);
 }
 
+const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item: ParsedProductData) => {
+    const brandFolder = item.brand.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || 'Unbranded';
+    const skuFile = item.sku.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || `product_${Date.now()}`;
+    
+    const brandDirHandle = await getOrCreateDirectory(dirHandle, brandFolder);
+
+    await writeFile(brandDirHandle, `${skuFile}.txt`, item.fullText);
+    await writeFile(brandDirHandle, `${skuFile}.csv`, item.csvText);
+}
+
 export const fileSystemService = {
     getDirectoryHandle,
     directoryHasData,
@@ -188,4 +223,5 @@ export const fileSystemService = {
     loadNotesFromDirectory,
     deleteNoteFromDirectory,
     saveAllDataToDirectory,
+    saveProductDescription,
 };

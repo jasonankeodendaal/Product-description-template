@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { Header } from './components/Header';
 import { InputPanel } from './components/InputPanel';
-import { OutputPanel, ParsedProductData, GenerationResult } from './components/OutputPanel';
+import { OutputPanel, GenerationResult } from './components/OutputPanel';
 import { TemplateManager } from './components/TemplateManager';
 import { AuthModal } from './components/AuthModal';
 import { CreatorInfo } from './components/CreatorInfo';
-import { DownloadManager } from './components/DownloadManager';
 import { Hero } from './components/Hero';
 import { generateProductDescription, transcribeAudio } from './services/geminiService';
 import { DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, DEFAULT_SITE_SETTINGS, SiteSettings } from './constants';
@@ -30,8 +29,12 @@ export interface Template {
   prompt: string;
 }
 
-export interface QueuedItem extends ParsedProductData {
-  id:string;
+export interface ParsedProductData {
+  brand: string;
+  sku: string;
+  name: string;
+  fullText: string;
+  csvText: string;
 }
 
 export interface Recording {
@@ -115,8 +118,6 @@ const App: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [tone, setTone] = useState<string>('Professional');
-
-  const [downloadQueue, setDownloadQueue] = useState<QueuedItem[]>([]);
 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
 
@@ -312,19 +313,26 @@ const App: React.FC = () => {
 
     setIsLoading(true);
     setError(null);
-    setGeneratedOutput(null);
+    // Initialize with an empty text object to enable the output panel for streaming
+    setGeneratedOutput({ text: '', sources: [] });
 
     try {
+      // Pass the onUpdate callback to receive streaming updates
       const result = await generateProductDescription(
         userInput, 
         selectedTemplate.prompt, 
         tone, 
         siteSettings.customApiEndpoint,
-        siteSettings.customApiAuthKey
+        siteSettings.customApiAuthKey,
+        (partialResult) => {
+            setGeneratedOutput(partialResult);
+        }
       );
+      // Set the final result which includes sources
       setGeneratedOutput(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      setGeneratedOutput(null); // Clear output on error
     } finally {
       setIsLoading(false);
     }
@@ -423,11 +431,19 @@ const App: React.FC = () => {
     }
   }, [directoryHandle]);
 
-
-  // Download Queue Handlers
-  const handleAddToQueue = useCallback((item: ParsedProductData) => setDownloadQueue(prev => [...prev, { ...item, id: crypto.randomUUID() }]), []);
-  const handleRemoveFromQueue = useCallback((id: string) => setDownloadQueue(prev => prev.filter(item => item.id !== id)), []);
-  const handleClearQueue = useCallback(() => setDownloadQueue([]), []);
+  const handleSaveToFolder = useCallback(async (item: ParsedProductData) => {
+    if (!directoryHandle) {
+        alert("Please connect to a local folder first via the Dashboard > Data Management settings.");
+        throw new Error("Directory not connected.");
+    }
+    try {
+        await fileSystemService.saveProductDescription(directoryHandle, item);
+    } catch (error) {
+        console.error("Failed to save product description to folder:", error);
+        alert(`Could not save to folder: ${error instanceof Error ? error.message : "Unknown error"}`);
+        throw error; // re-throw to let the caller know it failed
+    }
+  }, [directoryHandle]);
 
   // Sync and Data Handlers
   const handleSyncDirectory = useCallback(async () => {
@@ -626,7 +642,15 @@ const App: React.FC = () => {
             tone={tone}
             onToneChange={(e) => setTone(e.target.value)}
           />
-          <OutputPanel output={generatedOutput} isLoading={isLoading} error={error} onAddToQueue={handleAddToQueue} queue={downloadQueue} />
+          <OutputPanel 
+            output={generatedOutput} 
+            isLoading={isLoading} 
+            error={error} 
+            onSaveToFolder={handleSaveToFolder} 
+            syncMode={siteSettings.syncMode}
+            photos={photos}
+            onSavePhoto={handleSavePhoto}
+          />
         </div>
       </main>
       {isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} onUnlock={handleUnlock} />}
@@ -655,7 +679,7 @@ const App: React.FC = () => {
         {isRecordingManagerOpen && (
           <RecordingManager onClose={() => setIsRecordingManagerOpen(false)} recordings={recordings} onSave={handleSaveRecording} onUpdate={handleUpdateRecording} onDelete={handleDeleteRecording} onTranscribe={handleTranscribe} />
         )}
-        {isImageToolOpen && <ImageTool onClose={() => setIsImageToolOpen(false)} />}
+        {isImageToolOpen && <ImageTool onClose={() => setIsImageToolOpen(false)} onSavePhoto={handleSavePhoto} syncMode={siteSettings.syncMode} />}
         {isPhotoManagerOpen && <PhotoManager onClose={() => setIsPhotoManagerOpen(false)} photos={photos} onSave={handleSavePhoto} onDelete={handleDeletePhoto} />}
         {isNotepadOpen && <Notepad onClose={() => setIsNotepadOpen(false)} notes={notes} onSave={handleSaveNote} onDelete={handleDeleteNote} />}
         {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
@@ -672,7 +696,6 @@ const App: React.FC = () => {
             >
                 <QuestionCircleIcon />
             </button>
-            <DownloadManager queue={downloadQueue} onRemove={handleRemoveFromQueue} onClear={handleClearQueue} />
         </div>
       </footer>
     </div>

@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
-import { QueuedItem } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
+
+// FIX: Define QueuedItem locally to resolve import error from App.tsx
+export interface QueuedItem {
+  id: string;
+  name: string;
+  brand: string;
+  sku: string;
+  fullText: string;
+  csvText: string;
+}
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;

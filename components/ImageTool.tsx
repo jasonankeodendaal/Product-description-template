@@ -2,12 +2,18 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { XIcon } from './icons/XIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { CropIcon } from './icons/CropIcon';
+import { SaveIcon } from './icons/SaveIcon';
+import { CheckIcon } from './icons/CheckIcon';
+import { dataURLtoBlob } from '../utils/dataUtils';
+import { Photo } from '../App';
 
 // Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
 
 interface ImageToolProps {
   onClose: () => void;
+  onSavePhoto: (photo: Photo) => Promise<void>;
+  syncMode?: 'local' | 'folder' | 'api';
 }
 
 interface ProcessedImage {
@@ -18,6 +24,8 @@ interface ProcessedImage {
   newName: string;
   status: 'queued' | 'processing' | 'done' | 'error';
   error?: string;
+  brand: string;
+  sku: string;
 }
 
 interface CropData {
@@ -215,12 +223,13 @@ const processImageOnCanvas = (imageFile: File, size: number): Promise<string> =>
 };
 
 
-export const ImageTool: React.FC<ImageToolProps> = ({ onClose }) => {
+export const ImageTool: React.FC<ImageToolProps> = ({ onClose, onSavePhoto, syncMode }) => {
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isConverting, setIsConverting] = useState<string | null>(null);
   const [targetSize, setTargetSize] = useState<number>(800);
   const [croppingImage, setCroppingImage] = useState<ProcessedImage | null>(null);
+  const [saveStates, setSaveStates] = useState<Record<string, 'idle' | 'saving' | 'saved'>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,6 +248,8 @@ export const ImageTool: React.FC<ImageToolProps> = ({ onClose }) => {
             squaredDataUrl: null,
             newName: `${nameWithoutExt}_${targetSize}x${targetSize}`,
             status: 'queued',
+            brand: '',
+            sku: '',
           };
         });
       setImages(prev => [...prev, ...newImages]);
@@ -272,6 +283,9 @@ export const ImageTool: React.FC<ImageToolProps> = ({ onClose }) => {
   const handleRename = (id: string, newName: string) => {
       setImages(prev => prev.map(img => img.id === id ? { ...img, newName } : img));
   };
+   const handleProductLinkChange = (id: string, field: 'brand' | 'sku', value: string) => {
+        setImages(prev => prev.map(img => img.id === id ? { ...img, [field]: value } : img));
+    };
   
   const handleDownload = useCallback(async (img: ProcessedImage, format: 'png' | 'jpeg') => {
     if (!img.squaredDataUrl) return;
@@ -356,6 +370,58 @@ export const ImageTool: React.FC<ImageToolProps> = ({ onClose }) => {
     }, [targetSize]);
   
   const handleClearAll = () => setImages([]);
+  
+    const handleSaveToLibrary = async (img: ProcessedImage) => {
+        if (!img.squaredDataUrl) return;
+
+        setSaveStates(prev => ({ ...prev, [img.id]: 'saving' }));
+        
+        const imageBlob = dataURLtoBlob(img.squaredDataUrl);
+        
+        const sanitizedBrand = img.brand.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
+        const sanitizedSku = img.sku.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
+
+        let folderName = 'Image Tool Exports';
+        if (sanitizedBrand) {
+            folderName = sanitizedBrand;
+            if (sanitizedSku) {
+                folderName += `/${sanitizedSku}`;
+            }
+        }
+
+        const newPhoto: Photo = {
+            id: crypto.randomUUID(),
+            name: img.newName,
+            notes: `Processed with Image Tool.\nOriginal name: ${img.originalName}`,
+            date: new Date().toISOString(),
+            folder: folderName,
+            imageBlob,
+            imageMimeType: imageBlob.type,
+            tags: ['imagetool', img.brand, img.sku].filter(Boolean) as string[],
+        };
+
+        try {
+            await onSavePhoto(newPhoto);
+            setSaveStates(prev => ({ ...prev, [img.id]: 'saved' }));
+            setTimeout(() => setSaveStates(prev => ({ ...prev, [img.id]: 'idle' })), 2500);
+        } catch (e) {
+            alert(`Failed to save photo: ${e instanceof Error ? e.message : 'Unknown error'}`);
+            setSaveStates(prev => ({ ...prev, [img.id]: 'idle' }));
+        }
+    };
+    
+    const getSaveButtonContent = (id: string) => {
+        const state = saveStates[id] || 'idle';
+        switch (state) {
+            case 'saving':
+                return 'Saving...';
+            case 'saved':
+                return <><CheckIcon /> Saved!</>;
+            default:
+                const saveTarget = syncMode === 'folder' ? 'Folder' : 'Library';
+                return <><SaveIcon /> Save to {saveTarget}</>;
+        }
+    };
 
 
   return (
@@ -432,7 +498,24 @@ export const ImageTool: React.FC<ImageToolProps> = ({ onClose }) => {
                                     className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded p-1.5 text-sm text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"
                                     aria-label="Rename image"
                                 />
-                                <div className="grid grid-cols-3 gap-2 text-sm">
+                                <div className="p-2 bg-black/20 rounded-md space-y-2">
+                                    <h4 className="text-xs font-bold text-[var(--theme-text-secondary)]">Link to Product (Optional)</h4>
+                                    <input
+                                        type="text"
+                                        placeholder="Brand Name"
+                                        value={img.brand}
+                                        onChange={(e) => handleProductLinkChange(img.id, 'brand', e.target.value)}
+                                        className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded p-1.5 text-xs text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Product SKU / Model"
+                                        value={img.sku}
+                                        onChange={(e) => handleProductLinkChange(img.id, 'sku', e.target.value)}
+                                        className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded p-1.5 text-xs text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-sm mt-auto">
                                     <button 
                                         onClick={() => handleDownload(img, 'png')}
                                         disabled={img.status !== 'done' || !!isConverting}
@@ -453,6 +536,13 @@ export const ImageTool: React.FC<ImageToolProps> = ({ onClose }) => {
                                         <CropIcon />
                                     </button>
                                 </div>
+                                <button
+                                    onClick={() => handleSaveToLibrary(img)}
+                                    disabled={img.status !== 'done' || (saveStates[img.id] && saveStates[img.id] !== 'idle')}
+                                    className="w-full bg-[var(--theme-green)] text-white font-bold py-2 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] flex items-center justify-center gap-2 text-sm"
+                                >
+                                    {getSaveButtonContent(img.id)}
+                                </button>
                             </div>
                         ))}
                     </div>
