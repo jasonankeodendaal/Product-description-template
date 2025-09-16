@@ -2,8 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Declare JSZip for TypeScript since it's loaded from a CDN
+// Declare globals for TypeScript since they are loaded from a CDN
 declare var JSZip: any;
+declare var WaveSurfer: any;
 
 // Register the Service Worker to enable PWA offline functionality
 if ('serviceWorker' in navigator) {

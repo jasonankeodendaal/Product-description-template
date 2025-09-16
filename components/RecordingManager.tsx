@@ -3,8 +3,6 @@ import { Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { MicIcon } from './icons/MicIcon';
 import { SaveIcon } from './icons/SaveIcon';
-import { PlayIcon } from './icons/PlayIcon';
-import { PauseIcon } from './icons/PauseIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { CameraIcon } from './icons/CameraIcon';
@@ -14,6 +12,7 @@ import { formatTime } from '../utils/formatters';
 import { useDebounce } from '../hooks/useDebounce';
 import { resizeImage } from '../utils/imageUtils';
 import { CameraCapture } from './CameraCapture';
+import { WaveformPlayer } from './WaveformPlayer';
 
 
 interface RecordingManagerProps {
@@ -22,7 +21,6 @@ interface RecordingManagerProps {
   onSave: (recording: Recording) => Promise<void>;
   onUpdate: (recording: Recording) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  directoryHandle: FileSystemDirectoryHandle | null;
   onTranscribe: (id: string) => Promise<void>;
 }
 
@@ -49,9 +47,6 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
   
   const { isRecording, recordingTime, audioBlob, startRecording, stopRecording } = useRecorder();
   
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,27 +128,6 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
     }
   };
   
-  const togglePlay = () => {
-      const currentBlob = selectedRecording?.audioBlob || audioBlob;
-      if (!currentBlob) return;
-
-      if (audioPlayerRef.current && !audioPlayerRef.current.paused) {
-          audioPlayerRef.current.pause();
-          return;
-      }
-      
-      const player = new Audio(URL.createObjectURL(currentBlob));
-      audioPlayerRef.current = player;
-      player.play();
-      player.onplay = () => setIsPlaying(true);
-      player.onpause = () => setIsPlaying(false);
-      player.onended = () => setIsPlaying(false);
-  };
-  
-  useEffect(() => {
-    return () => { audioPlayerRef.current?.pause(); }
-  }, []);
-
   const handleDelete = async () => {
     if (!selectedRecording) return;
     if (window.confirm(`Are you sure you want to delete "${selectedRecording.name}"?`)) {
@@ -252,6 +226,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                     {(selectedRecording || audioBlob) ? (
                         <div className="w-full h-full flex flex-col">
                              <div className="flex-grow space-y-4 pr-2">
+                                <WaveformPlayer audioBlob={selectedRecording?.audioBlob || audioBlob} />
                                 <div>
                                     <label htmlFor="rec-name" className="text-sm text-[var(--theme-text-secondary)]">Name</label>
                                     <input id="rec-name" type="text" value={formState.name} onChange={e => setFormState(s => ({...s, name: e.target.value}))} className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 mt-1 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
@@ -269,12 +244,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                                     <label htmlFor="rec-notes" className="text-sm text-[var(--theme-text-secondary)]">Notes</label>
                                     <textarea id="rec-notes" value={formState.notes} onChange={e => setFormState(s => ({...s, notes: e.target.value}))} rows={3} className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 mt-1 resize-y text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"></textarea>
                                 </div>
-                                <div className="flex items-center gap-4 bg-[var(--theme-bg)]/50 p-3 rounded-md">
-                                    <button onClick={togglePlay} className="p-2 bg-[var(--theme-blue)] rounded-full text-white hover:opacity-90 flex-shrink-0">
-                                        {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                                    </button>
-                                    <p className="text-sm text-[var(--theme-text-secondary)]">Duration: {formatTime(selectedRecording?.duration || recordingTime)}</p>
-                                </div>
+                                
                                  <div>
                                     <label className="text-sm text-[var(--theme-text-secondary)]">Attachments</label>
                                      <div className="mt-2 grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">

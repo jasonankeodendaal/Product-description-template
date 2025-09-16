@@ -73,7 +73,7 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
       <button
         onClick={() => setIsModalOpen(true)}
         style={{ backgroundColor: 'var(--theme-green)' }}
-        className="fixed bottom-4 right-4 z-40 hover:opacity-90 text-white rounded-full p-4 shadow-lg transition-transform transform hover:scale-110 flex items-center justify-center"
+        className="relative hover:opacity-90 text-white rounded-full p-4 shadow-lg transition-transform transform hover:scale-110 flex items-center justify-center"
         aria-label={`Open download queue with ${queue.length} items`}
       >
         <DownloadIcon />

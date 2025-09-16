@@ -1,5 +1,3 @@
-
-
 import { Template, Recording, Photo, Note, BackupData } from '../App';
 import { SiteSettings } from '../constants';
 
@@ -65,7 +63,7 @@ export const createBackup = async (
         })
     );
     
-    const backupData = {
+    const backupData: BackupData = {
         siteSettings,
         templates,
         recordings: recordingsForBackup,

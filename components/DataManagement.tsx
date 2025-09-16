@@ -96,14 +96,14 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             customApiEndpoint: apiSettings.customApiEndpoint,
             customApiAuthKey: apiSettings.customApiAuthKey
         });
-        alert("API settings saved locally. Click 'Connect & Sync' to establish a connection.");
+        alert("Settings saved successfully.");
     };
     
     const handleConnectClick = () => {
         if (apiSettings.customApiEndpoint && apiSettings.customApiAuthKey) {
             onApiConnect(apiSettings.customApiEndpoint, apiSettings.customApiAuthKey);
         } else {
-            alert("Please enter both an API URL and an Auth Key.");
+            alert("Please enter both an API URL and an Auth Key to connect.");
         }
     };
 
@@ -195,29 +195,33 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             </div>
             
             <InfoCard>
-                <SectionTitle>Sync & API Settings</SectionTitle>
+                <SectionTitle>Backend & API Sync Settings</SectionTitle>
                 <div className="space-y-4">
                     <InputField 
                         id="customApiEndpoint" 
-                        label="Custom API URL" 
+                        label="API Server URL (for remote sync)" 
                         value={apiSettings.customApiEndpoint} 
                         onChange={handleApiSettingsChange} 
-                        placeholder="https://your-backend-url.com" 
+                        placeholder="Leave blank to use this app's built-in backend" 
                     />
                     <InputField 
                         id="customApiAuthKey" 
-                        label="Custom API Auth Key" 
+                        label="Backend Auth Key" 
                         value={apiSettings.customApiAuthKey} 
                         onChange={handleApiSettingsChange} 
-                        placeholder="Enter your secret API key" 
+                        placeholder="Your secret auth key (e.g., API_SECRET_KEY)" 
                         type="password"
                     />
                     <p className="text-xs text-[var(--theme-text-secondary)]/70 -mt-2">
-                        Configure a self-hosted backend for multi-device sync. See the 'Setup Guide' tab for instructions.
+                        To protect your backend, provide an Auth Key. This is the value you set for <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_SECRET_KEY</code> on Vercel or in your self-hosted server's <code className="bg-black/30 px-1 py-0.5 rounded text-xs">.env</code> file. For multi-device sync, also provide a Server URL.
                     </p>
                     <div className="flex justify-end items-center gap-3 pt-2">
                         <button onClick={handleApiSettingsSave} className="bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-4 rounded-md text-sm">Save Settings</button>
-                        <button onClick={handleConnectClick} disabled={isApiConnecting} className="bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)]">
+                        <button 
+                            onClick={handleConnectClick} 
+                            disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
+                            className="bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed"
+                        >
                            {isApiConnecting ? 'Connecting...' : 'Connect & Sync'}
                         </button>
                     </div>

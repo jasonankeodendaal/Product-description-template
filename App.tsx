@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { Header } from './components/Header';
 import { InputPanel } from './components/InputPanel';
@@ -15,6 +13,7 @@ import { db } from './services/db';
 import { base64ToBlob, dataURLtoBlob, blobToBase64, apiSyncService } from './utils/dataUtils';
 import { fileSystemService } from './services/fileSystemService';
 import { FullScreenLoader } from './components/FullScreenLoader';
+import { QuestionCircleIcon } from './components/icons/QuestionCircleIcon';
 
 // Lazy-load heavy components that are not visible on initial render
 const Dashboard = lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -22,6 +21,7 @@ const RecordingManager = lazy(() => import('./components/RecordingManager').then
 const ImageTool = lazy(() => import('./components/ImageTool').then(module => ({ default: module.ImageTool })));
 const PhotoManager = lazy(() => import('./components/PhotoManager').then(module => ({ default: module.PhotoManager })));
 const Notepad = lazy(() => import('./components/Notepad').then(module => ({ default: module.Notepad })));
+const InfoModal = lazy(() => import('./components/InfoModal').then(module => ({ default: module.InfoModal })));
 
 
 export interface Template {
@@ -55,15 +55,14 @@ export interface Photo {
     folder: string;
     imageBlob: Blob;
     imageMimeType: string;
+    tags?: string[];
 }
 
 export interface Note {
     id: string;
-    title: string;
-    content: string;
-    category: string;
-    createdAt: string;
+    content: string; // Plain text
     updatedAt: string;
+    color?: string; // e.g., 'yellow', 'pink', 'blue'
 }
 
 
@@ -133,6 +132,7 @@ const App: React.FC = () => {
   const [isImageToolOpen, setIsImageToolOpen] = useState<boolean>(false);
   const [isPhotoManagerOpen, setIsPhotoManagerOpen] = useState<boolean>(false);
   const [isNotepadOpen, setIsNotepadOpen] = useState<boolean>(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
   
   const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [isPermissionPromptVisible, setIsPermissionPromptVisible] = useState<boolean>(false);
@@ -653,17 +653,27 @@ const App: React.FC = () => {
           />
         )}
         {isRecordingManagerOpen && (
-          <RecordingManager onClose={() => setIsRecordingManagerOpen(false)} recordings={recordings} onSave={handleSaveRecording} onUpdate={handleUpdateRecording} onDelete={handleDeleteRecording} onTranscribe={handleTranscribe} directoryHandle={directoryHandle} />
+          <RecordingManager onClose={() => setIsRecordingManagerOpen(false)} recordings={recordings} onSave={handleSaveRecording} onUpdate={handleUpdateRecording} onDelete={handleDeleteRecording} onTranscribe={handleTranscribe} />
         )}
         {isImageToolOpen && <ImageTool onClose={() => setIsImageToolOpen(false)} />}
         {isPhotoManagerOpen && <PhotoManager onClose={() => setIsPhotoManagerOpen(false)} photos={photos} onSave={handleSavePhoto} onDelete={handleDeletePhoto} />}
         {isNotepadOpen && <Notepad onClose={() => setIsNotepadOpen(false)} notes={notes} onSave={handleSaveNote} onDelete={handleDeleteNote} />}
+        {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
       </Suspense>
       <CreatorInfo settings={siteSettings} />
-      <DownloadManager queue={downloadQueue} onRemove={handleRemoveFromQueue} onClear={handleClearQueue} />
-      <footer className="text-center py-4 text-[var(--theme-text-secondary)] text-sm border-t border-[var(--theme-border)]/50">
+      <footer className="relative text-center py-4 text-[var(--theme-text-secondary)] text-sm border-t border-[var(--theme-border)]/50">
         <p>Powered by Google Gemini API</p>
         <p className="mt-1">© 2025 JSTYP.me — All Rights Reserved.</p>
+        <div className="absolute bottom-4 right-4 z-10 flex flex-col-reverse items-end gap-3">
+            <button
+                onClick={() => setIsInfoModalOpen(true)}
+                className="bg-[var(--theme-blue)] hover:opacity-90 text-white rounded-full p-3 shadow-lg transition-transform transform hover:scale-110 flex items-center justify-center"
+                aria-label="About and Setup Guide"
+            >
+                <QuestionCircleIcon />
+            </button>
+            <DownloadManager queue={downloadQueue} onRemove={handleRemoveFromQueue} onClear={handleClearQueue} />
+        </div>
       </footer>
     </div>
   );
