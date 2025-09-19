@@ -27,7 +27,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
 }) => {
 
   return (
-    <div className="bg-[var(--theme-card-bg)] p-6 rounded-lg shadow-lg border border-[var(--theme-border)] flex flex-col">
+    <div className="bg-[var(--theme-card-bg)] p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)] flex flex-col">
       <h2 className="text-xl font-semibold mb-4 text-[var(--theme-green)]">1. Select Template & Add Info</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

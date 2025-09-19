@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // FIX: SiteSettings is exported from constants.ts, not App.tsx.
 import { Note } from '../App';
@@ -5,6 +6,7 @@ import { SiteSettings } from '../constants';
 import { PlusIcon } from './icons/PlusIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { MagicIcon } from './icons/MagicIcon';
+import { Spinner } from './icons/Spinner';
 
 interface NotepadProps {
     notes: Note[];
@@ -133,8 +135,13 @@ export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDel
                                             <option value="improve">Improve Writing</option>
                                             <option value="keywords">Extract Keywords</option>
                                         </select>
-                                        <button onClick={handleAiAction} disabled={isAiLoading} className="w-full bg-[var(--theme-green)] text-black font-bold py-2 px-3 rounded-md text-sm disabled:bg-gray-500">
-                                            {isAiLoading ? 'Working...' : 'Run Action'}
+                                        <button onClick={handleAiAction} disabled={isAiLoading} className="w-full bg-[var(--theme-green)] text-black font-bold py-2 px-3 rounded-md text-sm disabled:bg-gray-500 flex items-center justify-center gap-2">
+                                            {isAiLoading ? (
+                                                <>
+                                                    <Spinner className="h-4 w-4" />
+                                                    <span>Working...</span>
+                                                </>
+                                            ) : 'Run Action'}
                                         </button>
                                     </div>
                                 )}

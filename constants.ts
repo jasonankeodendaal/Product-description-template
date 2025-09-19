@@ -1,4 +1,5 @@
 
+
 export interface CreatorDetails {
   name:string;
   slogan: string;
@@ -24,7 +25,7 @@ export interface SiteSettings {
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  companyName: 'Ai tools',
+  companyName: 'JSTYP.me Ai tools',
   slogan: 'Ai your friend!',
   logoSrc: 'https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png',
   heroImageSrc: 'https://i.ibb.co/mNkS54j/ai-tools-hero-v2.webp',

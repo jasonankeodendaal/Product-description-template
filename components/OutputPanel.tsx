@@ -247,7 +247,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     };
 
   return (
-    <div className="bg-[var(--theme-card-bg)] p-6 rounded-lg shadow-lg border border-[var(--theme-border)] relative flex flex-col">
+    <div className="bg-[var(--theme-card-bg)] p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)] relative flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-[var(--theme-green)]">Generated Description</h2>
         {hasOutput && !isLoading && (
@@ -276,15 +276,16 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
 
       <div className="bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-4 flex-grow min-h-[300px] text-[var(--theme-text-primary)] overflow-y-auto flex flex-col">
         <div className="flex-grow">
-            {isLoading && !hasOutput && <SkeletonLoader />}
-            {error && <div className="text-[var(--theme-red)] p-4 rounded-md bg-[var(--theme-red)]/10 border border-[var(--theme-red)]/30" role="alert">{error}</div>}
-            {!isLoading && !error && !hasOutput && (
+            {error ? (
+                <div className="text-[var(--theme-red)] p-4 rounded-md bg-[var(--theme-red)]/10 border border-[var(--theme-red)]/30" role="alert">{error}</div>
+            ) : isLoading && !hasOutput ? (
+                <SkeletonLoader />
+            ) : hasOutput ? (
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{outputText}</pre>
+            ) : (
                 <div className="h-full flex items-center justify-center text-[var(--theme-text-secondary)]/70">
                     Your generated product description will appear here.
                 </div>
-            )}
-            {hasOutput && (
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{outputText}</pre>
             )}
         </div>
       </div>

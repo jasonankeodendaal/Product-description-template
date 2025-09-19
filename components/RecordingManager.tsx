@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { Recording, Photo } from '../App';
 import { SiteSettings } from '../constants';
@@ -15,6 +16,7 @@ import { PhotoThumbnail } from './PhotoThumbnail';
 import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
+import { Spinner } from './icons/Spinner';
 
 interface RecordingManagerProps {
     recordings: Recording[];
@@ -63,7 +65,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
     const handleTranscribe = useCallback(async (recording: Recording) => {
         const recordingToUpdate = { ...recording, isTranscribing: true };
         setSelectedRecording(recordingToUpdate);
-        await onUpdate(recordingToUpdate);
+        onUpdate(recordingToUpdate); // Immediately update state to show transcribing status
         try {
             const transcript = await transcribeAudio(recording.audioBlob, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey);
             const finalUpdate = { ...recording, transcript, isTranscribing: false };
@@ -86,11 +88,18 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
         );
     }, [recordings, searchTerm]);
 
-    const handleUpdateField = (field: keyof Recording, value: any) => {
+    const handleFieldChange = (field: keyof Recording, value: any) => {
         if (selectedRecording) {
-            const updatedRecording = { ...selectedRecording, [field]: value };
-            setSelectedRecording(updatedRecording);
-            onUpdate(updatedRecording);
+            setSelectedRecording(prev => prev ? { ...prev, [field]: value } : null);
+        }
+    };
+    
+    const handleSaveChanges = () => {
+        if (selectedRecording) {
+            const originalRecording = recordings.find(r => r.id === selectedRecording.id);
+            if (originalRecording && JSON.stringify(originalRecording) !== JSON.stringify(selectedRecording)) {
+                onUpdate(selectedRecording);
+            }
         }
     };
     
@@ -111,7 +120,10 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                            tags: [selectedRecording.name, 'recording-asset']
                        };
                        await onSavePhoto(newPhoto);
-                       handleUpdateField('photoIds', [...selectedRecording.photoIds, newPhoto.id]);
+                       // Update local state first, then save
+                       handleFieldChange('photoIds', [...selectedRecording.photoIds, newPhoto.id]);
+                       // Manually trigger save for this change
+                       onUpdate({ ...selectedRecording, photoIds: [...selectedRecording.photoIds, newPhoto.id] });
                        setIsCameraOpen(false);
                     }}
                 />
@@ -168,7 +180,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                     ${selectedRecording ? 'flex' : 'hidden'} lg:flex
                     flex-1 h-full flex-col overflow-y-auto
                 `}>
-                    <div className="p-6">
+                    <div className="p-4 md:p-6">
                         {selectedRecording ? (
                             <div>
                                 <div className="flex justify-between items-start">
@@ -179,7 +191,8 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                                         <input 
                                             type="text"
                                             value={selectedRecording.name}
-                                            onChange={(e) => handleUpdateField('name', e.target.value)}
+                                            onChange={(e) => handleFieldChange('name', e.target.value)}
+                                            onBlur={handleSaveChanges}
                                             className="text-2xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-green)] focus:outline-none w-full mr-4 truncate"
                                         />
                                     </div>
@@ -196,7 +209,8 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                                     {selectedRecording.transcript ? (
                                         <textarea 
                                             value={selectedRecording.transcript}
-                                            onChange={(e) => handleUpdateField('transcript', e.target.value)}
+                                            onChange={(e) => handleFieldChange('transcript', e.target.value)}
+                                            onBlur={handleSaveChanges}
                                             className="w-full h-40 bg-[var(--theme-card-bg)] p-3 rounded-md border border-[var(--theme-border)] resize-y"
                                             placeholder="Transcript appears here..."
                                         />
@@ -204,9 +218,16 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                                         <button 
                                             onClick={() => handleTranscribe(selectedRecording)}
                                             disabled={selectedRecording.isTranscribing}
-                                            className="bg-[var(--theme-green)] text-black font-bold py-2 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed"
+                                            className="bg-[var(--theme-green)] text-black font-bold py-2 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[150px]"
                                         >
-                                            {selectedRecording.isTranscribing ? 'Transcribing...' : 'Transcribe Audio'}
+                                            {selectedRecording.isTranscribing ? (
+                                                <>
+                                                    <Spinner className="h-4 w-4" />
+                                                    <span>Transcribing...</span>
+                                                </>
+                                            ) : (
+                                                'Transcribe Audio'
+                                            )}
                                         </button>
                                     )}
                                 </div>
@@ -215,7 +236,8 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                                     <h3 className="text-lg font-semibold mb-2">Notes</h3>
                                     <textarea 
                                         value={selectedRecording.notes}
-                                        onChange={(e) => handleUpdateField('notes', e.target.value)}
+                                        onChange={(e) => handleFieldChange('notes', e.target.value)}
+                                        onBlur={handleSaveChanges}
                                         className="w-full h-32 bg-[var(--theme-card-bg)] p-3 rounded-md border border-[var(--theme-border)] resize-y"
                                         placeholder="Add your notes here..."
                                     />

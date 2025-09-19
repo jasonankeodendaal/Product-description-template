@@ -51,13 +51,13 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
 }) => {
     return (
         <div className="h-full overflow-y-auto no-scrollbar pb-24 lg:pb-0">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
                  <TemplateManager 
                     templates={templates} 
                     onAddTemplate={onAddTemplate} 
                     onEditTemplate={onEditTemplate} 
                 />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 flex-grow">
                     <ComposerPanel
                         value={userInput}
                         onChange={(e) => onUserInputChange(e.target.value)}

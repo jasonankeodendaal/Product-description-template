@@ -30,7 +30,7 @@ const HeroIllustration: React.FC = () => (
 export const Hero: React.FC<HeroProps> = React.memo(({ heroImageSrc }) => {
   return (
     <div 
-      className="relative rounded-lg mb-8 overflow-hidden border border-[var(--theme-border)] text-center h-80 flex flex-col justify-center items-center p-8"
+      className="relative rounded-lg mb-8 overflow-hidden border border-[var(--theme-border)] text-center h-60 md:h-72 lg:h-80 flex flex-col justify-center items-center p-4 sm:p-8"
       role="banner"
     >
       {heroImageSrc ? (
@@ -48,10 +48,10 @@ export const Hero: React.FC<HeroProps> = React.memo(({ heroImageSrc }) => {
       )}
       
       <div className="relative z-10">
-        <h1 className="text-4xl lg:text-5xl font-bold text-[var(--theme-text-primary)] tracking-tight" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)'}}>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--theme-text-primary)] tracking-tight" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)'}}>
           Generate Flawless Product Descriptions
         </h1>
-        <p className="mt-4 text-lg text-[var(--theme-text-secondary)] max-w-3xl mx-auto" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)'}}>
+        <p className="mt-2 text-base sm:text-lg text-[var(--theme-text-secondary)] max-w-3xl mx-auto" style={{ textShadow: '0 1px 5px rgba(0,0,0,0.5)'}}>
           Effortlessly transform raw product data into compelling, structured content that converts.
         </p>
       </div>

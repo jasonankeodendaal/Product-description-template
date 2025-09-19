@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Photo } from '../App';
 import { PhotoThumbnail } from './PhotoThumbnail';
@@ -9,6 +10,7 @@ import { TrashIcon } from './icons/TrashIcon';
 import { CameraCapture } from './CameraCapture';
 import { resizeImage } from '../utils/imageUtils';
 import { dataURLtoBlob } from '../utils/dataUtils';
+import { Spinner } from './icons/Spinner';
 
 interface PhotoManagerProps {
     photos: Photo[];
@@ -21,6 +23,8 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadCount, setUploadCount] = useState(0);
 
     const filteredPhotos = useMemo(() => {
         return photos.filter(p =>
@@ -43,49 +47,66 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
     }, [onDelete]);
     
     const handleFileUpload = useCallback(async (files: FileList | null) => {
-        if (!files) return;
-        for (const file of Array.from(files)) {
-            try {
-                const resizedDataUrl = await resizeImage(file);
-                const imageBlob = dataURLtoBlob(resizedDataUrl);
-                const newPhoto: Photo = {
-                    id: crypto.randomUUID(),
-                    name: file.name.split('.').slice(0, -1).join('.') || `Image ${Date.now()}`,
-                    notes: '',
-                    date: new Date().toISOString(),
-                    folder: '_uncategorized',
-                    imageBlob,
-                    imageMimeType: imageBlob.type,
-                    tags: [],
-                };
-                await onSave(newPhoto);
-            } catch (error) {
-                console.error("Failed to process image:", error);
-                alert(`Failed to process ${file.name}.`);
+        if (!files || files.length === 0) return;
+        setIsUploading(true);
+        setUploadCount(files.length);
+        try {
+            for (const file of Array.from(files)) {
+                try {
+                    const resizedDataUrl = await resizeImage(file);
+                    const imageBlob = dataURLtoBlob(resizedDataUrl);
+                    const newPhoto: Photo = {
+                        id: crypto.randomUUID(),
+                        name: file.name.split('.').slice(0, -1).join('.') || `Image ${Date.now()}`,
+                        notes: '',
+                        date: new Date().toISOString(),
+                        folder: '_uncategorized',
+                        imageBlob,
+                        imageMimeType: imageBlob.type,
+                        tags: [],
+                    };
+                    await onSave(newPhoto);
+                } catch (error) {
+                    console.error("Failed to process image:", error);
+                    alert(`Failed to process ${file.name}.`);
+                }
             }
+        } finally {
+            setIsUploading(false);
+            setUploadCount(0);
         }
     }, [onSave]);
     
     return (
-        <div className="container mx-auto px-4 py-8 h-full flex flex-col">
+        <div className="container mx-auto p-4 h-full flex flex-col">
             {isCameraOpen && (
                 <CameraCapture 
                     onClose={() => setIsCameraOpen(false)} 
                     onCapture={async (dataUrl) => {
-                        const resizedDataUrl = await resizeImage(dataURLtoBlob(dataUrl));
-                        const imageBlob = dataURLtoBlob(resizedDataUrl);
-                        const newPhoto: Photo = {
-                            id: crypto.randomUUID(),
-                            name: `Capture ${new Date().toLocaleString()}`,
-                            notes: '',
-                            date: new Date().toISOString(),
-                            folder: '_uncategorized',
-                            imageBlob,
-                            imageMimeType: imageBlob.type,
-                            tags: ['camera-capture'],
-                        };
-                        await onSave(newPhoto);
-                        setIsCameraOpen(false);
+                        setIsUploading(true);
+                        setUploadCount(1);
+                        try {
+                            const resizedDataUrl = await resizeImage(dataURLtoBlob(dataUrl));
+                            const imageBlob = dataURLtoBlob(resizedDataUrl);
+                            const newPhoto: Photo = {
+                                id: crypto.randomUUID(),
+                                name: `Capture ${new Date().toLocaleString()}`,
+                                notes: '',
+                                date: new Date().toISOString(),
+                                folder: '_uncategorized',
+                                imageBlob,
+                                imageMimeType: imageBlob.type,
+                                tags: ['camera-capture'],
+                            };
+                            await onSave(newPhoto);
+                        } catch(e) {
+                            console.error("Failed to save captured photo:", e);
+                            alert("Failed to save captured photo.");
+                        } finally {
+                            setIsCameraOpen(false);
+                            setIsUploading(false);
+                            setUploadCount(0);
+                        }
                     }}
                 />
             )}
@@ -122,12 +143,25 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-[var(--theme-green)]">Photo Library</h1>
                 <div className="flex items-center gap-2">
-                    <input type="file" id="photo-upload" className="sr-only" onChange={(e) => handleFileUpload(e.target.files)} multiple accept="image/*" />
-                    <label htmlFor="photo-upload" className="cursor-pointer bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
-                        <UploadIcon /> Upload
+                    <label 
+                        htmlFor="photo-upload" 
+                        className={`font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2 transition-colors ${
+                            isUploading 
+                                ? 'bg-[var(--theme-border)] text-[var(--theme-text-secondary)]/50 cursor-not-allowed'
+                                : 'cursor-pointer bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)]'
+                        }`}
+                    >
+                        <input type="file" id="photo-upload" className="sr-only" onChange={(e) => handleFileUpload(e.target.files)} multiple accept="image/*" disabled={isUploading} />
+                        {isUploading ? <Spinner className="h-5 w-5" /> : <UploadIcon />}
+                        <span>{isUploading ? 'Uploading...' : 'Upload'}</span>
                     </label>
-                    <button onClick={() => setIsCameraOpen(true)} className="bg-[var(--theme-green)] text-black font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
-                        <CameraIcon className="h-5 w-5" /> Capture
+                    <button 
+                        onClick={() => setIsCameraOpen(true)}
+                        disabled={isUploading}
+                        className="bg-[var(--theme-green)] text-black font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center justify-center gap-2 disabled:bg-[var(--theme-border)] disabled:text-[var(--theme-text-secondary)]/50 disabled:cursor-not-allowed min-w-[100px]"
+                    >
+                        {isUploading ? <Spinner className="h-5 w-5"/> : <CameraIcon className="h-5 w-5" />}
+                        <span>{isUploading ? '' : 'Capture'}</span>
                     </button>
                 </div>
             </div>
@@ -147,6 +181,9 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
 
             <div className="flex-grow overflow-y-auto -mx-2 pb-24 lg:pb-2">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-2">
+                    {isUploading && Array.from({ length: uploadCount }).map((_, index) => (
+                        <div key={`skeleton-${index}`} className="aspect-square bg-[var(--theme-card-bg)]/50 rounded-md animate-pulse"></div>
+                    ))}
                     {filteredPhotos.map(photo => (
                         <PhotoThumbnail key={photo.id} photo={photo} onSelect={setSelectedPhoto} />
                     ))}

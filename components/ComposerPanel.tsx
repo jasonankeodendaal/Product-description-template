@@ -7,6 +7,7 @@ import { Template, Recording, Note, Photo } from '../App';
 import { SiteSettings } from '../constants';
 import { describeImage } from '../services/geminiService';
 import { PhotoThumbnail } from './PhotoThumbnail';
+import { Spinner } from './icons/Spinner';
 
 interface ComposerPanelProps {
     value: string;
@@ -33,14 +34,19 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
     siteSettings, onAddToInput
 }) => {
     const [activeTab, setActiveTab] = useState<AssetTab>('recordings');
+    const [describingPhotoId, setDescribingPhotoId] = useState<string | null>(null);
 
     const handleDescribeImage = async (photo: Photo) => {
+        if (describingPhotoId) return;
         if (!window.confirm("Use AI to describe this image and add it to the input?")) return;
+        setDescribingPhotoId(photo.id);
         try {
             const description = await describeImage(photo.imageBlob, "Briefly describe this product image for an e-commerce listing.", siteSettings.customApiEndpoint, siteSettings.customApiAuthKey);
             onAddToInput(`Image Description (${photo.name}): ${description}`);
         } catch (error) {
             alert(`Failed to describe image: ${error instanceof Error ? error.message : "Unknown error"}`);
+        } finally {
+            setDescribingPhotoId(null);
         }
     };
 
@@ -74,9 +80,15 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                         {photos.slice(0, 8).map(photo => (
                             <div key={photo.id} className="relative group">
                                 <PhotoThumbnail photo={photo} onSelect={() => handleDescribeImage(photo)} />
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                    <p className="text-white text-xs text-center p-1">Describe & Add</p>
-                                </div>
+                                 {describingPhotoId === photo.id ? (
+                                    <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-md">
+                                        <Spinner className="h-6 w-6 text-white" />
+                                    </div>
+                                ) : (
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity pointer-events-none rounded-md">
+                                        <p className="text-white text-xs text-center p-1">Describe & Add</p>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -98,7 +110,7 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                 tone={tone}
                 onToneChange={onToneChange}
             />
-            <div className="bg-[var(--theme-card-bg)] p-6 rounded-lg shadow-lg border border-[var(--theme-border)]">
+            <div className="bg-[var(--theme-card-bg)] p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)]">
                 <h2 className="text-xl font-semibold mb-4 text-[var(--theme-green)]">2. Add From Library</h2>
                 <div className="border-b border-[var(--theme-border)] mb-4">
                     <nav className="-mb-px flex space-x-6" aria-label="Tabs">

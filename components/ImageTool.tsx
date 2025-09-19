@@ -92,13 +92,13 @@ export const ImageTool: React.FC = () => {
     }, [sourceImage, position, zoom, fileName]);
 
     return (
-        <div className="container mx-auto px-4 pt-8 pb-24 lg:py-8 h-full flex flex-col overflow-y-auto">
+        <div className="container mx-auto p-4 lg:py-8 h-full flex flex-col overflow-y-auto">
             <h1 className="text-3xl font-bold text-[var(--theme-green)]">Image Squarer Tool</h1>
             <p className="text-[var(--theme-text-secondary)] mt-2">Upload an image to crop it into a perfect square. Drag to position and use the slider to zoom.</p>
             
             <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 items-start">
                 {/* Control Panel */}
-                <div className="bg-[var(--theme-card-bg)] p-6 rounded-lg shadow-lg border border-[var(--theme-border)]">
+                <div className="bg-[var(--theme-card-bg)] p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)]">
                     <h2 className="text-xl font-semibold mb-4">1. Upload Image</h2>
                     <input type="file" id="image-upload" className="sr-only" onChange={handleFileChange} accept="image/*" />
                     <label htmlFor="image-upload" className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-[var(--theme-border)] rounded-md cursor-pointer hover:bg-[var(--theme-bg)] transition-colors">
@@ -140,7 +140,7 @@ export const ImageTool: React.FC = () => {
                 </div>
 
                 {/* Preview Panel */}
-                <div className="bg-[var(--theme-card-bg)] p-6 rounded-lg shadow-lg border border-[var(--theme-border)] flex items-center justify-center">
+                <div className="bg-[var(--theme-card-bg)] p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)] flex items-center justify-center">
                     <div
                         className="relative bg-[var(--theme-bg)] overflow-hidden cursor-move"
                         style={{ width: CROP_BOX_SIZE, height: CROP_BOX_SIZE }}

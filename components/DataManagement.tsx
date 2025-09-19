@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Template, Recording, Photo, Note } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -13,6 +14,7 @@ import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
 import { SiteSettings } from '../constants';
 import { CloudIcon } from './icons/CloudIcon';
+import { Spinner } from './icons/Spinner';
 
 interface DataManagementProps {
     templates: Template[];
@@ -224,9 +226,14 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                             <button 
                                 onClick={handleConnectClick} 
                                 disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
-                                className="bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0"
+                                className="bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center justify-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0 min-w-[160px]"
                             >
-                               {isApiConnecting ? 'Connecting...' : 'Connect & Sync'}
+                               {isApiConnecting ? (
+                                    <>
+                                        <Spinner className="h-4 w-4" />
+                                        <span>Connecting...</span>
+                                    </>
+                               ) : 'Connect & Sync'}
                             </button>
                         </div>
                          {siteSettings.syncMode === 'api' && isApiConnected && (

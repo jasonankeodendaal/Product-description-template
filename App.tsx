@@ -19,6 +19,7 @@ import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
 import { Sidebar } from './components/Sidebar';
+import { MobileHeader } from './components/MobileHeader';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
@@ -545,6 +546,7 @@ const App: React.FC = () => {
 
     return (
         <div className="bg-[var(--theme-bg)] min-h-screen font-sans text-[var(--theme-text-primary)]">
+            {/* --- Desktop Navigation --- */}
             <Sidebar 
                 currentView={currentView}
                 onNavigate={setCurrentView}
@@ -552,8 +554,20 @@ const App: React.FC = () => {
                 onOpenInfo={() => setIsInfoModalOpen(true)}
                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
             />
-            <div className="lg:pl-64">
-                <Header siteSettings={siteSettings} isApiConnected={isApiConnected} />
+            <div className="hidden lg:block">
+                 <Header siteSettings={siteSettings} isApiConnected={isApiConnected} />
+            </div>
+
+            {/* --- Mobile Navigation --- */}
+            <MobileHeader 
+                siteSettings={siteSettings}
+                onNavigate={setCurrentView}
+                onOpenDashboard={() => setIsDashboardOpen(true)}
+                onOpenInfo={() => setIsInfoModalOpen(true)}
+                onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+            />
+            
+            <div className="lg:pl-64 pt-[76px] lg:pt-0">
                 <main className="w-full" style={{ height: 'calc(100vh - 76px)' }}>
                     <div className="h-full">
                         {renderView()}
@@ -564,9 +578,6 @@ const App: React.FC = () => {
             <BottomNavBar
                  currentView={currentView} 
                  onNavigate={setCurrentView} 
-                 onOpenDashboard={() => setIsDashboardOpen(true)}
-                 onOpenInfo={() => setIsInfoModalOpen(true)}
-                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
             />
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
