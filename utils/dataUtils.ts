@@ -19,7 +19,7 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
-export const base64ToBlob = (base64: string, mimeType: string): Blob => {
+const base64ToBlob = (base64: string, mimeType: string): Blob => {
   const byteCharacters = atob(base64);
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i++) {
@@ -117,12 +117,12 @@ const handleApiResponse = async (response: Response) => {
 
 type ApiBackupData = Omit<BackupData, 'recordings' | 'photos'> & {
     recordings: (Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string })[];
-    photos: (Omit<Photo, 'imageBlob'> & { imageBase64: string })[];
+    photos: (Omit<Photo, 'imageBlob'> & { imageBase64: string, imageMimeType: string })[];
 }
 
 export const apiSyncService = {
+    base64ToBlob, // Export helper function
     async connect(apiUrl: string, apiKey: string): Promise<boolean> {
-        // A simple health check endpoint is assumed to exist on the server.
         const response = await fetch(`${apiUrl}/api/health`, { headers: getHeaders(apiKey) });
         return response.ok;
     },

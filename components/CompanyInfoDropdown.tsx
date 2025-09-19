@@ -21,7 +21,7 @@ export const CompanyInfoDropdown: React.FC<CompanyInfoDropdownProps> = ({ settin
             <img src={settings.logoSrc} alt="Company Logo" className="h-12 w-12 object-contain rounded-md bg-[var(--theme-bg)] p-1" />
           )}
           <div>
-            <h2 className="text-md font-bold text-[var(--theme-blue)]">{settings.companyName}</h2>
+            <h2 className="text-md font-bold text-[var(--theme-green)]">{settings.companyName}</h2>
             <p className="text-[var(--theme-text-secondary)] text-xs">{settings.slogan}</p>
           </div>
         </div>
@@ -29,17 +29,17 @@ export const CompanyInfoDropdown: React.FC<CompanyInfoDropdownProps> = ({ settin
         {(settings.tel || settings.email || settings.website) && (
           <div className="space-y-3 mt-4 border-t border-[var(--theme-border)]/50 pt-4">
             {settings.tel && (
-              <a href={`tel:${settings.tel}`} className="flex items-center gap-3 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-blue)] transition-colors">
+              <a href={`tel:${settings.tel}`} className="flex items-center gap-3 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-green)] transition-colors">
                 <PhoneIcon /> <span>{settings.tel}</span>
               </a>
             )}
             {settings.email && (
-              <a href={`mailto:${settings.email}`} className="flex items-center gap-3 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-blue)] transition-colors">
+              <a href={`mailto:${settings.email}`} className="flex items-center gap-3 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-green)] transition-colors">
                 <MailIcon /> <span>{settings.email}</span>
               </a>
             )}
             {settings.website && (
-              <a href={settings.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-blue)] transition-colors">
+              <a href={settings.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-green)] transition-colors">
                 <GlobeIcon /> <span>Visit Website</span>
               </a>
             )}

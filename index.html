@@ -7,7 +7,7 @@
   <title>Ai tools | AI Product Description Generator</title>
   <link rel="icon" href="https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png" type="image/png">
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#33302E">
+  <meta name="theme-color" content="#000000">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -19,29 +19,51 @@
 
   <style>
     :root {
-      --theme-bg: #33302E;
-      --theme-card-bg: #3F3C3A;
-      --theme-dark-bg: #2B2826;
-      --theme-border: #78746F;
+      /* New Dark & Green Theme */
+      --theme-bg: #111827; /* Dark Slate Blue-Grey */
+      --theme-card-bg: #1F2937; /* Lighter Slate */
+      --theme-dark-bg: #000000; /* Pure Black */
+      --theme-border: #4B5563; /* Medium Grey */
+      --theme-green: #34D399; /* Candy Apple Green (Emerald) */
+      --theme-red: #F87171; /* Softer Red */
+      --theme-text-primary: #F9FAFB; /* Off-white */
+      --theme-text-secondary: #9CA3AF; /* Light Grey */
+      
+      /* Recorder Light Theme (Updated with Green Accent) */
+      --theme-bg-light: #F9FAFB;
+      --theme-card-bg-light: #FFFFFF;
+      --theme-text-primary-light: #1F2937;
+      --theme-text-secondary-light: #6B7280;
+      --theme-border-light: #E5E7EB;
+      --theme-green-light: #10B981; /* Darker Green for contrast on light BG */
+      --theme-red-light: #EF4444;
+      --theme-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+
+      /* Deprecated */
       --theme-blue: #3A6187;
-      --theme-green: #60814A;
       --theme-yellow: #D49E3C;
-      --theme-red: #AF412C;
-      --theme-text-primary: #E9E2D5;
-      --theme-text-secondary: #D1C1A1;
     }
     body {
-      background-color: var(--theme-bg);
+      background-color: var(--theme-dark-bg);
       color: var(--theme-text-primary);
       font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMzMzMDJFIi8+PHBhdGggZD0iTTAgMjAgQzEwIDIwIDEwIDAgMjAgME0yMCA0MCBDMzAgNDAgMzAgMjAgNDAgMjAiIHN0cm9rZT0iIzc4NzQ2RiIgc3Ryb2tlLW9wYWNpdHk9IjAuMDUiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==');
     }
     
     .font-lora {
       font-family: 'Lora', serif;
     }
+
+    /* Custom scrollbar for webkit browsers */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
 
     /* Notepad checklist styles */
     ul[data-type="checklist"] {
@@ -67,8 +89,8 @@
       transition: background-color 0.2s ease, border-color 0.2s ease;
     }
     ul[data-type="checklist"] > li[data-checked="true"]::before {
-      background-color: var(--theme-blue);
-      border-color: var(--theme-blue);
+      background-color: var(--theme-green);
+      border-color: var(--theme-green);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
       background-size: 80%;
       background-position: center;
@@ -145,6 +167,10 @@
     }
     .creator-modal-animate-out {
         animation: slide-out-down 0.3s ease-in forwards;
+    }
+    
+    .fab-shadow {
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.05) inset;
     }
 
     /* md breakpoint: 768px */

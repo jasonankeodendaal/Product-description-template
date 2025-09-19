@@ -20,11 +20,11 @@ export const MagicIcon: React.FC = () => (
         </style>
         <defs>
             <linearGradient id="magic-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FDE047"/>
-                <stop offset="100%" stopColor="#F59E0B"/>
+                <stop offset="0%" stopColor="#34D399"/>
+                <stop offset="100%" stopColor="#10B981"/>
             </linearGradient>
             <filter id="magic-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="0" stdDeviation="1" floodColor="#F59E0B" floodOpacity="0.7"/>
+                <feDropShadow dx="0" dy="0" stdDeviation="1" floodColor="#10B981" floodOpacity="0.7"/>
             </filter>
         </defs>
         <g className="magic-sparkle" filter="url(#magic-shadow)" fill="url(#magic-grad)" stroke="#FFF" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round">

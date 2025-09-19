@@ -18,6 +18,53 @@
   ],
   "start_url": "/index.html",
   "display": "fullscreen",
-  "theme_color": "#33302E",
-  "background_color": "#33302E"
+  "theme_color": "#1F2937",
+  "background_color": "#000000",
+  "categories": ["business", "productivity", "developer_tools"],
+  "screenshots": [
+    {
+      "src": "https://i.ibb.co/Rz7xWdY/screenshot-generator.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "AI Generator Workspace"
+    },
+    {
+      "src": "https://i.ibb.co/2vXQZtP/screenshot-recordings.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Recording and Transcription Manager"
+    },
+    {
+      "src": "https://i.ibb.co/1K5x2L1/screenshot-photos.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Photo Library and Management"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Recording",
+      "short_name": "Record",
+      "description": "Start a new voice recording",
+      "url": "/index.html?view=recordings",
+      "icons": [{ "src": "https://i.ibb.co/6y1jV1h/shortcut-mic.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "New Sticky Note",
+      "short_name": "Note",
+      "description": "Create a new sticky note",
+      "url": "/index.html?view=notepad",
+      "icons": [{ "src": "https://i.ibb.co/L6Szk5X/shortcut-note.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Open Image Squarer",
+      "short_name": "Image Tool",
+      "description": "Open the image processing tool",
+      "url": "/index.html?view=imagetool",
+      "icons": [{ "src": "https://i.ibb.co/8Y4B05y/shortcut-image.png", "sizes": "96x96" }]
+    }
+  ]
 }

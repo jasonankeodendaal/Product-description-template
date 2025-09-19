@@ -13,7 +13,7 @@ interface SiteSettingsEditorProps {
 const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
     <div className="bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50">
         <div className="flex items-center gap-3">
-            <div className="text-[var(--theme-yellow)]">{icon}</div>
+            <div className="text-[var(--theme-green)]">{icon}</div>
             <h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">{title}</h3>
         </div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -32,7 +32,7 @@ const InputField: React.FC<{ label: string; id: string; value: string; onChange:
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-green)] transition-shadow duration-200"
         />
     </div>
 );
@@ -139,7 +139,7 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
             <footer className="sticky bottom-0 -mx-6 -mb-6 mt-6 bg-[var(--theme-dark-bg)]/80 backdrop-blur-sm p-4 border-t border-[var(--theme-border)]/50">
                 <div className="flex justify-end items-center gap-4 max-w-6xl mx-auto pr-60">
                     {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Settings saved!</p>}
-                    <button type="submit" disabled={isSaving} className="bg-[var(--theme-green)] hover:opacity-90 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed">
+                    <button type="submit" disabled={isSaving} className="bg-[var(--theme-green)] hover:opacity-90 text-black font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed">
                         {isSaving ? (
                             <><svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Saving...</>
                         ) : "Save All Changes" }

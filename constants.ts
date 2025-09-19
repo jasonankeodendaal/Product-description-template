@@ -26,7 +26,7 @@ export interface SiteSettings {
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'Ai tools',
   slogan: 'Ai your friend!',
-  logoSrc: 'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png',
+  logoSrc: 'https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png',
   heroImageSrc: 'https://i.ibb.co/mNkS54j/ai-tools-hero-v2.webp',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
@@ -34,7 +34,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   creator: {
     name: 'JSTYP.me',
     slogan: 'Jason solution to your problems, Yes me!!',
-    logoSrc: 'https://iili.io/KxPZTT7.png',
+    logoSrc: 'https://i.postimg.cc/vH0dsmFk/Creator-logo.png',
     tel: '0695989427',
     email: 'odendaaljason454@gmail.com',
     whatsapp: 'https://wa.link/nohogl',

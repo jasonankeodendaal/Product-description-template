@@ -18,8 +18,8 @@ export const PhotosIcon: React.FC = () => (
                 <feDropShadow dx="0.5" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.2"/>
             </filter>
             <linearGradient id="photo-fill-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#87CEEB"/>
-                <stop offset="100%" stopColor="#4682B4"/>
+                <stop offset="0%" stopColor="#34D399"/>
+                <stop offset="100%" stopColor="#10B981"/>
             </linearGradient>
         </defs>
         <g filter="url(#photo-shadow)">

@@ -56,7 +56,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
         className="w-full flex justify-between items-center p-4 text-left"
         aria-expanded={isFormVisible}
       >
-        <h2 className="text-lg font-semibold text-[var(--theme-blue)] flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-[var(--theme-green)] flex items-center gap-2">
           <PlusIcon />
           Template Management
         </h2>
@@ -83,7 +83,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
                   placeholder="e.g., My Custom Product Template"
-                  className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200"
+                  className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-green)] focus:border-[var(--theme-green)] transition-shadow duration-200"
                 />
               </div>
               <div>
@@ -95,7 +95,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
                   value={templatePrompt}
                   onChange={(e) => setTemplatePrompt(e.target.value)}
                   placeholder="Paste your full AI prompt template here..."
-                  className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)] transition-shadow duration-200 min-h-[200px] resize-y"
+                  className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-green)] focus:border-[var(--theme-green)] transition-shadow duration-200 min-h-[200px] resize-y"
                   rows={8}
                 />
               </div>
@@ -104,7 +104,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
                 <button
                   type="submit"
                   style={{backgroundColor: 'var(--theme-green)'}}
-                  className="text-white font-bold py-2 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] transition-colors duration-200"
+                  className="text-black font-bold py-2 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] transition-colors duration-200"
                 >
                   Save New Template
                 </button>
@@ -124,16 +124,16 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
                         type="text"
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
-                        className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md py-1 px-2 text-[var(--theme-dark-bg)] focus:ring-1 focus:ring-[var(--theme-yellow)] focus:border-[var(--theme-yellow)]"
+                        className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md py-1 px-2 text-[var(--theme-dark-bg)] focus:ring-1 focus:ring-[var(--theme-green)] focus:border-[var(--theme-green)]"
                         autoFocus
                       />
-                      <button onClick={() => handleEditSave(template.id)} className="text-sm bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-1 px-3 rounded-md">Save</button>
+                      <button onClick={() => handleEditSave(template.id)} className="text-sm bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-1 px-3 rounded-md">Save</button>
                       <button onClick={handleEditCancel} className="text-sm text-[var(--theme-text-secondary)] hover:text-white">Cancel</button>
                     </div>
                   ) : (
                     <>
                       <span className="text-[var(--theme-text-primary)]">{template.name}</span>
-                      <button onClick={() => handleEditClick(template)} className="text-sm text-[var(--theme-yellow)] hover:underline font-medium">Edit</button>
+                      <button onClick={() => handleEditClick(template)} className="text-sm text-[var(--theme-green)] hover:underline font-medium">Edit</button>
                     </>
                   )}
                 </li>

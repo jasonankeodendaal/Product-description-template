@@ -21,7 +21,7 @@ const Step: React.FC<{ num: string; title: string; children: React.ReactNode; }>
 const Section: React.FC<{ title: string; children: React.ReactNode; icon: React.ReactNode }> = ({ title, children, icon }) => (
     <div className="bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50">
         <div className="flex items-center gap-3 mb-4">
-            <div className="text-[var(--theme-yellow)] w-6 h-6">{icon}</div>
+            <div className="text-[var(--theme-green)] w-6 h-6">{icon}</div>
             <h3 className="text-xl font-bold text-[var(--theme-text-primary)]">{title}</h3>
         </div>
         <div className="space-y-4 text-sm text-[var(--theme-text-secondary)]">
@@ -74,8 +74,8 @@ export const SetupGuide: React.FC = () => (
              <p>This is the most powerful option. It turns one of your computers into a private, central "brain" for your app data. All other devices connect to this central brain to get live updates. It's like running your own private cloud.</p>
 
             <div className="mt-6 space-y-8">
-                <div className="p-4 bg-[var(--theme-yellow)]/10 rounded-lg border border-[var(--theme-yellow)]/30">
-                    <h4 className="font-semibold text-[var(--theme-yellow)]">What You'll Need</h4>
+                <div className="p-4 bg-[var(--theme-green)]/10 rounded-lg border border-[var(--theme-green)]/30">
+                    <h4 className="font-semibold text-[var(--theme-green)]">What You'll Need</h4>
                      <ul className="list-disc list-inside mt-2 text-sm text-[var(--theme-text-secondary)]">
                         <li><strong>A "Server" Computer:</strong> One computer that can be left on and connected to the internet.</li>
                         <li><strong>Command Line Familiarity:</strong> You'll need to be comfortable opening a terminal (on Mac/Linux) or Command Prompt/PowerShell (on Windows) to copy and paste commands.</li>
@@ -88,7 +88,7 @@ export const SetupGuide: React.FC = () => (
                     <h3 className="text-lg font-bold text-[var(--theme-text-primary)] mb-3">Part 1: One-Time Setup on Your Server Computer</h3>
                      <div className="space-y-6">
                         <Step num="1" title="Install the Engine: Node.js">
-                            <p>Node.js is the underlying technology that runs the server. If you don't have it, download the "LTS" version from <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-blue)] hover:underline">nodejs.org</a> and install it.</p>
+                            <p>Node.js is the underlying technology that runs the server. If you don't have it, download the "LTS" version from <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-green)] hover:underline">nodejs.org</a> and install it.</p>
                             <p>To check if it's installed, open your terminal and run <code className="bg-black/30 px-1 py-0.5 rounded">node -v</code>. You should see a version number like `v20.11.0`.</p>
                         </Step>
                         
@@ -98,7 +98,7 @@ export const SetupGuide: React.FC = () => (
                         </Step>
 
                         <Step num="3" title="Install the Secure Tunnel: Cloudflare">
-                             <p>This creates a secure tunnel from the internet to your server without any complicated network setup. Follow the <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/install-and-setup/installation/" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-blue)] hover:underline">official guide</a> to install the `cloudflared` tool. After installing, log in to your Cloudflare account by running:</p>
+                             <p>This creates a secure tunnel from the internet to your server without any complicated network setup. Follow the <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/install-and-setup/installation/" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-green)] hover:underline">official guide</a> to install the `cloudflared` tool. After installing, log in to your Cloudflare account by running:</p>
                              <CodeBlock>cloudflared tunnel login</CodeBlock>
                         </Step>
                     </div>

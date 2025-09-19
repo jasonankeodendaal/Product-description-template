@@ -24,28 +24,59 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     }
   }, [stream]);
 
-  // Get video devices
+  // useEffect to handle permissions and device enumeration correctly.
   useEffect(() => {
-    const getVideoDevices = async () => {
+    let isMounted = true;
+    const initializeCamera = async () => {
+      let tempStream: MediaStream | null = null;
       try {
+        // First, get a generic stream to trigger the permission prompt.
+        tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        
+        // If we're here, permission was granted. Now we can get the full device list.
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoInputs = devices.filter(device => device.kind === 'videoinput');
+
         if (videoInputs.length === 0) {
-          throw new Error("No camera found.");
+          throw new Error("No camera found on this device.");
         }
-        setVideoDevices(videoInputs);
+        
+        if (isMounted) {
+          setVideoDevices(videoInputs);
+          setError(null);
+        }
+
       } catch (err) {
-        console.error("Error enumerating devices:", err);
-        setError(err instanceof Error ? err.message : "Could not list cameras.");
+        console.error("Error initializing camera:", err);
+        let message = "Could not access the camera. Please grant permission in your browser settings.";
+        if (err instanceof DOMException) {
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                message = 'Camera access was denied. Please grant permission in your browser settings to use this feature.';
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                message = 'No camera was found on this device.';
+            }
+        }
+        if (isMounted) {
+            setError(message);
+        }
+      } finally {
+        // Stop the temporary stream, as the next useEffect will handle the specific device.
+        tempStream?.getTracks().forEach(track => track.stop());
       }
     };
-    getVideoDevices();
+
+    initializeCamera();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Start a new stream when the active device changes
   useEffect(() => {
     if (videoDevices.length === 0) return;
 
+    let isCancelled = false;
     const startStream = async () => {
       stopCurrentStream(); // Stop any existing stream first
       try {
@@ -53,27 +84,38 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         const constraints: MediaStreamConstraints = {
           video: {
             deviceId: { exact: deviceId },
-            // Prioritize higher resolution for back camera
             width: { ideal: 1280 },
             height: { ideal: 720 },
           }
         };
         const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        setStream(mediaStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
+        if (!isCancelled) {
+          setStream(mediaStream);
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+          }
+          setError(null);
         }
-        setError(null);
       } catch (err) {
         console.error("Error accessing camera:", err);
-        setError("Could not access the camera. Please ensure you have granted permission in your browser settings.");
+        let message = "Could not access the camera. Please ensure you have granted permission in your browser settings.";
+        if (err instanceof DOMException) {
+            if (err.name === 'NotReadableError') {
+                message = 'The camera is currently in use by another application or a hardware error occurred.';
+            } else if (err.name === 'OverconstrainedError') {
+                message = `The selected camera does not support the requested settings (e.g., resolution).`;
+            }
+        }
+        if (!isCancelled) {
+            setError(message);
+        }
       }
     };
 
     startStream();
 
-    // Cleanup on component unmount or when dependencies change
     return () => {
+      isCancelled = true;
       stopCurrentStream();
     };
   }, [activeDeviceIndex, videoDevices, stopCurrentStream]);

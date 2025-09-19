@@ -1,13 +1,17 @@
-const CACHE_NAME = 'ai-product-gen-cache-v5';
-const APP_SHELL_URL = '/index.html';
+const CACHE_NAME = 'ai-product-gen-cache-v6'; // Incremented version
+const APP_SHELL_URLS = [
+  '/index.html',
+  '/manifest.json',
+  '/index.tsx' // Add main script to pre-cache
+];
 
 // Install event: cache the application shell and manifest, then force activation.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching App Shell and Manifest');
-        return cache.addAll([APP_SHELL_URL, '/manifest.json']);
+        console.log('Service Worker: Caching App Shell and core assets');
+        return cache.addAll(APP_SHELL_URLS);
       })
       .then(() => {
         // Force the waiting service worker to become the active service worker.
@@ -70,7 +74,7 @@ self.addEventListener('fetch', event => {
       fetch(request)
         .catch(() => {
           console.log('Service Worker: Network failed for navigation. Serving cached app shell.');
-          return caches.match(APP_SHELL_URL);
+          return caches.match('/index.html'); // Always fall back to the main app shell
         })
     );
     return;
@@ -88,6 +92,7 @@ self.addEventListener('fetch', event => {
         // If not in cache, fetch from the network.
         return fetch(request.clone()).then(networkResponse => {
           // Check for a valid, cacheable response.
+          // Opaque responses are for cross-origin requests without CORS, caching them is a bit risky but often necessary for CDNs.
           if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then(cache => {

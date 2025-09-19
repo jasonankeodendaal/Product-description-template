@@ -1,29 +1,30 @@
-import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
-import { InputPanel } from './components/InputPanel';
-import { OutputPanel, GenerationResult } from './components/OutputPanel';
-import { TemplateManager } from './components/TemplateManager';
-import { AuthModal } from './components/AuthModal';
-import { CreatorInfo } from './components/CreatorInfo';
 import { Hero } from './components/Hero';
-import { generateProductDescription, transcribeAudio } from './services/geminiService';
-import { DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, DEFAULT_SITE_SETTINGS, SiteSettings } from './constants';
-import { db } from './services/db';
-import { base64ToBlob, dataURLtoBlob, blobToBase64, apiSyncService } from './utils/dataUtils';
-import { fileSystemService } from './services/fileSystemService';
+import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE } from './constants';
+import { GeneratorView } from './components/GeneratorView';
+import { generateProductDescription } from './services/geminiService';
+import { GenerationResult } from './components/OutputPanel';
 import { FullScreenLoader } from './components/FullScreenLoader';
-import { QuestionCircleIcon } from './components/icons/QuestionCircleIcon';
+import { db } from './services/db';
+import { fileSystemService } from './services/fileSystemService';
+import { apiSyncService } from './utils/dataUtils';
+import { AuthModal } from './components/AuthModal';
+import { Dashboard } from './components/Dashboard';
+import { RecordingManager } from './components/RecordingManager';
+import { PhotoManager } from './components/PhotoManager';
+import { Notepad } from './components/Notepad';
+import { ImageTool } from './components/ImageTool';
+import { BottomNavBar } from './components/BottomNavBar';
+import { InfoModal } from './components/InfoModal';
+import { CreatorInfo } from './components/CreatorInfo';
+import { Sidebar } from './components/Sidebar';
 
-// Lazy-load heavy components that are not visible on initial render
-const Dashboard = lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
-const RecordingManager = lazy(() => import('./components/RecordingManager').then(module => ({ default: module.RecordingManager })));
-const ImageTool = lazy(() => import('./components/ImageTool').then(module => ({ default: module.ImageTool })));
-const PhotoManager = lazy(() => import('./components/PhotoManager').then(module => ({ default: module.PhotoManager })));
-const Notepad = lazy(() => import('./components/Notepad').then(module => ({ default: module.Notepad })));
-const InfoModal = lazy(() => import('./components/InfoModal').then(module => ({ default: module.InfoModal })));
-
-// Declare globals for TypeScript since they are loaded from a CDN
+// FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
+
+// --- Type Definitions ---
+export type View = 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool';
 
 export interface Template {
   id: string;
@@ -32,24 +33,23 @@ export interface Template {
 }
 
 export interface ParsedProductData {
-  brand: string;
-  sku: string;
-  name: string;
-  fullText: string;
-  csvText: string;
+    brand: string;
+    sku: string;
+    name: string;
+    fullText: string;
+    csvText: string;
 }
 
 export interface Recording {
   id: string;
   name: string;
   date: string;
+  transcript: string;
   notes: string;
   audioBlob: Blob;
-  duration: number; // in seconds
-  transcript?: string;
-  isTranscribing?: boolean; // Client-side only
-  tags?: string[];
-  images?: { id: string; dataUrl: string; }[];
+  tags: string[];
+  photoIds: string[];
+  isTranscribing?: boolean;
 }
 
 export interface Photo {
@@ -60,682 +60,556 @@ export interface Photo {
     folder: string;
     imageBlob: Blob;
     imageMimeType: string;
-    tags?: string[];
+    tags: string[];
 }
 
 export interface Note {
     id: string;
-    content: string; // Plain text
-    updatedAt: string;
-    color?: string; // e.g., 'yellow', 'pink', 'blue'
+    title: string;
+    content: string;
+    category: string;
+    tags: string[];
+    date: string;
 }
 
-
-// For backup/restore functionality
-// FIX: Updated `recordings` and `photos` to be arrays of objects to resolve TypeScript type mismatch errors.
 export interface BackupData {
-    siteSettings?: SiteSettings;
+    siteSettings: SiteSettings;
     templates: Template[];
-    recordings: (Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string })[];
-    photos: (Omit<Photo, 'imageBlob'> & { imageBase64: string })[];
+    recordings: Recording[];
+    photos: Photo[];
     notes: Note[];
 }
 
-const PermissionPrompt: React.FC<{ handle: FileSystemDirectoryHandle; onGrant: () => void; onDeny: () => void; }> = ({ handle, onGrant, onDeny }) => {
-    const requestPermission = async () => {
-        try {
-            const permission = await (handle as any).requestPermission({ mode: 'readwrite' });
-            if (permission === 'granted') {
-                onGrant();
-            } else {
-                alert("Permission was not granted. To disconnect from the folder, please click 'Use Local'.");
+const App: React.FC = () => {
+    // --- State ---
+    const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
+    const [templates, setTemplates] = useState<Template[]>([]);
+    const [recordings, setRecordings] = useState<Recording[]>([]);
+    const [photos, setPhotos] = useState<Photo[]>([]);
+    const [notes, setNotes] = useState<Note[]>([]);
+    
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('Loading...');
+    const [error, setError] = useState<string | null>(null);
+
+    const [userInput, setUserInput] = useState('');
+    const [generatedOutput, setGeneratedOutput] = useState<GenerationResult | null>(null);
+    const [selectedTemplateId, setSelectedTemplateId] = useState('');
+    const [tone, setTone] = useState('Professional');
+    
+    const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+    const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+    const [isCreatorInfoOpen, setIsCreatorInfoOpen] = useState(false);
+    const [isUnlocked, setIsUnlocked] = useState(false);
+
+    const [isApiConnecting, setIsApiConnecting] = useState(false);
+    const [isApiConnected, setIsApiConnected] = useState(false);
+
+    const [currentView, setCurrentView] = useState<View>('generator');
+
+    // --- Data Loading and Initialization ---
+    useEffect(() => {
+        const initializeApp = async () => {
+            try {
+                const storedSettings = localStorage.getItem('siteSettings');
+                let settings = storedSettings ? JSON.parse(storedSettings) : DEFAULT_SITE_SETTINGS;
+
+                const storedTemplates = localStorage.getItem('templates');
+                let initialTemplates = storedTemplates ? JSON.parse(storedTemplates) : [];
+                 if (initialTemplates.length === 0) {
+                    initialTemplates.push({ id: 'default-product-desc', name: 'Default E-commerce Product Description', prompt: DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE });
+                }
+                setTemplates(initialTemplates);
+                setSelectedTemplateId(initialTemplates[0]?.id || '');
+
+                const handle = await db.getDirectoryHandle();
+                if (handle) {
+                    // FIX: The standard FileSystemDirectoryHandle type may not include 'queryPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
+                    if (await (handle as any).queryPermission({ mode: 'readwrite' }) === 'granted') {
+                        setDirectoryHandle(handle);
+                        settings = { ...settings, syncMode: 'folder' };
+                        await syncFromDirectory(handle);
+                    } else {
+                        await db.clearDirectoryHandle();
+                    }
+                } else if (settings.syncMode === 'api' && settings.customApiEndpoint && settings.customApiAuthKey) {
+                    await handleApiConnect(settings.customApiEndpoint, settings.customApiAuthKey, true);
+                } else {
+                    const [dbRecordings, dbPhotos, dbNotes] = await Promise.all([
+                        db.getAllRecordings(),
+                        db.getAllPhotos(),
+                        db.getAllNotes(),
+                    ]);
+                    setRecordings(dbRecordings);
+                    setPhotos(dbPhotos);
+                    setNotes(dbNotes);
+                }
+                setSiteSettings(settings);
+
+            } catch (err) {
+                console.error("Initialization Error:", err);
+                alert("There was an error initializing the application. Please check the console for details.");
+            } finally {
+                setIsInitialized(true);
             }
+        };
+        initializeApp();
+    }, []);
+
+    // FIX: Handle auth modal logic in an effect to avoid side-effects in render.
+    useEffect(() => {
+        if (isDashboardOpen && !isUnlocked) {
+            setIsAuthModalOpen(true);
+        }
+    }, [isDashboardOpen, isUnlocked]);
+
+
+    // --- Generic Data Handlers (Centralized) ---
+    const handleSaveRecording = useCallback(async (recording: Recording) => {
+        setRecordings(prev => [recording, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        await db.saveRecording(recording);
+        if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, recording);
+    }, [directoryHandle]);
+
+    const handleUpdateRecording = useCallback(async (recording: Recording) => {
+        setRecordings(prev => prev.map(r => r.id === recording.id ? recording : r));
+        await db.saveRecording(recording);
+        if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, recording);
+    }, [directoryHandle]);
+
+    const handleDeleteRecording = useCallback(async (id: string) => {
+        setRecordings(prev => prev.filter(r => r.id !== id));
+        await db.deleteRecording(id);
+        if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
+    }, [directoryHandle]);
+    
+    const handleSavePhoto = useCallback(async (photo: Photo) => {
+        setPhotos(prev => [photo, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        await db.savePhoto(photo);
+        if (directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
+    }, [directoryHandle]);
+
+    const handleUpdatePhoto = useCallback(async (photo: Photo) => {
+        setPhotos(prev => prev.map(p => p.id === photo.id ? photo : p));
+        await db.savePhoto(photo);
+        if (directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
+    }, [directoryHandle]);
+
+    const handleDeletePhoto = useCallback(async (photo: Photo) => {
+        setPhotos(prev => prev.filter(p => p.id !== photo.id));
+        await db.deletePhoto(photo.id);
+        if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
+    }, [directoryHandle]);
+
+    const handleSaveNote = useCallback(async (note: Note) => {
+        setNotes(prev => [note, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        await db.saveNote(note);
+        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
+    }, [directoryHandle]);
+
+    const handleUpdateNote = useCallback(async (note: Note) => {
+        setNotes(prev => prev.map(n => n.id === note.id ? note : n));
+        await db.saveNote(note);
+        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
+    }, [directoryHandle]);
+
+    const handleDeleteNote = useCallback(async (id: string) => {
+        setNotes(prev => prev.filter(n => n.id !== id));
+        await db.deleteNote(id);
+        if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
+    }, [directoryHandle]);
+
+    // --- Other Handlers ---
+    const handleGenerate = async () => {
+      const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
+      if (!selectedTemplate) {
+        setError('Please select a template first.');
+        return;
+      }
+      setIsLoading(true);
+      setError(null);
+      setGeneratedOutput({ text: '', sources: [] });
+      try {
+        await generateProductDescription(
+          userInput,
+          selectedTemplate.prompt,
+          tone,
+          siteSettings.customApiEndpoint,
+          siteSettings.customApiAuthKey,
+          (partialResult) => setGeneratedOutput(partialResult)
+        );
+      } catch (e: any) {
+        setError(e.message || 'An unknown error occurred.');
+        setGeneratedOutput(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    const handleSaveToFolder = useCallback(async (item: ParsedProductData) => {
+        if (!directoryHandle) {
+             alert("Local folder connection is required to use this feature. Please connect a folder in the Dashboard.");
+             throw new Error("Directory not connected");
+        }
+        try {
+            await fileSystemService.saveProductDescription(directoryHandle, item);
+        } catch(e) {
+            console.error("Error saving to folder:", e);
+            alert(`Failed to save to folder: ${e instanceof Error ? e.message : String(e)}`);
+            throw e;
+        }
+    }, [directoryHandle]);
+
+    const handleUpdateSettings = useCallback(async (newSettings: SiteSettings) => {
+        setSiteSettings(newSettings);
+        localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+        if(directoryHandle) {
+            await fileSystemService.saveSettings(directoryHandle, newSettings);
+        }
+    }, [directoryHandle]);
+
+    const handleAddTemplate = useCallback(async (name: string, prompt: string) => {
+        const newTemplate: Template = { id: crypto.randomUUID(), name, prompt };
+        const updatedTemplates = [...templates, newTemplate];
+        setTemplates(updatedTemplates);
+        localStorage.setItem('templates', JSON.stringify(updatedTemplates));
+        if(directoryHandle) await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
+    }, [templates, directoryHandle]);
+
+    const onEditTemplate = useCallback(async (id: string, newName: string) => {
+        const updatedTemplates = templates.map(t => t.id === id ? { ...t, name: newName } : t);
+        setTemplates(updatedTemplates);
+        localStorage.setItem('templates', JSON.stringify(updatedTemplates));
+        if(directoryHandle) await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
+    }, [templates, directoryHandle]);
+
+    const syncFromDirectory = async (handle: FileSystemDirectoryHandle, showSuccess = false) => {
+        setLoadingMessage('Syncing from folder...');
+        setIsLoading(true);
+        try {
+            const [dirSettings, dirTemplates, {recordings: dirRecordings}, dirPhotos, dirNotes] = await Promise.all([
+                fileSystemService.loadSettings(handle),
+                fileSystemService.loadTemplates(handle),
+                fileSystemService.loadRecordingsFromDirectory(handle),
+                fileSystemService.loadPhotosFromDirectory(handle),
+                fileSystemService.loadNotesFromDirectory(handle),
+            ]);
+            
+            if (dirSettings) setSiteSettings(prev => ({...prev, ...dirSettings, syncMode: 'folder' }));
+            if (dirTemplates) setTemplates(dirTemplates);
+            setRecordings(dirRecordings);
+            setPhotos(dirPhotos);
+            setNotes(dirNotes);
+            
+            if (showSuccess) alert('Sync from folder complete!');
+
         } catch (e) {
-            console.error("Error requesting permission:", e);
-            alert("Could not get permission to access the folder.");
+            console.error("Sync error:", e);
+            alert(`Error syncing from directory: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleSyncDirectory = useCallback(async () => {
+        try {
+            const handle = await fileSystemService.getDirectoryHandle();
+            if (await fileSystemService.directoryHasData(handle)) {
+                if (!window.confirm("The selected folder contains data. Do you want to overwrite your current session with the folder's data?")) {
+                    return;
+                }
+                await syncFromDirectory(handle);
+            } else {
+                await Promise.all([
+                    fileSystemService.saveSettings(handle, siteSettings),
+                    fileSystemService.saveTemplates(handle, templates),
+                    fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, notes }),
+                ]);
+                alert("Connected to new folder and saved current data.");
+            }
+            await db.setDirectoryHandle(handle);
+            setDirectoryHandle(handle);
+            setSiteSettings(s => ({ ...s, syncMode: 'folder' }));
+
+        } catch (err) {
+            if (err instanceof DOMException && err.name === 'AbortError') return;
+            alert(`Could not connect to directory: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }, [siteSettings, templates, recordings, photos, notes]);
+
+    const handleDisconnectDirectory = useCallback(async () => {
+        if(window.confirm("Are you sure you want to disconnect? The app will switch back to using local browser storage.")) {
+            await db.clearDirectoryHandle();
+            setDirectoryHandle(null);
+            setSiteSettings(s => ({ ...s, syncMode: 'local' }));
+            const [dbRecordings, dbPhotos, dbNotes] = await Promise.all([
+                db.getAllRecordings(),
+                db.getAllPhotos(),
+                db.getAllNotes(),
+            ]);
+            setRecordings(dbRecordings);
+            setPhotos(dbPhotos);
+            setNotes(dbNotes);
+        }
+    }, []);
+
+    const handleClearLocalData = useCallback(async () => {
+        if (window.confirm("WARNING: This will permanently delete all recordings, photos, and notes from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
+            await db.clearAllData();
+            setRecordings([]);
+            setPhotos([]);
+            setNotes([]);
+            alert("Local data has been cleared.");
+        }
+    }, []);
+
+    const handleApiConnect = useCallback(async (apiUrl: string, apiKey: string, silent = false) => {
+        setIsApiConnecting(true);
+        try {
+            const isConnected = await apiSyncService.connect(apiUrl, apiKey);
+            if(isConnected) {
+                const data = await apiSyncService.fetchAllData(apiUrl, apiKey);
+                const newRecordings = await Promise.all(data.recordings.map(async r => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
+                const newPhotos = await Promise.all(data.photos.map(async p => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
+
+                setSiteSettings({ ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' });
+                setTemplates(data.templates);
+                setRecordings(newRecordings);
+                setPhotos(newPhotos);
+                setNotes(data.notes);
+                setIsApiConnected(true);
+                if (!silent) alert("Successfully connected to API server and synced data.");
+            } else {
+                throw new Error("Connection test failed. Check API URL and server status.");
+            }
+        } catch(e) {
+            console.error("API Connection error:", e);
+            if (!silent) alert(`Failed to connect to API: ${e instanceof Error ? e.message : String(e)}`);
+            setIsApiConnected(false);
+        } finally {
+            setIsApiConnecting(false);
+        }
+    }, []);
+    
+    const handleApiDisconnect = useCallback(() => {
+        if(window.confirm("Disconnect from the API server? The app will revert to local browser storage.")) {
+            setIsApiConnected(false);
+            setSiteSettings(s => ({ ...s, customApiEndpoint: null, customApiAuthKey: null, syncMode: 'local' }));
+        }
+    }, []);
+
+    const onRestore = useCallback(async (file: File) => {
+        if (typeof JSZip === 'undefined') {
+            alert("Error: JSZip library is not loaded. Cannot process backup file.");
+            return;
+        }
+        setIsLoading(true);
+        setLoadingMessage('Restoring backup...');
+        try {
+            const zip = await JSZip.loadAsync(file);
+            const metadataFile = zip.file('metadata.json');
+            if (!metadataFile) throw new Error('Invalid backup: metadata.json not found.');
+            
+            const metadata = JSON.parse(await metadataFile.async('string'));
+            
+            const restoredRecordings: Recording[] = [];
+            const recordingsFolder = zip.folder('assets/recordings');
+            if (recordingsFolder) {
+                for (const fileName in recordingsFolder.files) {
+                    if (fileName.endsWith('.json')) {
+                        const recMetadata = JSON.parse(await recordingsFolder.files[fileName].async('string'));
+                        const audioFile = zip.file(`assets/recordings/${recMetadata.id}.webm`);
+                        if (audioFile) {
+                            const audioBlob = await audioFile.async('blob');
+                            restoredRecordings.push({ ...recMetadata, audioBlob });
+                        }
+                    }
+                }
+            }
+            
+            const restoredPhotos: Photo[] = [];
+            const photosFolder = zip.folder('assets/photos');
+            if (photosFolder) {
+                 const processFolder = async (folder: any, path: string) => {
+                    for (const fileName in folder.files) {
+                        const fullPath = path + fileName;
+                        const fileInFolder = folder.files[fileName];
+                        if (fileInFolder.dir) {
+                           await processFolder(fileInFolder, fullPath);
+                        } else if (fileName.endsWith('.json')) {
+                            const photoMetadata = JSON.parse(await fileInFolder.async('string'));
+                            const ext = photoMetadata.imageMimeType.split('/')[1] || 'png';
+                            const imageFile = zip.file(`assets/photos/${photoMetadata.folder}/${photoMetadata.id}.${ext}`);
+                            if (imageFile) {
+                                const imageBlob = await imageFile.async('blob');
+                                restoredPhotos.push({ ...photoMetadata, imageBlob });
+                            }
+                        }
+                    }
+                };
+                await processFolder(photosFolder, '');
+            }
+
+            if (directoryHandle) await handleDisconnectDirectory();
+
+            await db.clearAllData();
+            await Promise.all([
+                ...restoredRecordings.map(r => db.saveRecording(r)),
+                ...restoredPhotos.map(p => db.savePhoto(p)),
+                ...metadata.notes.map((n: Note) => db.saveNote(n)),
+            ]);
+
+            setSiteSettings(metadata.siteSettings);
+            setTemplates(metadata.templates);
+            setRecordings(restoredRecordings);
+            setPhotos(restoredPhotos);
+            setNotes(metadata.notes);
+
+            alert("Backup restored successfully!");
+
+        } catch (e) {
+            console.error("Restore failed:", e);
+            alert(`Failed to restore backup: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [directoryHandle, handleDisconnectDirectory]);
+
+    if (!isInitialized) {
+        return <FullScreenLoader message="Initializing App..." />;
+    }
+
+    const renderView = () => {
+        switch (currentView) {
+            case 'generator':
+                return (
+                    <>
+                        <Hero heroImageSrc={siteSettings.heroImageSrc} />
+                        <GeneratorView 
+                            userInput={userInput}
+                            onUserInputChange={setUserInput}
+                            generatedOutput={generatedOutput}
+                            isLoading={isLoading}
+                            error={error}
+                            templates={templates}
+                            onAddTemplate={handleAddTemplate}
+                            onEditTemplate={onEditTemplate}
+                            selectedTemplateId={selectedTemplateId}
+                            onTemplateChange={setSelectedTemplateId}
+                            tone={tone}
+                            onToneChange={setTone}
+                            onGenerate={handleGenerate}
+                            onSaveToFolder={handleSaveToFolder}
+                            siteSettings={siteSettings}
+                            photos={photos}
+                            onSavePhoto={handleSavePhoto}
+                            recordings={recordings}
+                            notes={notes}
+                        />
+                    </>
+                );
+             case 'recordings':
+                return <RecordingManager 
+                    recordings={recordings}
+                    onSave={handleSaveRecording}
+                    onUpdate={handleUpdateRecording}
+                    onDelete={handleDeleteRecording}
+                    photos={photos}
+                    onSavePhoto={handleSavePhoto}
+                    siteSettings={siteSettings}
+                 />;
+            case 'photos':
+                return <PhotoManager 
+                    photos={photos}
+                    onSave={handleSavePhoto}
+                    onUpdate={handleUpdatePhoto}
+                    onDelete={handleDeletePhoto}
+                />;
+            case 'notepad':
+                return <Notepad 
+                    notes={notes}
+                    onSave={handleSaveNote}
+                    onUpdate={handleUpdateNote}
+                    onDelete={handleDeleteNote}
+                    siteSettings={siteSettings}
+                />;
+            case 'image-tool':
+                return <ImageTool />;
+            default:
+                return null;
         }
     };
 
     return (
-        <div className="fixed top-0 left-0 right-0 bg-[var(--theme-yellow)] text-[var(--theme-dark-bg)] p-3 text-sm z-[100] flex justify-center items-center shadow-lg text-center animate-fade-in-down">
-            <div className="container mx-auto flex justify-between items-center px-4">
-                <p>
-                    <strong>Action Required:</strong> Reconnect to your local folder <strong className="font-mono bg-black/10 px-1 py-0.5 rounded">{handle.name}</strong> to continue syncing your data.
-                </p>
-                <div className='flex items-center gap-2'>
-                    <button onClick={requestPermission} className="bg-black/20 hover:bg-black/40 font-bold py-1.5 px-4 rounded-md transition-colors">Grant Access</button>
-                    <button onClick={onDeny} className="font-bold py-1.5 px-4 rounded-md hover:bg-black/20 transition-colors">Use Local Instead</button>
-                </div>
+        <div className="bg-[var(--theme-bg)] min-h-screen font-sans text-[var(--theme-text-primary)]">
+            <Sidebar 
+                currentView={currentView}
+                onNavigate={setCurrentView}
+                onOpenDashboard={() => setIsDashboardOpen(true)}
+                onOpenInfo={() => setIsInfoModalOpen(true)}
+                onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+            />
+            <div className="lg:pl-64">
+                <Header siteSettings={siteSettings} isApiConnected={isApiConnected} />
+                <main className="w-full" style={{ height: 'calc(100vh - 76px)' }}>
+                    <div className="h-full">
+                        {renderView()}
+                    </div>
+                </main>
             </div>
+            
+            <BottomNavBar
+                 currentView={currentView} 
+                 onNavigate={setCurrentView} 
+                 onOpenDashboard={() => setIsDashboardOpen(true)}
+                 onOpenInfo={() => setIsInfoModalOpen(true)}
+                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+            />
+
+            {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
+            
+            {isAuthModalOpen && <AuthModal 
+                onClose={() => {
+                    setIsAuthModalOpen(false);
+                    // Also close dashboard if auth is cancelled to prevent re-opening modal
+                    setIsDashboardOpen(false);
+                }}
+                onUnlock={() => {
+                    setIsUnlocked(true);
+                    setIsAuthModalOpen(false);
+                }}
+            />}
+            {isDashboardOpen && isUnlocked && (
+                <Dashboard 
+                    onClose={() => setIsDashboardOpen(false)}
+                    onLock={() => {
+                        setIsUnlocked(false);
+                        setIsDashboardOpen(false);
+                    }}
+                    templates={templates}
+                    recordings={recordings}
+                    photos={photos}
+                    notes={notes}
+                    siteSettings={siteSettings}
+                    onUpdateSettings={handleUpdateSettings}
+                    onRestore={onRestore}
+                    directoryHandle={directoryHandle}
+                    onSyncDirectory={handleSyncDirectory}
+                    onDisconnectDirectory={handleDisconnectDirectory}
+                    onClearLocalData={handleClearLocalData}
+                    onApiConnect={handleApiConnect}
+                    onApiDisconnect={handleApiDisconnect}
+                    isApiConnecting={isApiConnecting}
+                    isApiConnected={isApiConnected}
+                />
+            )}
+            {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
+            {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
         </div>
     );
-};
-
-
-const App: React.FC = () => {
-  const [userInput, setUserInput] = useState<string>('');
-  const [generatedOutput, setGeneratedOutput] = useState<GenerationResult | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [tone, setTone] = useState<string>('Professional');
-
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
-
-  const [isDashboardLocked, setIsDashboardLocked] = useState<boolean>(true);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [isDashboardOpen, setIsDashboardOpen] = useState<boolean>(false);
-
-  // New state for modules
-  const [recordings, setRecordings] = useState<Recording[]>([]);
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [isRecordingManagerOpen, setIsRecordingManagerOpen] = useState<boolean>(false);
-  const [isImageToolOpen, setIsImageToolOpen] = useState<boolean>(false);
-  const [isPhotoManagerOpen, setIsPhotoManagerOpen] = useState<boolean>(false);
-  const [isNotepadOpen, setIsNotepadOpen] = useState<boolean>(false);
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
-  
-  const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const [isPermissionPromptVisible, setIsPermissionPromptVisible] = useState<boolean>(false);
-  
-  // API Sync State
-  const [isApiConnecting, setIsApiConnecting] = useState(false);
-  const [isApiConnected, setIsApiConnected] = useState(false);
-
-
-  // Effect to load data on mount
-  useEffect(() => {
-    const loadDataFromLocalStorage = async () => {
-        try {
-            const savedSettings = localStorage.getItem('siteSettings');
-            if (savedSettings) {
-                const parsedSettings = JSON.parse(savedSettings);
-                setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...parsedSettings });
-                 if (parsedSettings.syncMode === 'api' && parsedSettings.customApiEndpoint && parsedSettings.customApiAuthKey) {
-                    handleApiConnect(parsedSettings.customApiEndpoint, parsedSettings.customApiAuthKey, true);
-                    return; // API connect will handle data loading
-                }
-            }
-
-            const savedTemplates = localStorage.getItem('productGenTemplates');
-            if (savedTemplates) {
-                const parsedTemplates = JSON.parse(savedTemplates) as Template[];
-                setTemplates(parsedTemplates);
-                if (parsedTemplates.length > 0) setSelectedTemplateId(parsedTemplates[0].id);
-            } else {
-                const defaultTemplate: Template = { id: crypto.randomUUID(), name: 'Default E-commerce Template', prompt: DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE };
-                setTemplates([defaultTemplate]);
-                setSelectedTemplateId(defaultTemplate.id);
-                localStorage.setItem('productGenTemplates', JSON.stringify([defaultTemplate]));
-            }
-
-            const savedLockState = localStorage.getItem('dashboardLocked');
-            if (savedLockState) setIsDashboardLocked(JSON.parse(savedLockState));
-
-            setRecordings(await db.getAllRecordings());
-            setPhotos(await db.getAllPhotos());
-            setNotes(await db.getAllNotes());
-
-        } catch (e) {
-            console.error("Failed to load data from localStorage:", e);
-        }
-    }
-
-    const loadInitialData = async () => {
-      const handle = await db.getDirectoryHandle();
-      if (handle) {
-        setDirectoryHandle(handle);
-        const permissionStatus = await (handle as any).queryPermission({ mode: 'readwrite' });
-        
-        if (permissionStatus === 'granted') {
-          console.log("Loading all data from connected directory...");
-          try {
-            const loadedSettings = await fileSystemService.loadSettings(handle);
-             if (loadedSettings) setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...loadedSettings, syncMode: 'folder' });
-
-            setTemplates(await fileSystemService.loadTemplates(handle) || []);
-            setRecordings((await fileSystemService.loadRecordingsFromDirectory(handle)).recordings);
-            setPhotos(await fileSystemService.loadPhotosFromDirectory(handle));
-            setNotes(await fileSystemService.loadNotesFromDirectory(handle));
-          } catch (e) {
-            console.error("Error loading data from granted directory:", e);
-            alert("An error occurred while reading from your synchronized folder. The app will disconnect and load local data.");
-            await db.clearDirectoryHandle();
-            setDirectoryHandle(null);
-            await loadDataFromLocalStorage();
-          }
-        } else {
-          console.warn("Permission to access directory not granted. Prompting user.");
-          setIsPermissionPromptVisible(true);
-          await loadDataFromLocalStorage();
-        }
-      } else {
-        await loadDataFromLocalStorage();
-      }
-    };
-    
-    loadInitialData();
-  }, []);
-
-  const handleGrantPermission = useCallback(async () => {
-      setIsPermissionPromptVisible(false);
-      if (directoryHandle) {
-          console.log("Permission granted, reloading data from directory...");
-          localStorage.clear();
-          await db.clearAllData();
-
-          const loadedSettings = await fileSystemService.loadSettings(directoryHandle);
-          if (loadedSettings) setSiteSettings({ ...DEFAULT_SITE_SETTINGS, ...loadedSettings, syncMode: 'folder' });
-          setTemplates(await fileSystemService.loadTemplates(directoryHandle) || []);
-          setRecordings((await fileSystemService.loadRecordingsFromDirectory(directoryHandle)).recordings);
-          setPhotos(await fileSystemService.loadPhotosFromDirectory(directoryHandle));
-          setNotes(await fileSystemService.loadNotesFromDirectory(directoryHandle));
-          alert(`Successfully reconnected to folder '${directoryHandle.name}'.`);
-      }
-  }, [directoryHandle]);
-
-  const handleDenyPermission = useCallback(async () => {
-      if (window.confirm("This will disconnect you from the synchronized folder and the app will use local browser storage. Are you sure?")) {
-        setIsPermissionPromptVisible(false);
-        await db.clearDirectoryHandle();
-        setDirectoryHandle(null);
-        await handleUpdateSettings({...siteSettings, syncMode: 'local'});
-        alert("Disconnected from folder. The app is now using local storage.");
-      }
-  }, [siteSettings]);
-
-  const syncAllData = useCallback(async () => {
-    if (siteSettings.syncMode !== 'api' || !siteSettings.customApiEndpoint || !siteSettings.customApiAuthKey) return;
-    
-    try {
-        const recordingsForBackup = await Promise.all(recordings.map(async (r) => ({ ...r, audioBase64: await blobToBase64(r.audioBlob), audioMimeType: r.audioBlob.type })));
-        const photosForBackup = await Promise.all(photos.map(async (p) => ({ ...p, imageBase64: await blobToBase64(p.imageBlob) })));
-
-        await apiSyncService.saveData(siteSettings.customApiEndpoint, siteSettings.customApiAuthKey, {
-            siteSettings, templates, notes,
-            recordings: recordingsForBackup.map(({ audioBlob, ...r }) => r),
-            photos: photosForBackup.map(({ imageBlob, ...p }) => p),
-        });
-    } catch (error) {
-        console.error("Auto-sync failed:", error);
-        setIsApiConnected(false); // Visual feedback that sync is broken
-        alert("Failed to sync data with the server. Please check your connection and API settings.");
-    }
-  }, [siteSettings, templates, recordings, photos, notes]);
-
-  const handleUpdateSettings = useCallback(async (newSettings: SiteSettings) => {
-    setSiteSettings(newSettings);
-    if (newSettings.syncMode === 'api') {
-        localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-    } else if (directoryHandle) {
-        await fileSystemService.saveSettings(directoryHandle, newSettings);
-    } else {
-        localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-    }
-  }, [directoryHandle]);
-
-  const handleAddTemplate = useCallback(async (name: string, prompt: string) => {
-    const newTemplate: Template = { id: crypto.randomUUID(), name, prompt };
-    const updatedTemplates = [...templates, newTemplate];
-    setTemplates(updatedTemplates);
-    setSelectedTemplateId(newTemplate.id);
-    if (siteSettings.syncMode === 'folder' && directoryHandle) {
-        await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
-    } else if (siteSettings.syncMode !== 'api') {
-        localStorage.setItem('productGenTemplates', JSON.stringify(updatedTemplates));
-    }
-    if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [templates, directoryHandle, siteSettings, syncAllData]);
-  
-  const handleEditTemplate = useCallback(async (id: string, newName: string) => {
-    const updatedTemplates = templates.map(t => 
-      t.id === id ? { ...t, name: newName } : t
-    );
-    setTemplates(updatedTemplates);
-     if (siteSettings.syncMode === 'folder' && directoryHandle) {
-        await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
-    } else if (siteSettings.syncMode !== 'api') {
-        localStorage.setItem('productGenTemplates', JSON.stringify(updatedTemplates));
-    }
-     if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [templates, directoryHandle, siteSettings, syncAllData]);
-
-  const handleGenerate = useCallback(async () => {
-    if (!userInput.trim()) {
-      setError('Please enter some product information.');
-      return;
-    }
-    const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
-    if (!selectedTemplate) {
-      setError('Please select a valid template.');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    // Initialize with an empty text object to enable the output panel for streaming
-    setGeneratedOutput({ text: '', sources: [] });
-
-    try {
-      // Pass the onUpdate callback to receive streaming updates
-      const result = await generateProductDescription(
-        userInput, 
-        selectedTemplate.prompt, 
-        tone, 
-        siteSettings.customApiEndpoint,
-        siteSettings.customApiAuthKey,
-        (partialResult) => {
-            setGeneratedOutput(partialResult);
-        }
-      );
-      // Set the final result which includes sources
-      setGeneratedOutput(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-      setGeneratedOutput(null); // Clear output on error
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userInput, templates, selectedTemplateId, tone, siteSettings]);
-  
-  const handleSettingsClick = useCallback(() => {
-    if (isDashboardLocked) {
-      setIsAuthModalOpen(true);
-    } else {
-      setIsDashboardOpen(true);
-    }
-  }, [isDashboardLocked]);
-
-  const handleUnlock = useCallback(() => {
-    setIsDashboardLocked(false);
-    localStorage.setItem('dashboardLocked', JSON.stringify(false));
-    setIsAuthModalOpen(false);
-    setIsDashboardOpen(true);
-  }, []);
-  
-  const handleLock = useCallback(() => {
-    setIsDashboardLocked(true);
-    localStorage.setItem('dashboardLocked', JSON.stringify(true));
-    setIsDashboardOpen(false);
-  }, []);
-  
-  const handleRestoreBackup = useCallback(async (backupFile: File) => {
-    if (typeof JSZip === 'undefined') {
-        alert("Restore failed: JSZip library not loaded.");
-        return;
-    }
-
-    try {
-        if (directoryHandle) {
-            if (!window.confirm("Restoring a backup will disconnect the synchronized local folder. Are you sure you want to continue?")) {
-                return;
-            }
-            setDirectoryHandle(null);
-            await db.clearDirectoryHandle();
-        }
-        
-        await db.clearAllData();
-        localStorage.clear();
-
-        const zip = await JSZip.loadAsync(backupFile);
-
-        const metadataFile = zip.file('metadata.json');
-        if (!metadataFile) throw new Error('Backup is missing metadata.json');
-        
-        const metadataContent = await metadataFile.async('string');
-        const metadata = JSON.parse(metadataContent);
-
-        if (metadata.siteSettings) {
-            const newSettings = { ...DEFAULT_SITE_SETTINGS, ...metadata.siteSettings, syncMode: 'local' as const };
-            setSiteSettings(newSettings);
-            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-        }
-
-        const newTemplates = (metadata.templates || []) as Template[];
-        setTemplates(newTemplates);
-        localStorage.setItem('productGenTemplates', JSON.stringify(newTemplates));
-        if (newTemplates.length > 0) setSelectedTemplateId(newTemplates[0].id);
-        
-        const restoredNotes: Note[] = metadata.notes || [];
-        for (const note of restoredNotes) {
-            await db.saveNote(note);
-        }
-        setNotes(restoredNotes);
-
-        const recordingsFolder = zip.folder('assets/recordings');
-        const restoredRecordings: Recording[] = [];
-        if (recordingsFolder) {
-            const jsonFiles: any[] = [];
-            recordingsFolder.forEach((relativePath, file) => {
-                if (relativePath.endsWith('.json')) jsonFiles.push(file);
-            });
-            for (const jsonFile of jsonFiles) {
-                const recMetadata = JSON.parse(await jsonFile.async('string'));
-                const audioFile = recordingsFolder.file(`${recMetadata.id}.webm`);
-                if (audioFile) {
-                    const audioBlob = await audioFile.async('blob');
-                    restoredRecordings.push({ ...recMetadata, audioBlob });
-                }
-            }
-        }
-        for (const rec of restoredRecordings) await db.saveRecording(rec);
-        setRecordings(restoredRecordings);
-
-        const photosFolder = zip.folder('assets/photos');
-        const restoredPhotos: Photo[] = [];
-        if (photosFolder) {
-            const photoJsonFiles: { path: string; file: any }[] = [];
-            photosFolder.forEach((relativePath, file) => {
-                if (!file.dir && relativePath.endsWith('.json')) photoJsonFiles.push({ path: relativePath, file });
-            });
-            for (const { path, file } of photoJsonFiles) {
-                const photoMetadata = JSON.parse(await file.async('string'));
-                const ext = photoMetadata.imageMimeType.split('/')[1] || 'png';
-                const imagePath = path.replace('.json', `.${ext}`);
-                const imageFile = photosFolder.file(imagePath);
-                if (imageFile) {
-                    const imageBlob = await imageFile.async('blob');
-                    restoredPhotos.push({ ...photoMetadata, imageBlob });
-                }
-            }
-        }
-        for (const photo of restoredPhotos) await db.savePhoto(photo);
-        setPhotos(restoredPhotos);
-
-        alert('Backup restored successfully! The app will now use the restored local data.');
-        setIsDashboardOpen(false);
-
-    } catch (err) {
-        console.error("Failed to restore backup:", err);
-        alert(`Error restoring backup: ${err instanceof Error ? err.message : String(err)}`);
-        window.location.reload();
-    }
-  }, [directoryHandle]);
-  
-   const handleClearLocalData = useCallback(async () => {
-    if (window.confirm("Are you sure you want to delete ALL locally stored data? This action cannot be undone.")) {
-        localStorage.clear();
-        await db.clearAllData();
-        if (directoryHandle) {
-             setDirectoryHandle(null);
-             await db.clearDirectoryHandle();
-        }
-        alert("Local data cleared. The application will now reload.");
-        window.location.reload();
-    }
-  }, [directoryHandle]);
-
-  const handleSaveToFolder = useCallback(async (item: ParsedProductData) => {
-    if (!directoryHandle) {
-        alert("Please connect to a local folder first via the Dashboard > Data Management settings.");
-        throw new Error("Directory not connected.");
-    }
-    try {
-        await fileSystemService.saveProductDescription(directoryHandle, item);
-    } catch (error) {
-        console.error("Failed to save product description to folder:", error);
-        alert(`Could not save to folder: ${error instanceof Error ? error.message : "Unknown error"}`);
-        throw error; // re-throw to let the caller know it failed
-    }
-  }, [directoryHandle]);
-
-  // Sync and Data Handlers
-  const handleSyncDirectory = useCallback(async () => {
-    try {
-        const handle = await fileSystemService.getDirectoryHandle();
-        const folderDataExists = await fileSystemService.directoryHasData(handle);
-
-        if (folderDataExists) {
-             if (window.confirm("This folder contains existing data. Do you want to load it, overwriting your current app data?")) {
-                localStorage.clear();
-                await db.clearAllData();
-             }
-        } else {
-            if (window.confirm("This folder appears to be empty. Would you like to save your current app data to this folder?")) {
-                await fileSystemService.saveSettings(handle, siteSettings);
-                await fileSystemService.saveTemplates(handle, templates);
-                await fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, notes });
-            }
-        }
-        
-        localStorage.clear();
-        await db.clearAllData();
-        setDirectoryHandle(handle);
-        await db.setDirectoryHandle(handle);
-        await handleUpdateSettings({ ...siteSettings, syncMode: 'folder' });
-        alert(`Successfully connected to folder '${handle.name}'. The app will now reload to sync.`);
-        window.location.reload();
-
-    } catch (error) {
-      console.error("Failed to connect to directory:", error);
-      alert(`Could not connect to directory: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }, [templates, siteSettings, recordings, photos, notes, handleUpdateSettings]);
-  
-  const handleDisconnectDirectory = useCallback(async () => {
-    if (window.confirm("Are you sure you want to disconnect? The app will switch to using local browser storage.")) {
-        setDirectoryHandle(null);
-        await db.clearDirectoryHandle();
-        await handleUpdateSettings({ ...siteSettings, syncMode: 'local' });
-        alert("Disconnected from folder. The application will now reload and use local storage.");
-        window.location.reload();
-    }
-  }, [siteSettings, handleUpdateSettings]);
-  
-  const handleUpdateRecording = useCallback(async (updated: Recording) => {
-    setRecordings(prev => prev.map(r => r.id === updated.id ? updated : r));
-    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, updated);
-    else if (siteSettings.syncMode !== 'api') await db.saveRecording(updated);
-    if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [directoryHandle, siteSettings, syncAllData]);
-
-  const handleTranscribe = useCallback(async (id: string) => {
-    const rec = recordings.find(r => r.id === id);
-    if (!rec || rec.transcript) return;
-
-    setRecordings(prev => prev.map(r => r.id === id ? { ...r, isTranscribing: true } : r));
-    try {
-        const transcript = await transcribeAudio(rec.audioBlob, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey);
-        await handleUpdateRecording({ ...rec, transcript, isTranscribing: false });
-    } catch (error) {
-        console.error('Transcription failed:', error);
-        alert(`Transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        setRecordings(prev => prev.map(r => r.id === id ? { ...r, isTranscribing: false } : r));
-    }
-  }, [recordings, siteSettings, handleUpdateRecording]);
-
-  const handleSaveRecording = useCallback(async (rec: Recording) => {
-    setRecordings(prev => [...prev, rec].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, rec);
-    else if (siteSettings.syncMode !== 'api') await db.saveRecording(rec);
-    if (siteSettings.syncMode === 'api') await syncAllData();
-    handleTranscribe(rec.id);
-  }, [directoryHandle, siteSettings, handleTranscribe, syncAllData]);
-  
-  const handleDeleteRecording = useCallback(async (id: string) => {
-    setRecordings(prev => prev.filter(r => r.id !== id));
-    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
-    else if (siteSettings.syncMode !== 'api') await db.deleteRecording(id);
-    if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [directoryHandle, siteSettings, syncAllData]);
-
-  const handleSavePhoto = useCallback(async (photo: Photo) => {
-    setPhotos(prev => {
-        const existing = prev.find(p => p.id === photo.id);
-        if (existing) return prev.map(p => p.id === photo.id ? photo : p);
-        return [photo, ...prev].sort((a,b) => b.date.localeCompare(a.date));
-    });
-    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
-    else if (siteSettings.syncMode !== 'api') await db.savePhoto(photo);
-    if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [directoryHandle, siteSettings, syncAllData]);
-
-  const handleDeletePhoto = useCallback(async (photo: Photo) => {
-    setPhotos(prev => prev.filter(p => p.id !== photo.id));
-    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
-    else if (siteSettings.syncMode !== 'api') await db.deletePhoto(photo.id);
-    if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [directoryHandle, siteSettings, syncAllData]);
-
-  const handleSaveNote = useCallback(async (note: Note) => {
-    setNotes(prev => {
-        const existing = prev.find(n => n.id === note.id);
-        if(existing) return prev.map(n => n.id === note.id ? note : n);
-        return [note, ...prev].sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
-    });
-    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
-    else if (siteSettings.syncMode !== 'api') await db.saveNote(note);
-    if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [directoryHandle, siteSettings, syncAllData]);
-
-  const handleDeleteNote = useCallback(async (id: string) => {
-    setNotes(prev => prev.filter(n => n.id !== id));
-    if (siteSettings.syncMode === 'folder' && directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
-    else if (siteSettings.syncMode !== 'api') await db.deleteNote(id);
-    if (siteSettings.syncMode === 'api') await syncAllData();
-  }, [directoryHandle, siteSettings, syncAllData]);
-
-  const handleApiConnect = useCallback(async (apiUrl: string, apiKey: string, silent = false) => {
-    setIsApiConnecting(true);
-    setIsApiConnected(false);
-    try {
-        const isConnected = await apiSyncService.connect(apiUrl, apiKey);
-        if (!isConnected) throw new Error("Connection test failed.");
-
-        if (!silent) {
-            if (!window.confirm("Connection successful. Overwrite local data with data from the server?")) {
-                setIsApiConnecting(false);
-                return;
-            }
-        }
-        
-        const serverData = await apiSyncService.fetchAllData(apiUrl, apiKey);
-        
-        // Overwrite local state with server data
-        const newSettings = { ...DEFAULT_SITE_SETTINGS, ...serverData.siteSettings, syncMode: 'api' as const, customApiEndpoint: apiUrl, customApiAuthKey: apiKey };
-        setSiteSettings(newSettings);
-        localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-
-        setTemplates(serverData.templates || []);
-        setNotes(serverData.notes || []);
-
-        const restoredRecordings = await Promise.all((serverData.recordings || []).map(async rec => ({ ...rec, audioBlob: base64ToBlob(rec.audioBase64, rec.audioMimeType) })));
-        setRecordings(restoredRecordings);
-
-        const restoredPhotos = await Promise.all((serverData.photos || []).map(async photo => ({ ...photo, imageBlob: base64ToBlob(photo.imageBase64, photo.imageMimeType) })));
-        setPhotos(restoredPhotos);
-
-        setIsApiConnected(true);
-        if (!silent) alert("Successfully connected and synced with API server.");
-    } catch (error) {
-        console.error("API Connection Error:", error);
-        setIsApiConnected(false);
-        if (!silent) alert(`Failed to connect to API: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Revert to local mode if connection fails
-        await handleUpdateSettings({ ...siteSettings, syncMode: 'local' });
-    } finally {
-        setIsApiConnecting(false);
-    }
-  }, [handleUpdateSettings]);
-
-  const handleApiDisconnect = useCallback(async () => {
-    if (window.confirm("Disconnect from the API server? The app will revert to using local browser storage.")) {
-        await handleUpdateSettings({ ...siteSettings, syncMode: 'local', customApiEndpoint: '', customApiAuthKey: '' });
-        setIsApiConnected(false);
-        alert("Disconnected. The app will now reload.");
-        window.location.reload();
-    }
-  }, [siteSettings, handleUpdateSettings]);
-
-  return (
-    <div className="min-h-screen font-sans flex flex-col">
-      {isPermissionPromptVisible && directoryHandle && (
-        <PermissionPrompt handle={directoryHandle} onGrant={handleGrantPermission} onDeny={handleDenyPermission} />
-      )}
-      <Header 
-        onSettingsClick={handleSettingsClick}
-        onRecordingsClick={() => setIsRecordingManagerOpen(true)}
-        onImageToolClick={() => setIsImageToolOpen(true)}
-        onPhotoManagerClick={() => setIsPhotoManagerOpen(true)}
-        onNotepadClick={() => setIsNotepadOpen(true)}
-        siteSettings={siteSettings}
-        isApiConnected={isApiConnected}
-      />
-      <main className="container mx-auto px-4 py-8 flex-grow flex flex-col">
-        <Hero heroImageSrc={siteSettings.heroImageSrc} />
-        <TemplateManager templates={templates} onAddTemplate={handleAddTemplate} onEditTemplate={handleEditTemplate} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow">
-          <InputPanel
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onGenerate={handleGenerate}
-            isLoading={isLoading}
-            templates={templates}
-            selectedTemplateId={selectedTemplateId}
-            onTemplateChange={(e) => setSelectedTemplateId(e.target.value)}
-            tone={tone}
-            onToneChange={(e) => setTone(e.target.value)}
-          />
-          <OutputPanel 
-            output={generatedOutput} 
-            isLoading={isLoading} 
-            error={error} 
-            onSaveToFolder={handleSaveToFolder} 
-            syncMode={siteSettings.syncMode}
-            photos={photos}
-            onSavePhoto={handleSavePhoto}
-          />
-        </div>
-      </main>
-      {isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} onUnlock={handleUnlock} />}
-      <Suspense fallback={<FullScreenLoader message="Loading Module..."/>}>
-        {isDashboardOpen && (
-          <Dashboard
-            onClose={() => setIsDashboardOpen(false)}
-            onLock={handleLock}
-            templates={templates}
-            recordings={recordings}
-            photos={photos}
-            notes={notes}
-            siteSettings={siteSettings}
-            onUpdateSettings={handleUpdateSettings}
-            onRestore={handleRestoreBackup}
-            directoryHandle={directoryHandle}
-            onSyncDirectory={handleSyncDirectory}
-            onDisconnectDirectory={handleDisconnectDirectory}
-            onClearLocalData={handleClearLocalData}
-            onApiConnect={handleApiConnect}
-            onApiDisconnect={handleApiDisconnect}
-            isApiConnecting={isApiConnecting}
-            isApiConnected={isApiConnected}
-          />
-        )}
-        {isRecordingManagerOpen && (
-          <RecordingManager onClose={() => setIsRecordingManagerOpen(false)} recordings={recordings} onSave={handleSaveRecording} onUpdate={handleUpdateRecording} onDelete={handleDeleteRecording} onTranscribe={handleTranscribe} />
-        )}
-        {isImageToolOpen && <ImageTool onClose={() => setIsImageToolOpen(false)} onSavePhoto={handleSavePhoto} syncMode={siteSettings.syncMode} />}
-        {isPhotoManagerOpen && <PhotoManager onClose={() => setIsPhotoManagerOpen(false)} photos={photos} onSave={handleSavePhoto} onDelete={handleDeletePhoto} />}
-        {isNotepadOpen && <Notepad onClose={() => setIsNotepadOpen(false)} notes={notes} onSave={handleSaveNote} onDelete={handleDeleteNote} />}
-        {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
-      </Suspense>
-      <CreatorInfo settings={siteSettings} />
-      <footer className="relative text-center py-4 text-[var(--theme-text-secondary)] text-sm border-t border-[var(--theme-border)]/50">
-        <p>Powered by Google Gemini API</p>
-        <p className="mt-1">© 2025 JSTYP.me — All Rights Reserved.</p>
-        <div className="absolute bottom-4 right-4 z-10 flex flex-col-reverse items-end gap-3">
-            <button
-                onClick={() => setIsInfoModalOpen(true)}
-                className="bg-[var(--theme-blue)] hover:opacity-90 text-white rounded-full p-3 shadow-lg transition-transform transform hover:scale-110 flex items-center justify-center"
-                aria-label="About and Setup Guide"
-            >
-                <QuestionCircleIcon />
-            </button>
-        </div>
-      </footer>
-    </div>
-  );
 };
 
 export default App;

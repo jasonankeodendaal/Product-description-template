@@ -118,3 +118,28 @@ export async function transcribeAudio(
     throw error;
   }
 }
+
+export async function describeImage(
+    imageBlob: Blob,
+    prompt: string,
+    customApiUrl?: string | null,
+    customApiAuthKey?: string | null
+): Promise<string> {
+    const base64Image = await blobToBase64(imageBlob);
+    try {
+        const baseUrl = customApiUrl || '';
+        const response = await fetch(`${baseUrl}/api/image-query`, {
+            method: 'POST',
+            headers: getHeaders(customApiAuthKey),
+            body: JSON.stringify({ base64Image, mimeType: imageBlob.type, prompt }),
+        });
+        const data = await handleFetchErrors(response);
+        if (!data.text) {
+            throw new Error("Received an empty description from the backend.");
+        }
+        return data.text;
+    } catch (error) {
+        console.error("Error calling /api/image-query:", error);
+        throw error;
+    }
+}

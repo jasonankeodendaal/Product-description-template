@@ -1,0 +1,90 @@
+import React from 'react';
+import { GenerationResult, OutputPanel } from './OutputPanel';
+import { TemplateManager } from './TemplateManager';
+// FIX: SiteSettings is exported from constants.ts, not App.tsx.
+import { Template, ParsedProductData, Photo, Recording, Note } from '../App';
+import { SiteSettings } from '../constants';
+import { ComposerPanel } from './ComposerPanel';
+
+interface GeneratorViewProps {
+    userInput: string;
+    onUserInputChange: (value: string) => void;
+    generatedOutput: GenerationResult | null;
+    isLoading: boolean;
+    error: string | null;
+    templates: Template[];
+    onAddTemplate: (name: string, prompt: string) => void;
+    onEditTemplate: (id: string, newName: string) => void;
+    selectedTemplateId: string;
+    onTemplateChange: (id: string) => void;
+    tone: string;
+    onToneChange: (tone: string) => void;
+    onGenerate: () => void;
+    onSaveToFolder: (item: ParsedProductData) => Promise<void>;
+    siteSettings: SiteSettings;
+    photos: Photo[];
+    onSavePhoto: (photo: Photo) => Promise<void>;
+    recordings: Recording[];
+    notes: Note[];
+}
+
+export const GeneratorView: React.FC<GeneratorViewProps> = ({
+    userInput,
+    onUserInputChange,
+    generatedOutput,
+    isLoading,
+    error,
+    templates,
+    onAddTemplate,
+    onEditTemplate,
+    selectedTemplateId,
+    onTemplateChange,
+    tone,
+    onToneChange,
+    onGenerate,
+    onSaveToFolder,
+    siteSettings,
+    photos,
+    onSavePhoto,
+    recordings,
+    notes,
+}) => {
+    return (
+        <div className="h-full overflow-y-auto no-scrollbar pb-24 lg:pb-0">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                 <TemplateManager 
+                    templates={templates} 
+                    onAddTemplate={onAddTemplate} 
+                    onEditTemplate={onEditTemplate} 
+                />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-grow">
+                    <ComposerPanel
+                        value={userInput}
+                        onChange={(e) => onUserInputChange(e.target.value)}
+                        onGenerate={onGenerate}
+                        isLoading={isLoading}
+                        templates={templates}
+                        selectedTemplateId={selectedTemplateId}
+                        onTemplateChange={(e) => onTemplateChange(e.target.value)}
+                        tone={tone}
+                        onToneChange={(e) => onToneChange(e.target.value)}
+                        recordings={recordings}
+                        notes={notes}
+                        photos={photos}
+                        siteSettings={siteSettings}
+                        onAddToInput={(text) => onUserInputChange(userInput + '\n' + text)}
+                    />
+                    <OutputPanel 
+                        output={generatedOutput} 
+                        isLoading={isLoading} 
+                        error={error} 
+                        onSaveToFolder={onSaveToFolder} 
+                        syncMode={siteSettings.syncMode}
+                        photos={photos}
+                        onSavePhoto={onSavePhoto}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};

@@ -53,7 +53,7 @@ const InputField: React.FC<{ label: string; id: string; value: string; onChange:
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-yellow)] transition-shadow duration-200 h-[42px]"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-green)] transition-shadow duration-200 h-[42px]"
         />
     </div>
 );
@@ -162,7 +162,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                          <div className="flex items-start gap-4">
                             <HardDriveIcon />
                             <div>
-                                <p className="font-semibold text-[var(--theme-blue)] flex items-center gap-2">
+                                <p className="font-semibold text-[var(--theme-green)] flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 bg-current rounded-full"></span>
                                     Local Browser Mode
                                 </p>
@@ -209,7 +209,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                     <div className="p-4 bg-[var(--theme-bg)]/50 rounded-md border border-[var(--theme-border)]/30">
                         <h4 className="font-semibold text-[var(--theme-text-primary)]">Step 2: Connect to Sync Server (Optional)</h4>
                         <p className="text-sm text-[var(--theme-text-secondary)]/80 mt-1 mb-3">
-                            For multi-device or team sync, enter your custom API server URL below. If you are just using the app on Vercel, <strong className="text-[var(--theme-yellow)]">leave this field blank.</strong>
+                            For multi-device or team sync, enter your custom API server URL below. If you are just using the app on Vercel, <strong className="text-[var(--theme-green)]">leave this field blank.</strong>
                         </p>
                         <div className="flex items-end gap-4">
                             <div className="flex-grow">
@@ -224,7 +224,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                             <button 
                                 onClick={handleConnectClick} 
                                 disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
-                                className="bg-[var(--theme-green)] hover:opacity-90 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0"
+                                className="bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0"
                             >
                                {isApiConnecting ? 'Connecting...' : 'Connect & Sync'}
                             </button>
@@ -237,7 +237,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                     <div className="flex justify-end pt-2">
                          <button 
                             onClick={handleApiSettingsSave} 
-                            className="bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-6 rounded-md text-sm"
+                            className="bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-6 rounded-md text-sm"
                         >
                             Save All Settings
                         </button>
@@ -255,8 +255,8 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                         </button>
                     </div>
                     <div className="pt-5 border-t border-[var(--theme-border)]/50 md:pt-0 md:border-t-0 md:pl-6 md:border-l md:border-[var(--theme-border)]/50">
-                        <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Restore data from a backup file. This will <span className="font-semibold text-[var(--theme-yellow)]">overwrite all</span> existing data.</p>
-                         <label htmlFor="restore-upload" className="cursor-pointer bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
+                        <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Restore data from a backup file. This will <span className="font-semibold text-[var(--theme-red)]">overwrite all</span> existing data.</p>
+                         <label htmlFor="restore-upload" className="cursor-pointer bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
                             <RestoreIcon /> Choose Backup File (.zip)...
                         </label>
                         <input id="restore-upload" type="file" className="sr-only" onChange={handleRestoreFileSelect} accept=".zip" />

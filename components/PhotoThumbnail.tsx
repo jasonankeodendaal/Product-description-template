@@ -26,7 +26,7 @@ export const PhotoThumbnail: React.FC<PhotoThumbnailProps> = React.memo(({ photo
     return (
         <button 
             onClick={() => onSelect(photo)} 
-            className="aspect-square bg-black/20 rounded-md overflow-hidden group relative focus:outline-none focus:ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ring-[var(--theme-blue)]"
+            className="aspect-square bg-black/20 rounded-md overflow-hidden group relative focus:outline-none focus:ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ring-[var(--theme-green)]"
         >
             <img src={imageUrl} alt={photo.name} className="w-full h-full object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">

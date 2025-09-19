@@ -10,12 +10,12 @@ export const LibraryIcon: React.FC = () => (
         </style>
         <defs>
             <linearGradient id="folder-grad-1" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#5B86B3"/>
-                <stop offset="100%" stopColor="#3A6187"/>
+                <stop offset="0%" stopColor="#34D399"/>
+                <stop offset="100%" stopColor="#10B981"/>
             </linearGradient>
             <linearGradient id="folder-grad-2" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#4A79A7"/>
-                <stop offset="100%" stopColor="#2F5070"/>
+                <stop offset="0%" stopColor="#10B981"/>
+                <stop offset="100%" stopColor="#059669"/>
             </linearGradient>
             <filter id="folder-shadow" x="-20%" y="-20%" width="140%" height="140%">
                 <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.2"/>

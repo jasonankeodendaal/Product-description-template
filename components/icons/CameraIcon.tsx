@@ -19,8 +19,8 @@ export const CameraIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
                 <feDropShadow dx="0.5" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.3"/>
             </filter>
             <radialGradient id="lens-gradient" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
-                <stop offset="0%" stopColor="#80D0FF" stopOpacity="0.9"/>
-                <stop offset="60%" stopColor="#3A6187" stopOpacity="0.8"/>
+                <stop offset="0%" stopColor="#6EE7B7" stopOpacity="0.9"/>
+                <stop offset="60%" stopColor="#10B981" stopOpacity="0.8"/>
                 <stop offset="100%" stopColor="#2B2826" stopOpacity="0.9"/>
             </radialGradient>
             <linearGradient id="body-gradient" x1="0%" y1="0%" x2="0%" y2="100%">

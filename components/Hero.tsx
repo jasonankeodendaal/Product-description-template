@@ -10,7 +10,7 @@ const HeroIllustration: React.FC = () => (
         height="100%" 
         viewBox="0 0 400 150" 
         preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 w-full h-full text-[var(--theme-yellow)] opacity-10"
+        className="absolute inset-0 w-full h-full text-[var(--theme-green)] opacity-10"
     >
         <defs>
             <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">

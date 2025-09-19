@@ -1,4 +1,5 @@
-export const resizeImage = (file: File, maxSize: number = 1024): Promise<string> => {
+// FIX: Changed parameter type from File to Blob, as the function only uses properties available on Blob.
+export const resizeImage = (file: Blob, maxSize: number = 1024): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) {
         return reject(new Error('File is not an image.'));

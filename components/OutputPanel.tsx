@@ -232,7 +232,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
             case 'saving':
                 return (
                     <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -264,8 +264,8 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                     onClick={handleSave}
                     disabled={!isFolderMode || saveState !== 'idle'}
                     title={!isFolderMode ? "Connect a local folder to enable saving" : ""}
-                    style={{ backgroundColor: 'var(--theme-blue)'}}
-                    className="flex items-center gap-2 hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:text-[var(--theme-text-secondary)]/50 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm min-w-[140px] justify-center"
+                    style={{ backgroundColor: 'var(--theme-green)'}}
+                    className="flex items-center gap-2 hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:text-[var(--theme-text-secondary)]/50 disabled:cursor-not-allowed text-black font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm min-w-[140px] justify-center"
                     aria-label="Add to Folder"
                 >
                     {getSaveButtonContent()}
@@ -291,7 +291,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
 
       {structuredData && (
         <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
-            <h3 className="text-lg font-semibold text-[var(--theme-yellow)] mb-3">Linked Images</h3>
+            <h3 className="text-lg font-semibold text-[var(--theme-green)] mb-3">Linked Images</h3>
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
                 {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} />)}
                 <input
@@ -314,9 +314,9 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     ) : (
-                        <>
+                       <>
                             <UploadIcon />
-                            <span className="text-xs mt-1 text-center">Add Photos</span>
+                            <span className="text-xs mt-1">Add</span>
                         </>
                     )}
                 </button>
