@@ -1,5 +1,4 @@
 
-
 export interface CreatorDetails {
   name:string;
   slogan: string;
@@ -27,8 +26,8 @@ export interface SiteSettings {
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'Ai tools',
   slogan: 'Ai your friend!',
-  logoSrc: 'https://iili.io/KzJYHF9.png',
-  heroImageSrc: 'https://iili.io/Kxi4CTg.webp',
+  logoSrc: 'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png',
+  heroImageSrc: 'https://i.ibb.co/mNkS54j/ai-tools-hero-v2.webp',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
   website: '',

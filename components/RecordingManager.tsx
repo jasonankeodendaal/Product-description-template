@@ -14,6 +14,7 @@ import { resizeImage } from '../utils/imageUtils';
 import { CameraCapture } from './CameraCapture';
 import { WaveformPlayer } from './WaveformPlayer';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { SearchIcon } from './icons/SearchIcon';
 
 
 interface RecordingManagerProps {
@@ -201,15 +202,31 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
         <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
           {/* Recordings List */}
           <div className="w-full md:w-1/3 border-b md:border-r md:border-b-0 border-[var(--theme-border)] flex flex-col h-1/3 md:h-full flex-shrink-0">
-            <div className="p-4 border-b border-[var(--theme-border)] flex-shrink-0 space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold">Recordings ({recordings.length})</h3>
-                <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'date' | 'name')} className="bg-[var(--theme-text-primary)] text-sm rounded p-1 border border-[var(--theme-border)] text-[var(--theme-dark-bg)]">
-                  <option value="date">Sort by Date</option>
-                  <option value="name">Sort by Name</option>
+            <div className="p-3 border-b border-[var(--theme-border)] flex-shrink-0 space-y-2">
+              <h3 className="font-semibold text-sm text-[var(--theme-text-secondary)] px-1">Recordings ({recordings.length})</h3>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-grow">
+                  <input 
+                    type="search" 
+                    placeholder="Search..." 
+                    value={searchQuery} 
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                    className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-full py-2 pl-10 pr-4 text-sm text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"
+                  />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <SearchIcon />
+                  </div>
+                </div>
+                <select 
+                  value={sortOrder} 
+                  onChange={e => setSortOrder(e.target.value as 'date' | 'name')} 
+                  className="bg-[var(--theme-text-primary)] text-sm rounded-full py-2 px-3 border border-[var(--theme-border)] text-[var(--theme-dark-bg)] focus:ring-1 focus:ring-[var(--theme-yellow)]"
+                  aria-label="Sort order"
+                >
+                  <option value="date">Sort: Newest</option>
+                  <option value="name">Sort: A-Z</option>
                 </select>
               </div>
-               <input type="search" placeholder="Search recordings..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md py-2 px-3 text-sm text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-1 focus:ring-[var(--theme-yellow)]"/>
             </div>
             <ul className="overflow-y-auto flex-grow p-2">
               {filteredAndSortedRecordings.map(rec => (

@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.1.1",
+    "@google/genai": "^1.20.0",
     "react-dom": "^19.1.1",
-    "@google/genai": "^1.17.0",
-    "@vercel/node": "^5.3.21"
+    "react": "^19.1.1",
+    "@vercel/node": "^5.3.22"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
