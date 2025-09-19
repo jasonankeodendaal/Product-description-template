@@ -22,6 +22,8 @@ const PhotoManager = lazy(() => import('./components/PhotoManager').then(module 
 const Notepad = lazy(() => import('./components/Notepad').then(module => ({ default: module.Notepad })));
 const InfoModal = lazy(() => import('./components/InfoModal').then(module => ({ default: module.InfoModal })));
 
+// Declare globals for TypeScript since they are loaded from a CDN
+declare var JSZip: any;
 
 export interface Template {
   id: string;
@@ -359,7 +361,12 @@ const App: React.FC = () => {
     setIsDashboardOpen(false);
   }, []);
   
-  const handleRestoreBackup = useCallback(async (data: any) => {
+  const handleRestoreBackup = useCallback(async (backupFile: File) => {
+    if (typeof JSZip === 'undefined') {
+        alert("Restore failed: JSZip library not loaded.");
+        return;
+    }
+
     try {
         if (directoryHandle) {
             if (!window.confirm("Restoring a backup will disconnect the synchronized local folder. Are you sure you want to continue?")) {
@@ -372,49 +379,78 @@ const App: React.FC = () => {
         await db.clearAllData();
         localStorage.clear();
 
-        if (data.siteSettings) {
-            const newSettings = { ...DEFAULT_SITE_SETTINGS, ...data.siteSettings, syncMode: 'local' };
+        const zip = await JSZip.loadAsync(backupFile);
+
+        const metadataFile = zip.file('metadata.json');
+        if (!metadataFile) throw new Error('Backup is missing metadata.json');
+        
+        const metadataContent = await metadataFile.async('string');
+        const metadata = JSON.parse(metadataContent);
+
+        if (metadata.siteSettings) {
+            const newSettings = { ...DEFAULT_SITE_SETTINGS, ...metadata.siteSettings, syncMode: 'local' as const };
             setSiteSettings(newSettings);
             localStorage.setItem('siteSettings', JSON.stringify(newSettings));
         }
 
-        const newTemplates = data.templates as Template[];
+        const newTemplates = (metadata.templates || []) as Template[];
         setTemplates(newTemplates);
         localStorage.setItem('productGenTemplates', JSON.stringify(newTemplates));
         if (newTemplates.length > 0) setSelectedTemplateId(newTemplates[0].id);
-
-        const restoredRecordings: Recording[] = [];
-        for (const rec of (data.recordings || [])) {
-            const audioBlob = base64ToBlob(rec.audioBase64, rec.audioMimeType);
-            const newRecording: Recording = { ...rec, audioBlob };
-            delete (newRecording as any).audioBase64;
-            delete (newRecording as any).audioMimeType;
-            await db.saveRecording(newRecording);
-            restoredRecordings.push(newRecording);
-        }
-        setRecordings(restoredRecordings);
-
-        const restoredPhotos: Photo[] = [];
-        for (const photo of (data.photos || [])) {
-            const imageBlob = base64ToBlob(photo.imageBase64, photo.imageMimeType);
-            const newPhoto: Photo = { ...photo, imageBlob };
-            delete (newPhoto as any).imageBase64;
-            await db.savePhoto(newPhoto);
-            restoredPhotos.push(newPhoto);
-        }
-        setPhotos(restoredPhotos);
-
-        const restoredNotes: Note[] = data.notes || [];
+        
+        const restoredNotes: Note[] = metadata.notes || [];
         for (const note of restoredNotes) {
             await db.saveNote(note);
         }
         setNotes(restoredNotes);
 
-        alert('Backup restored successfully! The connection to the local sync folder has been removed.');
+        const recordingsFolder = zip.folder('assets/recordings');
+        const restoredRecordings: Recording[] = [];
+        if (recordingsFolder) {
+            const jsonFiles: any[] = [];
+            recordingsFolder.forEach((relativePath, file) => {
+                if (relativePath.endsWith('.json')) jsonFiles.push(file);
+            });
+            for (const jsonFile of jsonFiles) {
+                const recMetadata = JSON.parse(await jsonFile.async('string'));
+                const audioFile = recordingsFolder.file(`${recMetadata.id}.webm`);
+                if (audioFile) {
+                    const audioBlob = await audioFile.async('blob');
+                    restoredRecordings.push({ ...recMetadata, audioBlob });
+                }
+            }
+        }
+        for (const rec of restoredRecordings) await db.saveRecording(rec);
+        setRecordings(restoredRecordings);
+
+        const photosFolder = zip.folder('assets/photos');
+        const restoredPhotos: Photo[] = [];
+        if (photosFolder) {
+            const photoJsonFiles: { path: string; file: any }[] = [];
+            photosFolder.forEach((relativePath, file) => {
+                if (!file.dir && relativePath.endsWith('.json')) photoJsonFiles.push({ path: relativePath, file });
+            });
+            for (const { path, file } of photoJsonFiles) {
+                const photoMetadata = JSON.parse(await file.async('string'));
+                const ext = photoMetadata.imageMimeType.split('/')[1] || 'png';
+                const imagePath = path.replace('.json', `.${ext}`);
+                const imageFile = photosFolder.file(imagePath);
+                if (imageFile) {
+                    const imageBlob = await imageFile.async('blob');
+                    restoredPhotos.push({ ...photoMetadata, imageBlob });
+                }
+            }
+        }
+        for (const photo of restoredPhotos) await db.savePhoto(photo);
+        setPhotos(restoredPhotos);
+
+        alert('Backup restored successfully! The app will now use the restored local data.');
         setIsDashboardOpen(false);
+
     } catch (err) {
         console.error("Failed to restore backup:", err);
         alert(`Error restoring backup: ${err instanceof Error ? err.message : String(err)}`);
+        window.location.reload();
     }
   }, [directoryHandle]);
   

@@ -1,6 +1,9 @@
 import { Template, Recording, Photo, Note, BackupData } from '../App';
 import { SiteSettings } from '../constants';
 
+// Declare JSZip to inform TypeScript about the global variable from the CDN.
+declare var JSZip: any;
+
 export const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -47,34 +50,49 @@ export const createBackup = async (
     photos: Photo[],
     notes: Note[]
 ): Promise<void> => {
-    const recordingsForBackup = await Promise.all(
-        recordings.map(async (rec) => {
-            const audioBase64 = await blobToBase64(rec.audioBlob);
-            const { audioBlob, isTranscribing, ...rest } = rec;
-            return { ...rest, audioBase64, audioMimeType: rec.audioBlob.type };
-        })
-    );
+    if (typeof JSZip === 'undefined') {
+        alert("Error: JSZip library is not loaded. Cannot create backup file.");
+        throw new Error("JSZip not loaded");
+    }
+    const zip = new JSZip();
 
-    const photosForBackup = await Promise.all(
-        photos.map(async (photo) => {
-            const imageBase64 = await blobToBase64(photo.imageBlob);
-            const { imageBlob, ...rest } = photo;
-            return { ...rest, imageBase64 };
-        })
-    );
-    
-    const backupData: BackupData = {
+    const metadata = {
         siteSettings,
         templates,
-        recordings: recordingsForBackup,
-        photos: photosForBackup,
-        notes
+        notes,
     };
+    zip.file('metadata.json', JSON.stringify(metadata, null, 2));
 
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const recordingsFolder = zip.folder('assets/recordings');
+    if (recordingsFolder) {
+        for (const rec of recordings) {
+            const { audioBlob, isTranscribing, ...recMetadata } = rec;
+            recordingsFolder.file(`${rec.id}.json`, JSON.stringify(recMetadata, null, 2));
+            recordingsFolder.file(`${rec.id}.webm`, audioBlob);
+        }
+    }
+
+    const photosFolder = zip.folder('assets/photos');
+    if (photosFolder) {
+        for (const photo of photos) {
+            const { imageBlob, ...photoMetadata } = photo;
+            
+            const pathParts = photo.folder.split('/').filter(p => p.trim() !== '' && p !== '.');
+            let currentFolder = photosFolder;
+            for (const part of pathParts) {
+                currentFolder = currentFolder.folder(part)!;
+            }
+            
+            currentFolder.file(`${photo.id}.json`, JSON.stringify(photoMetadata, null, 2));
+            const ext = photo.imageMimeType.split('/')[1] || 'png';
+            currentFolder.file(`${photo.id}.${ext}`, imageBlob);
+        }
+    }
+    
+    const blob = await zip.generateAsync({ type: 'blob' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `ai-tools-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `ai-tools-backup-${new Date().toISOString().split('T')[0]}.zip`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

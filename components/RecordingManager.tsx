@@ -13,6 +13,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { resizeImage } from '../utils/imageUtils';
 import { CameraCapture } from './CameraCapture';
 import { WaveformPlayer } from './WaveformPlayer';
+import { DownloadIcon } from './icons/DownloadIcon';
 
 
 interface RecordingManagerProps {
@@ -135,6 +136,18 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
       setSelectedRecording(null);
     }
   };
+
+  const handleDownloadRecording = useCallback(() => {
+    if (!selectedRecording) return;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(selectedRecording.audioBlob);
+    const sanitizedName = selectedRecording.name.replace(/[^a-z0-9_.-]/gi, '_').trim() || 'recording';
+    link.download = `${sanitizedName}.webm`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  }, [selectedRecording]);
 
   const handleAttachmentsUpload = useCallback(async (files: FileList | null) => {
     if (!files) return;
@@ -284,9 +297,14 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                             </div>
                             <div className="mt-auto pt-4 flex justify-between items-center flex-shrink-0">
                                 {isEditing && selectedRecording ? (
-                                    <button onClick={handleDelete} className="text-[var(--theme-red)] hover:underline flex items-center gap-2 p-2">
-                                        <TrashIcon /> Delete
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={handleDelete} className="text-[var(--theme-red)] hover:underline flex items-center gap-2 p-2">
+                                            <TrashIcon /> Delete
+                                        </button>
+                                        <button onClick={handleDownloadRecording} className="text-[var(--theme-text-secondary)] hover:text-white flex items-center gap-2 p-2" aria-label="Download Recording">
+                                            <DownloadIcon /> Download
+                                        </button>
+                                    </div>
                                 ) : <div />}
                                 <button onClick={handleSave} style={{backgroundColor: 'var(--theme-green)'}} className="text-white font-bold py-2 px-4 rounded-md hover:opacity-90 flex items-center gap-2">
                                     <SaveIcon /> {isEditing ? 'Save Changes' : 'Save Recording'}

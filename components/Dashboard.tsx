@@ -22,7 +22,7 @@ interface DashboardProps {
   notes: Note[];
   siteSettings: SiteSettings;
   onUpdateSettings: (newSettings: SiteSettings) => Promise<void>;
-  onRestore: (data: any) => void;
+  onRestore: (data: File) => void;
   directoryHandle: FileSystemDirectoryHandle | null;
   onSyncDirectory: () => void;
   onDisconnectDirectory: () => void;

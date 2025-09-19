@@ -20,7 +20,7 @@ interface DataManagementProps {
     photos: Photo[];
     notes: Note[];
     onBackup: () => void;
-    onRestore: (data: any) => void;
+    onRestore: (data: File) => void;
     directoryHandle: FileSystemDirectoryHandle | null;
     onClearLocalData: () => void;
     onSyncDirectory: () => void;
@@ -111,26 +111,18 @@ export const DataManagement: React.FC<DataManagementProps> = ({
     const handleRestoreFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.type === 'application/json') {
+            if (file.type === 'application/zip' || file.name.endsWith('.zip')) {
                 setRestoreFile(file);
                 setRestoreError('');
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const data = JSON.parse(event.target?.result as string);
-                        if (window.confirm("Are you sure you want to restore from this backup? All current data will be overwritten and the local sync folder will be disconnected.")) {
-                            onRestore(data);
-                        }
-                    } catch (err) { setRestoreError('Invalid backup file format.'); setRestoreFile(null); }
-                };
-                reader.onerror = () => { setRestoreError('Failed to read the file.'); setRestoreFile(null); };
-                reader.readAsText(file);
+                if (window.confirm("Are you sure you want to restore from this backup? All current data will be overwritten and the local sync folder will be disconnected.")) {
+                    onRestore(file);
+                }
             } else {
-                setRestoreError('Invalid file type. Please select a .json backup file.');
+                setRestoreError('Invalid file type. Please select a .zip backup file.');
                 setRestoreFile(null);
             }
         }
-        e.target.value = '';
+        if (e.target) e.target.value = '';
     };
 
     return (
@@ -259,15 +251,15 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                     <div>
                         <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Save all app data to a single backup file.</p>
                         <button onClick={onBackup} className="bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
-                            <DownloadIcon /> Download Full Backup
+                            <DownloadIcon /> Download Full Backup (.zip)
                         </button>
                     </div>
                     <div className="pt-5 border-t border-[var(--theme-border)]/50 md:pt-0 md:border-t-0 md:pl-6 md:border-l md:border-[var(--theme-border)]/50">
                         <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Restore data from a backup file. This will <span className="font-semibold text-[var(--theme-yellow)]">overwrite all</span> existing data.</p>
                          <label htmlFor="restore-upload" className="cursor-pointer bg-[var(--theme-blue)] hover:opacity-90 text-white font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
-                            <RestoreIcon /> Choose Backup File...
+                            <RestoreIcon /> Choose Backup File (.zip)...
                         </label>
-                        <input id="restore-upload" type="file" className="sr-only" onChange={handleRestoreFileSelect} accept=".json" />
+                        <input id="restore-upload" type="file" className="sr-only" onChange={handleRestoreFileSelect} accept=".zip" />
                         {restoreError && <p className="text-[var(--theme-red)] text-sm mt-2">{restoreError}</p>}
                     </div>
                 </div>
