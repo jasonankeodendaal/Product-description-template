@@ -23,9 +23,15 @@ import { UpdateToast } from './components/UpdateToast';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 // FIX: Import the MobileHeader component to resolve the 'Cannot find name' error.
 import { MobileHeader } from './components/MobileHeader';
+import { projectFiles } from './utils/sourceCode';
+import { createClient } from '@supabase/supabase-js';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
+
+const supabaseUrl = 'https://izeispyzinvnblbxuxfc.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6ZWlzcHl6aW52bmJsYnh1eGZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyNTA2ODksImV4cCI6MjA2NTgyNjY4OX0.wDwli6ndOgsoAiXO7lHSfIbZ4_s8hvlVwiYUpwalzfc';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -86,6 +92,7 @@ export interface Note {
     tags: string[];
     date: string;
     isLocked?: boolean;
+    dueDate?: string | null;
 }
 
 export interface BackupData {
@@ -189,16 +196,54 @@ const App: React.FC = () => {
         }
     };
     
-    const handleApkDownload = () => {
-        // Create a link and click it to download the APK.
-        // NOTE: A real APK would need to be built and hosted. This is a placeholder.
-        const link = document.createElement('a');
-        link.href = '/downloads/app-release.apk'; 
-        link.download = 'AiToolsApp.apk';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setIsInstallOptionsModalOpen(false);
+    const handleDownloadSourceZip = async () => {
+        setIsInstallOptionsModalOpen(false); // Close modal first
+        setIsLoading(true);
+        setLoadingMessage('Packaging source code...');
+        try {
+            if (typeof JSZip === 'undefined') {
+                alert("Error: JSZip library is not loaded. Cannot create .zip file.");
+                throw new Error("JSZip not loaded");
+            }
+            const zip = new JSZip();
+
+            // Helper to create folders recursively
+            const getFolder = (path: string): any => {
+                let folder = zip;
+                const parts = path.split('/');
+                for (const part of parts) {
+                    if (part) {
+                        folder = folder.folder(part)!;
+                    }
+                }
+                return folder;
+            };
+            
+            for (const [fullPath, content] of Object.entries(projectFiles)) {
+                const pathParts = fullPath.split('/');
+                const fileName = pathParts.pop()!;
+                const folderPath = pathParts.join('/');
+                
+                const folder = getFolder(folderPath);
+                folder.file(fileName, content);
+            }
+            
+            const blob = await zip.generateAsync({ type: 'blob' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `AiTools_SourceCode_${new Date().toISOString().split('T')[0]}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+
+        } catch (e) {
+            console.error("Failed to create zip:", e);
+            alert("An error occurred while packaging the source code. Please check the console for details.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
 
@@ -257,6 +302,20 @@ const App: React.FC = () => {
             }
         };
         initializeApp();
+    }, []);
+    
+    useEffect(() => {
+        const fetchTodos = async () => {
+            console.log('Fetching from Supabase...');
+            const { data, error } = await supabase.from('todos').select();
+
+            if (error) {
+                console.error('Error fetching Supabase data:', error);
+            } else {
+                console.log('Supabase data:', data);
+            }
+        };
+        fetchTodos();
     }, []);
 
     // FIX: Handle auth modal logic in an effect to avoid side-effects in render.
@@ -608,6 +667,8 @@ const App: React.FC = () => {
                             siteSettings={siteSettings}
                             photos={photos}
                             onSavePhoto={handleSavePhoto}
+                            // FIX: Pass the handleDeletePhoto function to GeneratorView to resolve prop error in child component.
+                            onDeletePhoto={handleDeletePhoto}
                             recordings={recordings}
                             notes={notes}
                         />
@@ -714,6 +775,7 @@ const App: React.FC = () => {
                     onApiDisconnect={handleApiDisconnect}
                     isApiConnecting={isApiConnecting}
                     isApiConnected={isApiConnected}
+                    onDownloadSource={handleDownloadSourceZip}
                 />
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
@@ -723,7 +785,7 @@ const App: React.FC = () => {
                 <InstallOptionsModal 
                     onClose={() => setIsInstallOptionsModalOpen(false)}
                     onPwaInstall={handlePwaInstall}
-                    onApkDownload={handleApkDownload}
+                    onDownloadSource={handleDownloadSourceZip}
                     siteSettings={siteSettings}
                 />
             )}

@@ -1,5 +1,16 @@
 
 
+export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
+Periscope telephoto zoom – ultra-long zoom without losing quality.
+High-resolution sensors (200MP+) – super detailed photos.
+Advanced night vision mode – brighter, clearer low-light shots.
+Cinematic video (4K/8K with stabilization) – pro-level video recording.
+HDR+ and Dolby Vision – vivid colors and balanced lighting.
+Ultra-wide + macro combo – wide landscapes and close-ups in one device.
+AI portrait & bokeh control – adjustable background blur and lighting.
+Super slow-motion & hyperlapse – advanced creative video effects.
+Seamless AR & 3D capture – ready for AR apps, 3D scanning, and effects.`;
+
 export interface CreatorDetails {
   name:string;
   slogan: string;

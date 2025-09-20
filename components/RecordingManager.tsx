@@ -63,6 +63,20 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
         }
     }, [onDelete]);
     
+    // FIX: Add a handler to unlink photos from a recording.
+    // This function is passed to the PhotoThumbnail's onDelete prop to resolve the type error.
+    const handleUnlinkPhoto = useCallback((photoToUnlink: Photo) => {
+        if (selectedRecording) {
+            if (window.confirm(`Are you sure you want to unlink "${photoToUnlink.name}" from this recording? This will not delete the photo itself.`)) {
+                const updatedPhotoIds = selectedRecording.photoIds.filter(id => id !== photoToUnlink.id);
+                const updatedRecording = { ...selectedRecording, photoIds: updatedPhotoIds };
+                // Update the local state to reflect the change immediately
+                setSelectedRecording(updatedRecording);
+                onUpdate(updatedRecording);
+            }
+        }
+    }, [selectedRecording, onUpdate]);
+
     const handleTranscribe = useCallback(async (recording: Recording) => {
         const recordingToUpdate = { ...recording, isTranscribing: true };
         setSelectedRecording(recordingToUpdate);
@@ -105,7 +119,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
     };
     
     return (
-        <div className="flex flex-col h-full bg-[var(--theme-bg)] backdrop-blur-2xl">
+        <div className="flex flex-col flex-1 bg-[var(--theme-bg)] backdrop-blur-2xl">
             {isCameraOpen && selectedRecording && (
                 <CameraCapture 
                     onClose={() => setIsCameraOpen(false)}
@@ -249,7 +263,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
                                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                                         {selectedRecording.photoIds.map(id => {
                                             const photo = photos.find(p => p.id === id);
-                                            return photo ? <PhotoThumbnail key={id} photo={photo} onSelect={() => {}} /> : null;
+                                            return photo ? <PhotoThumbnail key={id} photo={photo} onSelect={() => {}} onDelete={handleUnlinkPhoto} /> : null;
                                         })}
                                         <button onClick={() => setIsCameraOpen(true)} className="aspect-square border-2 border-dashed border-[var(--theme-border)] rounded-md flex items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-card-bg)]">
                                             <CameraIcon className="h-6 w-6" />

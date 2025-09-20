@@ -49,15 +49,42 @@
       --theme-yellow: #D49E3C;
     }
     body {
-      background-image: url('https://i.postimg.cc/KzMqzb9P/d0bb3312-3297-4f16-b7bf-9f1442d29e20.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
       background-color: var(--theme-dark-bg);
       color: var(--theme-text-primary);
       font-family: 'Nunito', sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+        content: '';
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -2;
+    }
+
+    /* Layer 1: The main image with a slow zoom (Ken Burns effect) */
+    body::before {
+        background-image: url('https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg');
+        background-size: cover;
+        background-position: center;
+        animation: ken-burns 45s ease-in-out infinite;
+    }
+
+    /* Layer 2: A subtle, moving grid overlay and vignette */
+    body::after {
+        background-image: 
+            linear-gradient(to right, rgba(52, 211, 153, 0.08) 1px, transparent 1px), /* Vertical lines */
+            linear-gradient(to bottom, rgba(52, 211, 153, 0.08) 1px, transparent 1px), /* Horizontal lines */
+            radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 0.9) 100%); /* Vignette */
+        background-size: 40px 40px, 40px 40px, 100% 100%;
+        animation: move-grid 25s linear infinite;
     }
     
     .font-lora {
@@ -90,6 +117,7 @@
       align-items: center;
       gap: 0.75rem;
       padding: 0.25rem 0;
+      cursor: grab;
     }
     .note-editor-content ul[data-type="checklist"] > li::before,
     ul[data-type="checklist"] > li::before {
@@ -114,7 +142,7 @@
       background-repeat: no-repeat;
     }
      .note-editor-content ul[data-type="checklist"] > li[data-checked="true"],
-     ul[data--checked="true"] {
+     ul[data-type="checklist"] li[data-checked="true"] {
       text-decoration: line-through;
       color: var(--theme-text-secondary);
     }
@@ -122,6 +150,30 @@
     .note-editor-content > *:first-child { margin-top: 0; }
     .note-editor-content > *:last-child { margin-bottom: 0; }
     .note-editor-content:focus { outline: none; }
+
+    /* Drag & Drop for Notepad Checklist */
+    .note-editor-content ul[data-type="checklist"] > li.dragging {
+      opacity: 0.4;
+      background-color: var(--theme-bg);
+      border-radius: 4px;
+    }
+    .drop-indicator {
+      height: 2px;
+      background-color: var(--theme-green);
+      margin: 4px 0;
+      animation: hologram-pulse 1.5s infinite;
+    }
+    li.drop-indicator-li {
+      list-style-type: none !important;
+      padding: 0 !important;
+      cursor: default !important;
+      /* Override the default li styles */
+      display: block !important;
+      gap: 0 !important;
+    }
+    li.drop-indicator-li::before {
+      display: none !important;
+    }
 
     /* Logo Glow Effect */
     .logo-glow-effect {
@@ -181,6 +233,24 @@
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
     }
+    @keyframes ken-burns {
+        0%, 100% {
+            transform: scale(1) translate(0, 0);
+            filter: brightness(0.8);
+        }
+        50% {
+            transform: scale(1.1) translate(-2%, 2%);
+            filter: brightness(1.0);
+        }
+    }
+    @keyframes move-grid {
+        from {
+            background-position: 0 0, 0 0, center;
+        }
+        to {
+            background-position: -40px -40px, 0 0, center;
+        }
+    }
     
     /* New animations for responsive creator modal */
     @keyframes slide-in-up {
@@ -226,7 +296,8 @@
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
-    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.22"
+    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.22",
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
   }
 }
 </script>

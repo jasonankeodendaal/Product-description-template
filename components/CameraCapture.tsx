@@ -2,6 +2,11 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { XIcon } from './icons/XIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { SwitchCameraIcon } from './icons/SwitchCameraIcon';
+import { FlashOnIcon } from './icons/FlashOnIcon';
+import { FlashOffIcon } from './icons/FlashOffIcon';
+import { CAMERA_FEATURES_LIST } from '../constants';
+import { CopyIcon } from './icons/CopyIcon';
+import { CheckIcon } from './icons/CheckIcon';
 
 interface CameraCaptureProps {
   onCapture: (dataUrl: string) => void;
@@ -16,6 +21,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [activeDeviceIndex, setActiveDeviceIndex] = useState(0);
   const [isStreamActive, setIsStreamActive] = useState(false);
+  const [hasTorch, setHasTorch] = useState(false);
+  const [isTorchOn, setIsTorchOn] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   // Stop current stream
   const stopCurrentStream = useCallback(() => {
@@ -29,15 +37,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   useEffect(() => {
     let isMounted = true;
     const initializeCamera = async () => {
-      // Stop any existing streams from previous mounts before starting
       stopCurrentStream();
       
       let tempStream: MediaStream | null = null;
       try {
-        // First, get a generic stream to trigger the permission prompt.
         tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         
-        // If we're here, permission was granted. Now we can get the full device list.
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoInputs = devices.filter(device => device.kind === 'videoinput');
 
@@ -64,7 +69,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             setError(message);
         }
       } finally {
-        // Stop the temporary stream, as the next useEffect will handle the specific device.
         tempStream?.getTracks().forEach(track => track.stop());
       }
     };
@@ -83,16 +87,18 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     let isCancelled = false;
     const startStream = async () => {
-      stopCurrentStream(); // Stop any existing stream first
+      stopCurrentStream();
       setIsStreamActive(false);
+      setHasTorch(false);
+      setIsTorchOn(false);
 
       try {
         const deviceId = videoDevices[activeDeviceIndex].deviceId;
         const constraints: MediaStreamConstraints = {
           video: {
             deviceId: { exact: deviceId },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 3840 },
+            height: { ideal: 2160 },
           }
         };
         const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -101,6 +107,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           if (videoRef.current) {
             videoRef.current.srcObject = mediaStream;
           }
+          const track = mediaStream.getVideoTracks()[0];
+          // FIX: The standard MediaTrackCapabilities type may not include 'torch'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped property.
+          const capabilities = track.getCapabilities() as any;
+          setHasTorch(!!capabilities.torch);
+
           setIsStreamActive(true);
           setError(null);
         } else {
@@ -144,7 +155,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     const context = canvas.getContext('2d');
     if (context) {
-      // Flip the image horizontally if it's the front camera
       if (videoDevices[activeDeviceIndex]?.label.toLowerCase().includes('front')) {
           context.translate(canvas.width, 0);
           context.scale(-1, 1);
@@ -160,11 +170,30 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       setActiveDeviceIndex(prev => (prev + 1) % videoDevices.length);
     }
   };
+  
+  const handleToggleTorch = useCallback(() => {
+      if (!streamRef.current || !hasTorch) return;
+      const track = streamRef.current.getVideoTracks()[0];
+      const newTorchState = !isTorchOn;
+      // FIX: The standard MediaTrackConstraintSet type may not include 'torch'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped property.
+      track.applyConstraints({ advanced: [{ torch: newTorchState } as any] })
+          .then(() => {
+              setIsTorchOn(newTorchState);
+          })
+          .catch(e => console.error("Failed to toggle torch", e));
+  }, [hasTorch, isTorchOn]);
+
+  const handleCopyFeatures = useCallback(() => {
+    navigator.clipboard.writeText(CAMERA_FEATURES_LIST).then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    });
+  }, []);
 
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex flex-col items-center justify-center p-4" aria-modal="true" role="dialog">
-      <div className="relative w-full max-w-3xl aspect-video bg-black rounded-lg shadow-2xl overflow-hidden border border-[var(--theme-border)]">
+      <div className="relative w-full max-w-3xl aspect-[4/3] md:aspect-video bg-black rounded-lg shadow-2xl overflow-hidden border border-[var(--theme-border)]">
         {error ? (
           <div className="w-full h-full flex items-center justify-center p-8 text-center text-[var(--theme-red)]">
             {error}
@@ -177,8 +206,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         </button>
       </div>
 
-      <div className="mt-6 flex w-full max-w-3xl items-center justify-around">
-        <div className="w-16"></div>
+      <div className="mt-6 flex w-full max-w-3xl items-center justify-between">
+        <div className="w-28 flex justify-start gap-2">
+             {hasTorch && (
+                <button onClick={handleToggleTorch} className="text-white bg-black/30 hover:bg-black/60 rounded-full p-3" aria-label="Toggle Flash">
+                    {isTorchOn ? <FlashOnIcon /> : <FlashOffIcon />}
+                </button>
+            )}
+             <button onClick={handleCopyFeatures} title="Copy Camera Features" className="text-white bg-black/30 hover:bg-black/60 rounded-full p-3" aria-label="Copy Camera Features">
+                {isCopied ? <CheckIcon /> : <CopyIcon />}
+            </button>
+        </div>
         <button
           onClick={handleCapture}
           disabled={!isStreamActive || !!error}
@@ -187,7 +225,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         >
           <CameraIcon className="h-7 w-7" />
         </button>
-        <div className="w-16 flex justify-center">
+        <div className="w-28 flex justify-end">
             {videoDevices.length > 1 && (
               <button onClick={handleSwitchCamera} className="text-white bg-black/30 hover:bg-black/60 rounded-full p-3" aria-label="Switch Camera">
                   <SwitchCameraIcon />

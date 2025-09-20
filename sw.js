@@ -1,5 +1,5 @@
-const STATIC_CACHE_NAME = 'site-static-v12';
-const DYNAMIC_CACHE_NAME = 'site-dynamic-v12';
+const STATIC_CACHE_NAME = 'site-static-v13';
+const DYNAMIC_CACHE_NAME = 'site-dynamic-v13';
 
 // Comprehensive list of assets needed for the app to work offline
 const APP_SHELL_URLS = [
@@ -8,7 +8,7 @@ const APP_SHELL_URLS = [
   '/index.tsx',
   '/manifest.json',
   'https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png',
-  'https://i.postimg.cc/KzMqzb9P/d0bb3312-3297-4f16-b7bf-9f1442d29e20.jpg', // Main background
+  'https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg', // Main background
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
   'https://unpkg.com/wavesurfer.js@7',

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Note } from '../App';
 import { PlusIcon } from './icons/PlusIcon';
@@ -5,31 +6,124 @@ import { TrashIcon } from './icons/TrashIcon';
 import { ChecklistIcon } from './icons/ChecklistIcon';
 import { useDebounce } from '../hooks/useDebounce';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
+import { NotepadIcon } from './icons/NotepadIcon';
+
+// --- Helper Functions ---
+const getPreview = (htmlContent: string): { type: 'text' | 'checklist', content: string } => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    const checklist = tempDiv.querySelector('ul[data-type="checklist"]');
+    if (checklist) {
+        const items = Array.from(checklist.querySelectorAll('li')).slice(0, 3).map(li => li.textContent || '').filter(Boolean);
+        if (items.length > 0) {
+            return { type: 'checklist', content: items.join(', ') };
+        }
+    }
+    
+    const text = tempDiv.textContent || 'No additional content';
+    return { type: 'text', content: text.substring(0, 120) + (text.length > 120 ? '...' : '') };
+};
+
+const getFirstImage = (htmlContent: string): string | null => {
+    const match = htmlContent.match(/<img[^>]+src="([^">]+)"/);
+    return match ? match[1] : null;
+};
+
+
+// --- Child Components ---
+
+const NoteCard: React.FC<{ note: Note; isSelected: boolean; onClick: () => void; onDelete: (id: string) => void; }> = React.memo(({ note, isSelected, onClick, onDelete }) => {
+    const preview = useMemo(() => getPreview(note.content), [note.content]);
+    const imageUrl = useMemo(() => getFirstImage(note.content), [note.content]);
+    const noteDate = useMemo(() => new Date(note.date), [note.date]);
+    
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card click when deleting
+        onDelete(note.id);
+    };
+
+    return (
+        <div className="relative group">
+            <button
+                onClick={onClick}
+                className={`w-full text-left rounded-lg transition-all duration-200 overflow-hidden flex flex-col h-full shadow-md ${
+                    isSelected 
+                        ? 'bg-[var(--theme-green)]/20 ring-2 ring-[var(--theme-green)]' 
+                        : 'bg-[var(--theme-card-bg)] hover:bg-[var(--theme-card-bg)]/80 hover:shadow-xl hover:-translate-y-1'
+                }`}
+            >
+                {imageUrl && (
+                    <div className="h-32 w-full overflow-hidden">
+                        <img src={imageUrl} alt="Note attachment" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    </div>
+                )}
+                <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="font-bold text-lg font-lora text-[var(--theme-text-primary)] break-words">{note.title}</h3>
+                    <p className="text-sm text-[var(--theme-text-secondary)] mt-2 flex-grow break-words">
+                        {preview.type === 'checklist' && <ChecklistIcon />}
+                        {preview.content}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-[var(--theme-text-secondary)]/80 mt-4">
+                        <span>{noteDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                        {note.category && note.category !== 'General' && <span className="font-semibold bg-white/5 px-2 py-1 rounded">{note.category}</span>}
+                    </div>
+                </div>
+            </button>
+             <button
+                onClick={handleDelete}
+                className="absolute top-2 right-2 p-1.5 bg-[var(--theme-bg)] rounded-full text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                aria-label={`Delete note ${note.title}`}
+            >
+                <TrashIcon />
+            </button>
+        </div>
+    );
+});
+
 
 const NoteEditor = ({ note, onUpdate, onDelete, onBack }: { note: Note; onUpdate: (note: Note) => void; onDelete: (id: string) => void; onBack: () => void; }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [title, setTitle] = useState(note.title);
     const [content, setContent] = useState(note.content);
+    const [dueDate, setDueDate] = useState<string | null>(note.dueDate || null);
+
+    const draggedItemRef = useRef<HTMLElement | null>(null);
+    const dropIndicatorRef = useRef<HTMLElement | null>(null);
 
     const debouncedTitle = useDebounce(title, 500);
     const debouncedContent = useDebounce(content, 500);
+    const debouncedDueDate = useDebounce(dueDate, 500);
 
     useEffect(() => {
         setTitle(note.title);
         setContent(note.content);
+        setDueDate(note.dueDate || null);
         if (editorRef.current && note.content !== editorRef.current.innerHTML) {
             editorRef.current.innerHTML = note.content;
+        }
+        if (!dropIndicatorRef.current) {
+            const indicator = document.createElement('li');
+            indicator.className = 'drop-indicator-li';
+            indicator.innerHTML = `<div class="drop-indicator"></div>`;
+            dropIndicatorRef.current = indicator;
         }
     }, [note]);
 
     useEffect(() => {
-        if (debouncedTitle !== note.title || debouncedContent !== note.content) {
-            onUpdate({ ...note, title: debouncedTitle, content: debouncedContent });
+        if (debouncedTitle !== note.title || debouncedContent !== note.content || debouncedDueDate !== (note.dueDate || null)) {
+            onUpdate({ ...note, title: debouncedTitle, content: debouncedContent, dueDate: debouncedDueDate });
         }
-    }, [debouncedTitle, debouncedContent, note, onUpdate]);
+    }, [debouncedTitle, debouncedContent, debouncedDueDate, note, onUpdate]);
 
     const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
+        if (draggedItemRef.current) return;
         setContent(e.currentTarget.innerHTML);
+    };
+    
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setDueDate(e.target.value || null);
     };
 
     const handleChecklistClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -54,38 +148,103 @@ const NoteEditor = ({ note, onUpdate, onDelete, onBack }: { note: Note; onUpdate
         }
     };
 
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'LI' && target.parentElement?.dataset.type === 'checklist') {
+            draggedItemRef.current = target;
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(() => target.classList.add('dragging'), 0);
+        } else {
+            e.preventDefault();
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const draggedItem = draggedItemRef.current;
+        const dropIndicator = dropIndicatorRef.current;
+        if (!draggedItem || !dropIndicator) return;
+        const targetLi = (e.target as HTMLElement).closest('li');
+        if (!targetLi || targetLi === draggedItem || targetLi.parentElement?.dataset.type !== 'checklist' || targetLi === dropIndicator) {
+             if (dropIndicator.parentElement) dropIndicator.parentElement.removeChild(dropIndicator);
+            return;
+        }
+        const parentUl = targetLi.parentElement;
+        if (!parentUl) return;
+        const rect = targetLi.getBoundingClientRect();
+        const isAfter = e.clientY > rect.top + rect.height / 2;
+        parentUl.insertBefore(dropIndicator, isAfter ? targetLi.nextSibling : targetLi);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const draggedItem = draggedItemRef.current;
+        const dropIndicator = dropIndicatorRef.current;
+        if (!draggedItem || !dropIndicator || !dropIndicator.parentElement) return;
+        dropIndicator.parentElement.replaceChild(draggedItem, dropIndicator);
+        if (editorRef.current) setContent(editorRef.current.innerHTML);
+    };
+
+    const handleDragEnd = () => {
+        const draggedItem = draggedItemRef.current;
+        const dropIndicator = dropIndicatorRef.current;
+        if (draggedItem) draggedItem.classList.remove('dragging');
+        if (dropIndicator?.parentElement) dropIndicator.parentElement.removeChild(dropIndicator);
+        draggedItemRef.current = null;
+    };
+
 
     return (
-        <div className="flex flex-col h-full bg-transparent">
-            <header className="flex-shrink-0 p-4 border-b border-[var(--theme-border)] flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-grow">
-                    <button onClick={onBack} className="md:hidden p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white">
-                        <ChevronLeftIcon />
+        <div className="flex flex-col h-full bg-[var(--theme-bg)]">
+            <header className="flex-shrink-0 p-4 border-b border-[var(--theme-border)]">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-grow min-w-0">
+                        <button onClick={onBack} className="lg:hidden p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white">
+                            <ChevronLeftIcon />
+                        </button>
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={e => setTitle(e.target.value)}
+                            placeholder="Note Title"
+                            className="text-2xl font-bold bg-transparent focus:outline-none w-full text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] truncate"
+                        />
+                    </div>
+                    <button onClick={() => onDelete(note.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] flex-shrink-0 ml-2">
+                        <TrashIcon />
                     </button>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={e => setTitle(e.target.value)}
-                        placeholder="Note Title"
-                        className="text-xl font-bold bg-transparent focus:outline-none w-full text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)]"
-                    />
                 </div>
-                <button onClick={() => onDelete(note.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]">
-                    <TrashIcon />
-                </button>
+                 <div className="mt-3 flex items-center gap-2 text-sm pl-1 lg:pl-0">
+                    <label htmlFor="due-date" className="flex items-center gap-2 text-[var(--theme-text-secondary)] cursor-pointer">
+                        <CalendarIcon />
+                        <span>Due Date</span>
+                    </label>
+                    <input
+                        id="due-date"
+                        type="date"
+                        value={dueDate || ''}
+                        onChange={handleDateChange}
+                        className="bg-transparent border-b border-dashed border-transparent focus:border-[var(--theme-border)] focus:outline-none text-[var(--theme-text-primary)] p-1"
+                    />
+                    {dueDate && <button onClick={() => setDueDate(null)} className="text-xs text-[var(--theme-red)] hover:underline">Clear</button>}
+                </div>
             </header>
-            <div className="flex-grow overflow-y-auto p-6" onClick={handleChecklistClick}>
+            <div className="flex-grow overflow-y-auto p-4 md:p-6" onClick={handleChecklistClick}>
                 <div
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
                     onInput={handleContentChange}
-                    className="note-editor-content h-full leading-relaxed text-lg"
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                    className="note-editor-content h-full leading-relaxed text-lg max-w-3xl mx-auto bg-[var(--theme-card-bg)]/50 rounded-lg p-4 sm:p-6 focus:ring-2 focus:ring-[var(--theme-green)] focus:outline-none"
                     dangerouslySetInnerHTML={{ __html: content }}
                 />
             </div>
             <footer className="flex-shrink-0 p-2 border-t border-[var(--theme-border)] bg-[var(--theme-dark-bg)]/30">
-                <div className="flex items-center">
+                <div className="flex items-center max-w-3xl mx-auto">
                     <button onClick={insertChecklist} className="p-3 hover:bg-[var(--theme-bg)] rounded-md text-[var(--theme-text-secondary)]" title="Insert Checklist">
                         <ChecklistIcon />
                     </button>
@@ -95,149 +254,113 @@ const NoteEditor = ({ note, onUpdate, onDelete, onBack }: { note: Note; onUpdate
     );
 };
 
-const groupNotesByDate = (notes: Note[]) => {
-    const groups: { [key: string]: Note[] } = {};
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    notes.forEach(note => {
-        const noteDate = new Date(note.date);
-        const diffDays = Math.round((todayStart.getTime() - noteDate.getTime()) / (1000 * 60 * 60 * 24));
-        let groupKey: string;
-
-        if (diffDays === 0) {
-            groupKey = "Today";
-        } else if (diffDays === 1) {
-            groupKey = "Yesterday";
-        } else {
-            groupKey = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(noteDate);
-        }
-
-        if (!groups[groupKey]) {
-            groups[groupKey] = [];
-        }
-        groups[groupKey].push(note);
-    });
-    return groups;
-};
-
-
+// --- Main Notepad Component ---
 export const Notepad: React.FC<{ notes: Note[]; onSave: (note: Note) => Promise<void>; onUpdate: (note: Note) => Promise<void>; onDelete: (id: string) => Promise<void>; }> = ({ notes, onSave, onUpdate, onDelete }) => {
-    const [activeCategory, setActiveCategory] = useState('All');
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const [isEditorVisible, setIsEditorVisible] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
+        const noteExists = notes.some(n => n.id === selectedNoteId);
         const sortedNotes = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        if (!selectedNoteId && sortedNotes.length > 0) {
-            setSelectedNoteId(sortedNotes[0].id);
-        } else if (selectedNoteId && !notes.find(n => n.id === selectedNoteId)) {
+        
+        if (selectedNoteId && !noteExists) {
             setSelectedNoteId(sortedNotes.length > 0 ? sortedNotes[0].id : null);
+        } else if (!selectedNoteId && sortedNotes.length > 0) {
+            setSelectedNoteId(sortedNotes[0].id);
         }
     }, [notes, selectedNoteId]);
 
-    const categories = useMemo(() => ['All', ...Array.from(new Set(notes.map(n => n.category)))], [notes]);
-    
     const filteredNotes = useMemo(() => {
         const sorted = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        if (activeCategory === 'All') return sorted;
-        return sorted.filter(note => note.category === activeCategory);
-    }, [notes, activeCategory]);
+        if (!searchTerm) return sorted;
+        return sorted.filter(note => 
+            note.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            note.content.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [notes, searchTerm]);
 
-    const groupedNotes = useMemo(() => groupNotesByDate(filteredNotes), [filteredNotes]);
-    
     const handleAddNote = useCallback(async () => {
         const newNote: Note = {
             id: crypto.randomUUID(),
             title: 'New Note',
             content: '<p>Start writing here...</p>',
-            category: activeCategory !== 'All' ? activeCategory : 'General',
+            category: 'General',
             tags: [],
             date: new Date().toISOString(),
+            dueDate: null,
         };
         await onSave(newNote);
         setSelectedNoteId(newNote.id);
-        setIsEditorVisible(true);
-    }, [onSave, activeCategory]);
+    }, [onSave]);
     
     const handleDeleteNote = useCallback(async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this note?")) {
+        if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
             await onDelete(id);
         }
     }, [onDelete]);
 
     const selectedNote = useMemo(() => notes.find(n => n.id === selectedNoteId) || null, [notes, selectedNoteId]);
     
-    const renderNotePreview = (content: string) => {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-        // Try to find checklist items first
-        const checklistItems = Array.from(tempDiv.querySelectorAll('ul[data-type="checklist"] li'));
-        if (checklistItems.length > 0) {
-            return checklistItems.slice(0, 2).map(li => li.textContent).join(', ') + '...';
-        }
-        return tempDiv.textContent?.substring(0, 100) || 'No content';
-    };
-
     return (
-        <div className="relative flex h-full overflow-hidden bg-[var(--theme-bg)] backdrop-blur-2xl text-[var(--theme-text-primary)]">
+        <div className="flex flex-1 overflow-hidden bg-[var(--theme-bg)] backdrop-blur-2xl text-[var(--theme-text-primary)]">
             {/* Note List Pane */}
-            <aside className={`w-full flex-shrink-0 md:w-1/3 md:max-w-sm flex flex-col border-r border-[var(--theme-border)] transition-transform duration-300 ease-in-out ${isEditorVisible ? '-translate-x-full md:translate-x-0' : 'translate-x-0'} absolute md:relative inset-0 md:inset-auto`}>
+            <aside className={`w-full lg:w-[450px] xl:w-[550px] flex-shrink-0 flex flex-col border-r border-[var(--theme-border)] ${selectedNoteId ? 'hidden lg:flex' : 'flex'}`}>
                 <header className="p-4 flex-shrink-0 flex items-center justify-between border-b border-[var(--theme-border)]">
-                    <h1 className="text-3xl font-patrick-hand">NOTEE</h1>
-                    <button className="p-2 -mr-2"><PlusIcon /></button> {/* Placeholder, FAB is main add button */}
+                    <h1 className="text-3xl font-bold font-lora">Notes</h1>
                 </header>
-                 <div className="p-4 flex-shrink-0">
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                        {categories.map(cat => (
-                             <button 
-                                key={cat} 
-                                onClick={() => setActiveCategory(cat)}
-                                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${activeCategory === cat ? 'bg-[var(--theme-dark-bg)] text-white shadow-md' : 'bg-[var(--theme-card-bg)] text-[var(--theme-text-secondary)]'}`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
-                    </div>
+                <div className="p-4 flex-shrink-0">
+                    <input 
+                        type="text" 
+                        placeholder="Search your notes..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-[var(--theme-dark-bg)] border border-[var(--theme-border)] rounded-md pl-4 pr-4 py-2" 
+                    />
                 </div>
-
-                <div className="flex-grow overflow-y-auto no-scrollbar pb-24">
-                    {Object.entries(groupedNotes).map(([group, notesInGroup]) => (
-                        notesInGroup.length > 0 && (
-                        <div key={group} className="px-4 py-2">
-                            <h2 className="text-sm font-bold uppercase text-[var(--theme-text-secondary)] tracking-wider mb-2">{group}</h2>
-                            <div className="grid grid-cols-1 gap-3">
-                                {notesInGroup.map(note => (
-                                    <button 
-                                        key={note.id}
-                                        onClick={() => { setSelectedNoteId(note.id); setIsEditorVisible(true); }}
-                                        className={`w-full text-left p-4 rounded-lg transition-colors ${selectedNoteId === note.id ? 'bg-[var(--theme-green)]/20' : 'bg-[var(--theme-card-bg)] hover:bg-[var(--theme-card-bg)]/50'}`}
-                                    >
-                                        <h3 className="font-bold truncate">{note.title}</h3>
-                                        <p className="text-sm text-[var(--theme-text-secondary)] mt-1 h-10 overflow-hidden">{renderNotePreview(note.content)}</p>
-                                    </button>
-                                ))}
-                            </div>
+                <div className="flex-grow overflow-y-auto no-scrollbar pb-24 lg:pb-4">
+                   {filteredNotes.length > 0 ? (
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+                            {filteredNotes.map(note => (
+                                <NoteCard 
+                                    key={note.id} 
+                                    note={note} 
+                                    isSelected={selectedNoteId === note.id} 
+                                    onClick={() => setSelectedNoteId(note.id)} 
+                                    onDelete={handleDeleteNote}
+                                />
+                            ))}
                         </div>
-                        )
-                    ))}
+                   ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]">
+                            <NotepadIcon />
+                            <h3 className="text-lg font-semibold text-[var(--theme-text-primary)] mt-4">Your notepad is empty</h3>
+                            <p className="text-sm mt-1">Click the '+' button to capture your first thought.</p>
+                        </div>
+                   )}
                 </div>
             </aside>
             
             {/* Note Editor Pane */}
-            <main className={`w-full flex-grow flex flex-col transition-transform duration-300 ease-in-out ${isEditorVisible ? 'translate-x-0' : 'translate-x-full md:translate-x-0'} absolute md:relative inset-0 md:inset-auto`}>
+            <main className={`flex-1 flex-col ${selectedNoteId ? 'flex' : 'hidden lg:flex'}`}>
                 {selectedNote ? (
-                    <NoteEditor note={selectedNote} onUpdate={onUpdate} onDelete={handleDeleteNote} onBack={() => setIsEditorVisible(false)} />
+                    <NoteEditor 
+                        note={selectedNote} 
+                        onUpdate={onUpdate} 
+                        onDelete={handleDeleteNote} 
+                        onBack={() => setSelectedNoteId(null)} 
+                    />
                 ) : (
-                    <div className="hidden md:flex items-center justify-center h-full text-[var(--theme-text-secondary)]">
-                        <p>Select a note to view or create a new one.</p>
+                    <div className="hidden lg:flex flex-col items-center justify-center h-full text-center p-8 text-[var(--theme-text-secondary)]">
+                        <NotepadIcon />
+                        <h2 className="mt-4 text-xl font-semibold text-[var(--theme-text-primary)]">Your notes live here</h2>
+                        <p className="mt-1">Select a note from the list, or create a new one to get started.</p>
                     </div>
                 )}
             </main>
 
              <button 
                 onClick={handleAddNote}
-                className="absolute bottom-20 right-6 md:bottom-6 z-40 bg-[var(--theme-green)] text-black rounded-full p-4 fab-shadow hover:opacity-90 transform hover:scale-110 transition-transform"
+                className="absolute bottom-20 right-6 lg:bottom-8 lg:right-8 z-40 bg-[var(--theme-green)] text-black rounded-full p-4 fab-shadow hover:opacity-90 transform hover:scale-110 transition-transform"
                 aria-label="Create new note"
             >
                 <PlusIcon />

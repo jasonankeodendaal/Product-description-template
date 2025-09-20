@@ -12,6 +12,8 @@ import { CodeIcon } from './icons/CodeIcon';
 import { NavButton } from './NavButton';
 import { AboutThisApp } from './AboutThisApp';
 import { SetupGuide } from './SetupGuide';
+import { AndroidIcon } from './icons/AndroidIcon';
+import { AppPublishingGuide } from './AppPublishingGuide';
 
 interface DashboardProps {
   onClose: () => void;
@@ -31,9 +33,10 @@ interface DashboardProps {
   onApiDisconnect: () => void;
   isApiConnecting: boolean;
   isApiConnected: boolean;
+  onDownloadSource: () => void;
 }
 
-type Section = 'data' | 'settings' | 'setup' | 'about';
+type Section = 'data' | 'settings' | 'setup' | 'about' | 'publishing';
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   onClose, 
@@ -53,6 +56,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onApiDisconnect,
   isApiConnecting,
   isApiConnected,
+  onDownloadSource,
 }) => {
   const [activeSection, setActiveSection] = useState<Section>('about');
 
@@ -85,6 +89,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <NavButton active={activeSection === 'data'} onClick={() => setActiveSection('data')} icon={<DatabaseIcon />}>Data Management</NavButton>
                     <NavButton active={activeSection === 'settings'} onClick={() => setActiveSection('settings')} icon={<SettingsIcon />}>Site & Creator Settings</NavButton>
                     <NavButton active={activeSection === 'setup'} onClick={() => setActiveSection('setup')} icon={<CodeIcon />}>Setup Guide</NavButton>
+                    <NavButton active={activeSection === 'publishing'} onClick={() => setActiveSection('publishing')} icon={<AndroidIcon />}>App Publishing (APK)</NavButton>
                 </nav>
             </aside>
 
@@ -117,6 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 )}
                 {activeSection === 'setup' && <SetupGuide />}
                 {activeSection === 'about' && <AboutThisApp onNavigateToSetup={() => setActiveSection('setup')} />}
+                {activeSection === 'publishing' && <AppPublishingGuide onDownloadSource={onDownloadSource} />}
             </main>
         </div>
       </div>

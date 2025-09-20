@@ -1,9 +1,5 @@
-
-
-
 import React, { useState } from 'react';
 import { InputPanel } from './InputPanel';
-// FIX: SiteSettings is exported from constants.ts, not App.tsx.
 import { Template, Recording, Note, Photo } from '../App';
 import { SiteSettings } from '../constants';
 import { describeImage } from '../services/geminiService';
@@ -25,6 +21,7 @@ interface ComposerPanelProps {
     photos: Photo[];
     siteSettings: SiteSettings;
     onAddToInput: (text: string) => void;
+    onDeletePhoto: (photo: Photo) => Promise<void>;
 }
 
 type AssetTab = 'recordings' | 'notes' | 'photos';
@@ -32,7 +29,7 @@ type AssetTab = 'recordings' | 'notes' | 'photos';
 export const ComposerPanel: React.FC<ComposerPanelProps> = ({
     value, onChange, onGenerate, isLoading, templates, selectedTemplateId,
     onTemplateChange, tone, onToneChange, recordings, notes, photos,
-    siteSettings, onAddToInput
+    siteSettings, onAddToInput, onDeletePhoto
 }) => {
     const [activeTab, setActiveTab] = useState<AssetTab>('recordings');
     const [describingPhotoId, setDescribingPhotoId] = useState<string | null>(null);
@@ -80,7 +77,8 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                     <div className="grid grid-cols-4 gap-2">
                         {photos.slice(0, 8).map(photo => (
                             <div key={photo.id} className="relative group">
-                                <PhotoThumbnail photo={photo} onSelect={() => handleDescribeImage(photo)} />
+                                {/* FIX: Pass the onDeletePhoto prop to PhotoThumbnail to resolve the missing prop error. */}
+                                <PhotoThumbnail photo={photo} onSelect={() => handleDescribeImage(photo)} onDelete={onDeletePhoto} />
                                  {describingPhotoId === photo.id ? (
                                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-md">
                                         <Spinner className="h-6 w-6 text-white" />
@@ -99,7 +97,7 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
     }
     
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 h-full">
             <InputPanel 
                 value={value}
                 onChange={onChange}

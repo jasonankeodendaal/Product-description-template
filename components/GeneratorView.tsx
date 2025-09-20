@@ -1,7 +1,6 @@
 import React from 'react';
 import { GenerationResult, OutputPanel } from './OutputPanel';
 import { TemplateManager } from './TemplateManager';
-// FIX: SiteSettings is exported from constants.ts, not App.tsx.
 import { Template, ParsedProductData, Photo, Recording, Note } from '../App';
 import { SiteSettings } from '../constants';
 import { ComposerPanel } from './ComposerPanel';
@@ -24,6 +23,7 @@ interface GeneratorViewProps {
     siteSettings: SiteSettings;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
+    onDeletePhoto: (photo: Photo) => Promise<void>;
     recordings: Recording[];
     notes: Note[];
 }
@@ -46,18 +46,21 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
     siteSettings,
     photos,
     onSavePhoto,
+    onDeletePhoto,
     recordings,
     notes,
 }) => {
     return (
-        <div className="h-full overflow-y-auto no-scrollbar pb-24 lg:pb-0">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-                 <TemplateManager 
-                    templates={templates} 
-                    onAddTemplate={onAddTemplate} 
-                    onEditTemplate={onEditTemplate} 
-                />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 flex-grow">
+        <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex flex-col flex-1">
+                <div className="flex-shrink-0 mb-8">
+                     <TemplateManager 
+                        templates={templates} 
+                        onAddTemplate={onAddTemplate} 
+                        onEditTemplate={onEditTemplate} 
+                    />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 flex-1">
                     <ComposerPanel
                         value={userInput}
                         onChange={(e) => onUserInputChange(e.target.value)}
@@ -73,6 +76,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                         photos={photos}
                         siteSettings={siteSettings}
                         onAddToInput={(text) => onUserInputChange(userInput + '\n' + text)}
+                        onDeletePhoto={onDeletePhoto}
                     />
                     <OutputPanel 
                         output={generatedOutput} 

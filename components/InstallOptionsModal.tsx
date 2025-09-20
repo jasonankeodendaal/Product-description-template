@@ -1,13 +1,13 @@
 import React from 'react';
 import { XIcon } from './icons/XIcon';
 import { PwaIcon } from './icons/PwaIcon';
-import { AndroidIcon } from './icons/AndroidIcon';
 import { SiteSettings } from '../constants';
+import { ZipIcon } from './icons/ZipIcon';
 
 interface InstallOptionsModalProps {
     onClose: () => void;
     onPwaInstall: () => void;
-    onApkDownload: () => void;
+    onDownloadSource: () => void;
     siteSettings: SiteSettings;
 }
 
@@ -24,7 +24,7 @@ const InstallOption: React.FC<{ title: string; description: string; icon: React.
     </button>
 );
 
-export const InstallOptionsModal: React.FC<InstallOptionsModalProps> = ({ onClose, onPwaInstall, onApkDownload, siteSettings }) => {
+export const InstallOptionsModal: React.FC<InstallOptionsModalProps> = ({ onClose, onPwaInstall, onDownloadSource, siteSettings }) => {
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
             <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-lg shadow-xl border border-[var(--theme-border)] relative animate-modal-scale-in">
@@ -45,14 +45,10 @@ export const InstallOptionsModal: React.FC<InstallOptionsModalProps> = ({ onClos
                         onClick={onPwaInstall}
                     />
                     <InstallOption
-                        title="Download for Android (APK)"
-                        description="For advanced users. Get the standalone Android package. You may need to enable 'Install from unknown sources'."
-                        icon={
-                            siteSettings.logoSrc ?
-                                <img src={siteSettings.logoSrc} alt="App logo" className="w-full h-full object-contain" /> :
-                                <AndroidIcon />
-                        }
-                        onClick={onApkDownload}
+                        title="Download App Source (.zip)"
+                        description="Download a complete package of the application's source code for offline use or self-hosting."
+                        icon={<ZipIcon />}
+                        onClick={onDownloadSource}
                     />
                 </div>
             </div>
