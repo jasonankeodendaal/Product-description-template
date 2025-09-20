@@ -1,88 +1,86 @@
-const CACHE_NAME = 'ai-product-gen-cache-v10'; // Increment version to trigger update
+const STATIC_CACHE_NAME = 'site-static-v11';
+const DYNAMIC_CACHE_NAME = 'site-dynamic-v11';
+
+// Comprehensive list of assets needed for the app to work offline
 const APP_SHELL_URLS = [
   '/',
-  '/manifest.json',
+  '/index.html', // Explicitly cache the main HTML file
   '/index.tsx',
+  '/manifest.json',
   'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png',
-  'https://i.ibb.co/6y1jV1h/shortcut-mic.png',
-  'https://i.ibb.co/L6Szk5X/shortcut-note.png',
-  'https://i.ibb.co/8Y4B05y/shortcut-image.png'
+  'https://i.postimg.cc/KzMqzb9P/d0bb3312-3297-4f16-b7bf-9f1442d29e20.jpg', // Main background
+  'https://cdn.tailwindcss.com',
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  'https://unpkg.com/wavesurfer.js@7',
+  'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Patrick+Hand&display=swap',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap'
 ];
 
+// Install service worker and cache the app shell
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching App Shell');
+        console.log('Service Worker: Caching App Shell...');
+        // Use addAll for atomic caching. If any file fails, the SW install fails.
         return cache.addAll(APP_SHELL_URLS);
+      })
+      .catch(err => {
+        console.error('App Shell caching failed:', err);
       })
       .then(() => self.skipWaiting())
   );
 });
 
+// Activate service worker and clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames
-          .filter(name => name !== CACHE_NAME)
-          .map(name => {
-            console.log('Service Worker: Deleting old cache', name);
-            return caches.delete(name);
-          })
+    caches.keys().then(keys => {
+      return Promise.all(keys
+        .filter(key => key !== STATIC_CACHE_NAME && key !== DYNAMIC_CACHE_NAME)
+        .map(key => {
+            console.log('Service Worker: Deleting old cache:', key);
+            return caches.delete(key);
+        })
       );
-    }).then(() => self.clients.claim()) // Take control of open clients immediately
+    }).then(() => self.clients.claim())
   );
 });
 
-// Network-first, falling back to cache strategy
+// Fetch event: Serve from cache, fallback to network, and cache new requests
 self.addEventListener('fetch', event => {
-  // Ignore non-GET requests for caching
-  if (event.request.method !== 'GET') {
+  // Ignore non-GET requests, API calls, and browser extension requests
+  if (event.request.method !== 'GET' || event.request.url.includes('/api/') || event.request.url.startsWith('chrome-extension://')) {
     return;
   }
-  
-  // For cross-origin requests (like fonts or CDN scripts), use a cache-first strategy
-  // to avoid opaque responses that can't be introspected.
-  const isCrossOrigin = new URL(event.request.url).origin !== self.location.origin;
-  if (isCrossOrigin) {
-      event.respondWith(
-          caches.match(event.request).then(cachedResponse => {
-              if (cachedResponse) {
-                  return cachedResponse;
-              }
-              return fetch(event.request).then(networkResponse => {
-                  return caches.open(CACHE_NAME).then(cache => {
-                      if (networkResponse.ok) {
-                          cache.put(event.request, networkResponse.clone());
-                      }
-                      return networkResponse;
-                  });
-              });
-          })
-      );
-      return;
-  }
 
-  // Use network-first for same-origin requests to get the latest content
   event.respondWith(
-    fetch(event.request)
-      .then(networkResponse => {
-        return caches.open(CACHE_NAME).then(cache => {
-          if (networkResponse.ok) {
-            cache.put(event.request, networkResponse.clone());
+    caches.match(event.request)
+      .then(cacheRes => {
+        // Return from cache if found
+        if (cacheRes) {
+          return cacheRes;
+        }
+        
+        // Otherwise, fetch from network
+        return fetch(event.request).then(fetchRes => {
+          // Check for valid, non-opaque responses before caching
+          if (!fetchRes || fetchRes.status !== 200 || fetchRes.type !== 'basic') {
+            return fetchRes; // Return non-cacheable response as is
           }
-          return networkResponse;
+
+          // Cache the new response for future offline use
+          return caches.open(DYNAMIC_CACHE_NAME).then(cache => {
+            cache.put(event.request.url, fetchRes.clone());
+            return fetchRes;
+          });
         });
       })
       .catch(() => {
-        console.log('Service Worker: Network failed, serving from cache for:', event.request.url);
-        return caches.match(event.request).then(cachedResponse => {
-            return cachedResponse || new Response(JSON.stringify({ error: 'Network error and not in cache' }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        });
+        // Fallback for navigation requests when offline and not in cache
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
       })
   );
 });
