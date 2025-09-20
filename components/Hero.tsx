@@ -39,7 +39,7 @@ export const Hero: React.FC<HeroProps> = React.memo(({ heroImageSrc }) => {
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] ease-linear animate-[slow-zoom_15s_ease-in-out_infinite]"
                 style={{ backgroundImage: `url(${heroImageSrc})` }}
             ></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--theme-bg)] via-[var(--theme-bg)]/70 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--theme-bg)] via-[var(--theme-bg)]/60 to-transparent/20"></div>
         </>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--theme-card-bg)] to-[var(--theme-bg)]">

@@ -18,7 +18,6 @@ import { ImageTool } from './components/ImageTool';
 import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
-import { Sidebar } from './components/Sidebar';
 import { MobileHeader } from './components/MobileHeader';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
@@ -67,10 +66,11 @@ export interface Photo {
 export interface Note {
     id: string;
     title: string;
-    content: string;
+    content: string; // Can be simple text or HTML for checklists
     category: string;
     tags: string[];
     date: string;
+    isLocked?: boolean;
 }
 
 export interface BackupData {
@@ -535,7 +535,6 @@ const App: React.FC = () => {
                     onSave={handleSaveNote}
                     onUpdate={handleUpdateNote}
                     onDelete={handleDeleteNote}
-                    siteSettings={siteSettings}
                 />;
             case 'image-tool':
                 return <ImageTool />;
@@ -545,18 +544,17 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="bg-[var(--theme-bg)] min-h-screen font-sans text-[var(--theme-text-primary)]">
+        <div className="min-h-screen font-sans text-[var(--theme-text-primary)]">
             {/* --- Desktop Navigation --- */}
-            <Sidebar 
+            <Header 
+                siteSettings={siteSettings} 
+                isApiConnected={isApiConnected}
                 currentView={currentView}
                 onNavigate={setCurrentView}
                 onOpenDashboard={() => setIsDashboardOpen(true)}
                 onOpenInfo={() => setIsInfoModalOpen(true)}
                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
             />
-            <div className="hidden lg:block">
-                 <Header siteSettings={siteSettings} isApiConnected={isApiConnected} />
-            </div>
 
             {/* --- Mobile Navigation --- */}
             <MobileHeader 
@@ -567,7 +565,7 @@ const App: React.FC = () => {
                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
             />
             
-            <div className="lg:pl-64 pt-[76px] lg:pt-0">
+            <div className="pt-[76px]">
                 <main className="w-full" style={{ height: 'calc(100vh - 76px)' }}>
                     <div className="h-full">
                         {renderView()}

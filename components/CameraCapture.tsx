@@ -11,23 +11,27 @@ interface CameraCaptureProps {
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [activeDeviceIndex, setActiveDeviceIndex] = useState(0);
+  const [isStreamActive, setIsStreamActive] = useState(false);
 
   // Stop current stream
   const stopCurrentStream = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
-  }, [stream]);
+  }, []);
 
   // useEffect to handle permissions and device enumeration correctly.
   useEffect(() => {
     let isMounted = true;
     const initializeCamera = async () => {
+      // Stop any existing streams from previous mounts before starting
+      stopCurrentStream();
+      
       let tempStream: MediaStream | null = null;
       try {
         // First, get a generic stream to trigger the permission prompt.
@@ -69,8 +73,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     
     return () => {
       isMounted = false;
+      stopCurrentStream();
     };
-  }, []);
+  }, [stopCurrentStream]);
 
   // Start a new stream when the active device changes
   useEffect(() => {
@@ -79,6 +84,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     let isCancelled = false;
     const startStream = async () => {
       stopCurrentStream(); // Stop any existing stream first
+      setIsStreamActive(false);
+
       try {
         const deviceId = videoDevices[activeDeviceIndex].deviceId;
         const constraints: MediaStreamConstraints = {
@@ -90,11 +97,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         };
         const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         if (!isCancelled) {
-          setStream(mediaStream);
+          streamRef.current = mediaStream;
           if (videoRef.current) {
             videoRef.current.srcObject = mediaStream;
           }
+          setIsStreamActive(true);
           setError(null);
+        } else {
+            mediaStream.getTracks().forEach(track => track.stop());
         }
       } catch (err) {
         console.error("Error accessing camera:", err);
@@ -108,6 +118,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         }
         if (!isCancelled) {
             setError(message);
+            setIsStreamActive(false);
         }
       }
     };
@@ -117,12 +128,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     return () => {
       isCancelled = true;
       stopCurrentStream();
+      setIsStreamActive(false);
     };
   }, [activeDeviceIndex, videoDevices, stopCurrentStream]);
 
 
   const handleCapture = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current || !isStreamActive) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -141,7 +153,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
       onCapture(dataUrl);
     }
-  }, [onCapture, activeDeviceIndex, videoDevices]);
+  }, [onCapture, activeDeviceIndex, videoDevices, isStreamActive]);
 
   const handleSwitchCamera = () => {
     if (videoDevices.length > 1) {
@@ -169,7 +181,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         <div className="w-16"></div>
         <button
           onClick={handleCapture}
-          disabled={!stream || !!error}
+          disabled={!isStreamActive || !!error}
           className="bg-white hover:opacity-90 text-black font-bold rounded-full p-4 shadow-lg ring-4 ring-white/30 disabled:bg-gray-400 disabled:cursor-not-allowed"
           aria-label="Take Picture"
         >
