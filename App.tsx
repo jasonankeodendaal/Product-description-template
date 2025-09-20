@@ -18,8 +18,11 @@ import { ImageTool } from './components/ImageTool';
 import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
-import { MobileHeader } from './components/MobileHeader';
 import { ManualInstallModal } from './components/ManualInstallModal';
+import { UpdateToast } from './components/UpdateToast';
+import { InstallOptionsModal } from './components/InstallOptionsModal';
+// FIX: Import the MobileHeader component to resolve the 'Cannot find name' error.
+import { MobileHeader } from './components/MobileHeader';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
@@ -129,6 +132,10 @@ const App: React.FC = () => {
         () => window.matchMedia('(display-mode: standalone)').matches
     );
     const [isManualInstallModalOpen, setIsManualInstallModalOpen] = useState(false);
+    const [isInstallOptionsModalOpen, setIsInstallOptionsModalOpen] = useState(false);
+    
+    // App Update State
+    const [showUpdateToast, setShowUpdateToast] = useState(false);
 
 
     // --- PWA Installation Logic ---
@@ -147,9 +154,17 @@ const App: React.FC = () => {
 
         window.addEventListener('appinstalled', handleAppInstalled);
 
+        // Listen for the custom event from the service worker
+        const handleSwUpdate = () => {
+            setShowUpdateToast(true);
+        };
+        window.addEventListener('sw-updated', handleSwUpdate);
+
+
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             window.removeEventListener('appinstalled', handleAppInstalled);
+            window.removeEventListener('sw-updated', handleSwUpdate);
         };
     }, []);
 
@@ -163,7 +178,8 @@ const App: React.FC = () => {
         setInstallPromptEvent(null);
     };
     
-    const handleInstallButtonClick = () => {
+    const handlePwaInstall = () => {
+        setIsInstallOptionsModalOpen(false);
         // If the install prompt is available, show it.
         if (installPromptEvent) {
             handleBrowserInstall();
@@ -171,6 +187,18 @@ const App: React.FC = () => {
             // Otherwise, show instructions on how to install manually.
             setIsManualInstallModalOpen(true);
         }
+    };
+    
+    const handleApkDownload = () => {
+        // Create a link and click it to download the APK.
+        // NOTE: A real APK would need to be built and hosted. This is a placeholder.
+        const link = document.createElement('a');
+        link.href = '/downloads/app-release.apk'; 
+        link.download = 'AiToolsApp.apk';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setIsInstallOptionsModalOpen(false);
     };
 
 
@@ -625,6 +653,8 @@ const App: React.FC = () => {
                 onOpenDashboard={() => setIsDashboardOpen(true)}
                 onOpenInfo={() => setIsInfoModalOpen(true)}
                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+                showInstallButton={!isAppInstalled}
+                onInstallClick={() => setIsInstallOptionsModalOpen(true)}
             />
 
             {/* --- Mobile Navigation --- */}
@@ -635,7 +665,7 @@ const App: React.FC = () => {
                 onOpenInfo={() => setIsInfoModalOpen(true)}
                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                 showInstallButton={!isAppInstalled}
-                onInstallClick={handleInstallButtonClick}
+                onInstallClick={() => setIsInstallOptionsModalOpen(true)}
             />
             
             <main className="flex-1 pt-[76px] flex flex-col overflow-hidden">
@@ -687,6 +717,14 @@ const App: React.FC = () => {
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
             {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
             {isManualInstallModalOpen && <ManualInstallModal onClose={() => setIsManualInstallModalOpen(false)} />}
+            {isInstallOptionsModalOpen && (
+                <InstallOptionsModal 
+                    onClose={() => setIsInstallOptionsModalOpen(false)}
+                    onPwaInstall={handlePwaInstall}
+                    onApkDownload={handleApkDownload}
+                />
+            )}
+            {showUpdateToast && <UpdateToast onUpdate={() => window.location.reload()} />}
         </div>
     );
 };

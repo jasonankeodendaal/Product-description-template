@@ -1,31 +1,25 @@
-const CACHE_NAME = 'ai-product-gen-cache-v8'; // Incremented version
+const CACHE_NAME = 'ai-product-gen-cache-v10'; // Increment version to trigger update
 const APP_SHELL_URLS = [
   '/',
   '/manifest.json',
-  '/index.tsx', // Add main script to pre-cache
-  'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png', // Main Icon
-  // Pre-cache shortcut icons for a complete offline experience
+  '/index.tsx',
+  'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png',
   'https://i.ibb.co/6y1jV1h/shortcut-mic.png',
   'https://i.ibb.co/L6Szk5X/shortcut-note.png',
   'https://i.ibb.co/8Y4B05y/shortcut-image.png'
 ];
 
-// Install event: cache the application shell and manifest, then force activation.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching App Shell and core assets');
+        console.log('Service Worker: Caching App Shell');
         return cache.addAll(APP_SHELL_URLS);
       })
-      .then(() => {
-        // Force the waiting service worker to become the active service worker.
-        return self.skipWaiting();
-      })
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate event: clean up old caches and take immediate control of all clients.
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -37,74 +31,57 @@ self.addEventListener('activate', event => {
             return caches.delete(name);
           })
       );
-    }).then(() => {
-      // Take control of all open pages without waiting for a reload.
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim()) // Take control of open clients immediately
   );
 });
 
-// Fetch event: handle requests with appropriate strategies.
+// Network-first, falling back to cache strategy
 self.addEventListener('fetch', event => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Strategy for manifest.json: Network-first, falling back to cache.
-  // This ensures the app manifest is always up-to-date.
-  if (url.pathname === '/manifest.json') {
-    event.respondWith(
-      fetch(request)
-        .then(networkResponse => {
-          // If fetch is successful, cache the new manifest
-          if (networkResponse.ok) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // If network fails, serve from cache
-          console.log('Service Worker: Network failed for manifest. Serving from cache.');
-          return caches.match(request);
-        })
-    );
+  // Ignore non-GET requests for caching
+  if (event.request.method !== 'GET') {
     return;
   }
-
-  // Strategy for navigation requests (the app itself): Network-first, falling back to cache.
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .catch(() => {
-          console.log('Service Worker: Network failed for navigation. Serving cached app shell.');
-          return caches.match('/'); // Always fall back to the main app shell
-        })
-    );
-    return;
+  
+  // For cross-origin requests (like fonts or CDN scripts), use a cache-first strategy
+  // to avoid opaque responses that can't be introspected.
+  const isCrossOrigin = new URL(event.request.url).origin !== self.location.origin;
+  if (isCrossOrigin) {
+      event.respondWith(
+          caches.match(event.request).then(cachedResponse => {
+              if (cachedResponse) {
+                  return cachedResponse;
+              }
+              return fetch(event.request).then(networkResponse => {
+                  return caches.open(CACHE_NAME).then(cache => {
+                      if (networkResponse.ok) {
+                          cache.put(event.request, networkResponse.clone());
+                      }
+                      return networkResponse;
+                  });
+              });
+          })
+      );
+      return;
   }
 
-  // Strategy for all other requests (assets like scripts, styles, images): Cache-first.
+  // Use network-first for same-origin requests to get the latest content
   event.respondWith(
-    caches.match(request)
-      .then(cachedResponse => {
-        // Return the cached response if it exists.
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        
-        // If not in cache, fetch from the network.
-        return fetch(request.clone()).then(networkResponse => {
-          // Check for a valid, cacheable response.
-          // Opaque responses are for cross-origin requests without CORS, caching them is a bit risky but often necessary for CDNs.
-          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(request, responseToCache);
-            });
+    fetch(event.request)
+      .then(networkResponse => {
+        return caches.open(CACHE_NAME).then(cache => {
+          if (networkResponse.ok) {
+            cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
+        });
+      })
+      .catch(() => {
+        console.log('Service Worker: Network failed, serving from cache for:', event.request.url);
+        return caches.match(event.request).then(cachedResponse => {
+            return cachedResponse || new Response(JSON.stringify({ error: 'Network error and not in cache' }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json' }
+            });
         });
       })
   );

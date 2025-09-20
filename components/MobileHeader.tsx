@@ -60,11 +60,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
                  {showInstallButton && (
                     <button
                         onClick={onInstallClick}
-                        className="flex items-center gap-2 bg-[var(--theme-green)] text-black font-bold py-2 px-3 rounded-full text-sm animate-fade-in-down shadow-lg"
+                        className="flex items-center gap-2 bg-[var(--theme-green)] text-black font-bold py-2 px-3 rounded-full text-sm animate-fade-in-down shadow-lg hover:opacity-90 transition-opacity"
                         aria-label="Install App"
                     >
                         <DownloadIcon />
-                        <span>Install</span>
+                        <span className="pr-1">Install</span>
                     </button>
                 )}
                 <div className="relative" ref={moreMenuRef}>

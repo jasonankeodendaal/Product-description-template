@@ -11,6 +11,7 @@ import { ImageIcon } from './icons/ImageIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
 import { UserIcon } from './icons/UserIcon';
+import { DownloadIcon } from './icons/DownloadIcon';
 
 interface HeaderProps {
   siteSettings: SiteSettings;
@@ -20,6 +21,8 @@ interface HeaderProps {
   onOpenDashboard: () => void;
   onOpenInfo: () => void;
   onOpenCreatorInfo: () => void;
+  showInstallButton: boolean;
+  onInstallClick: () => void;
 }
 
 const HeaderNavItem: React.FC<{
@@ -54,7 +57,9 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     onNavigate,
     onOpenDashboard,
     onOpenInfo,
-    onOpenCreatorInfo
+    onOpenCreatorInfo,
+    showInstallButton,
+    onInstallClick,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -100,6 +105,16 @@ export const Header: React.FC<HeaderProps> = React.memo(({
         </nav>
 
         <div className="flex items-center gap-4">
+             {showInstallButton && (
+                <button
+                    onClick={onInstallClick}
+                    className="flex items-center gap-2 bg-[var(--theme-green)] text-black font-bold py-2 px-4 rounded-full text-sm animate-fade-in-down shadow-lg hover:opacity-90 transition-opacity"
+                    aria-label="Install App"
+                >
+                    <DownloadIcon />
+                    <span>Install App</span>
+                </button>
+            )}
             <UtilityButton label="Creator Info" icon={<UserIcon />} onClick={onOpenCreatorInfo} />
             <UtilityButton label="Dashboard" icon={<DatabaseIcon />} onClick={onOpenDashboard} />
             <UtilityButton label="About & Setup" icon={<QuestionCircleIcon />} onClick={onOpenInfo} />
