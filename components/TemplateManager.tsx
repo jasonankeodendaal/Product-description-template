@@ -50,7 +50,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
   };
 
   return (
-    <div className="bg-[var(--theme-card-bg)] rounded-lg shadow-lg border border-[var(--theme-border)] mb-8">
+    <div className="bg-[var(--theme-card-bg)] backdrop-blur-xl rounded-lg shadow-lg border border-[var(--theme-border)] mb-8">
       <button
         onClick={() => setIsFormVisible(!isFormVisible)}
         className="w-full flex justify-between items-center p-4 text-left"

@@ -19,7 +19,6 @@ import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
 import { MobileHeader } from './components/MobileHeader';
-import { InstallPwaButton } from './components/InstallPwaButton';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
@@ -604,7 +603,7 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen font-sans text-[var(--theme-text-primary)]">
+        <div className="min-h-screen font-sans text-[var(--theme-text-primary)] flex flex-col">
             {/* --- Desktop Navigation --- */}
             <Header 
                 siteSettings={siteSettings} 
@@ -623,15 +622,13 @@ const App: React.FC = () => {
                 onOpenDashboard={() => setIsDashboardOpen(true)}
                 onOpenInfo={() => setIsInfoModalOpen(true)}
                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+                isInstallButtonVisible={isInstallButtonVisible}
+                onInstall={handleInstallClick}
             />
             
-            <div className="pt-[76px]">
-                <main className="w-full" style={{ height: 'calc(100vh - 76px)' }}>
-                    <div className="h-full">
-                        {renderView()}
-                    </div>
-                </main>
-            </div>
+            <main className="flex-1 pt-[76px] flex flex-col overflow-hidden">
+                {renderView()}
+            </main>
             
             <BottomNavBar
                  currentView={currentView} 
@@ -677,7 +674,6 @@ const App: React.FC = () => {
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
             {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
-            {isInstallButtonVisible && <InstallPwaButton onInstall={handleInstallClick} />}
         </div>
     );
 };

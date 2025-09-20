@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { Recording, Photo } from '../App';
 import { SiteSettings } from '../constants';
@@ -104,7 +105,7 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
     };
     
     return (
-        <div className="flex flex-col h-full bg-[var(--theme-bg)]">
+        <div className="flex flex-col h-full bg-[var(--theme-bg)] backdrop-blur-2xl">
             {isCameraOpen && selectedRecording && (
                 <CameraCapture 
                     onClose={() => setIsCameraOpen(false)}

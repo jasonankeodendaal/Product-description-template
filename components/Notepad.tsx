@@ -56,7 +56,7 @@ const NoteEditor = ({ note, onUpdate, onDelete, onBack }: { note: Note; onUpdate
 
 
     return (
-        <div className="flex flex-col h-full bg-[var(--theme-card-bg)]">
+        <div className="flex flex-col h-full bg-transparent">
             <header className="flex-shrink-0 p-4 border-b border-[var(--theme-border)] flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-grow">
                     <button onClick={onBack} className="md:hidden p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white">
@@ -180,7 +180,7 @@ export const Notepad: React.FC<{ notes: Note[]; onSave: (note: Note) => Promise<
     };
 
     return (
-        <div className="relative flex h-full overflow-hidden bg-[var(--theme-bg)] text-[var(--theme-text-primary)]">
+        <div className="relative flex h-full overflow-hidden bg-[var(--theme-bg)] backdrop-blur-2xl text-[var(--theme-text-primary)]">
             {/* Note List Pane */}
             <aside className={`w-full flex-shrink-0 md:w-1/3 md:max-w-sm flex flex-col border-r border-[var(--theme-border)] transition-transform duration-300 ease-in-out ${isEditorVisible ? '-translate-x-full md:translate-x-0' : 'translate-x-0'} absolute md:relative inset-0 md:inset-auto`}>
                 <header className="p-4 flex-shrink-0 flex items-center justify-between border-b border-[var(--theme-border)]">

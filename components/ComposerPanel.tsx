@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { InputPanel } from './InputPanel';
 // FIX: SiteSettings is exported from constants.ts, not App.tsx.
@@ -110,7 +111,7 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                 tone={tone}
                 onToneChange={onToneChange}
             />
-            <div className="bg-[var(--theme-card-bg)] p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)]">
+            <div className="bg-[var(--theme-card-bg)] backdrop-blur-xl p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)]">
                 <h2 className="text-xl font-semibold mb-4 text-[var(--theme-green)]">2. Add From Library</h2>
                 <div className="border-b border-[var(--theme-border)] mb-4">
                     <nav className="-mb-px flex space-x-6" aria-label="Tabs">

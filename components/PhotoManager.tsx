@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Photo } from '../App';
 import { PhotoThumbnail } from './PhotoThumbnail';
@@ -112,7 +113,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
             )}
             {selectedPhoto && (
                  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in-down" onClick={() => setSelectedPhoto(null)}>
-                    <div className="bg-[var(--theme-card-bg)] w-full max-w-5xl h-[90vh] rounded-lg shadow-xl border border-[var(--theme-border)] flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[var(--theme-card-bg)] backdrop-blur-xl w-full max-w-5xl h-[90vh] rounded-lg shadow-xl border border-[var(--theme-border)] flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
                         <div className="w-full md:w-2/3 h-1/2 md:h-full bg-black/20 flex items-center justify-center">
                             <img src={URL.createObjectURL(selectedPhoto.imageBlob)} alt={selectedPhoto.name} className="max-w-full max-h-full object-contain" />
                         </div>

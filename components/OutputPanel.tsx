@@ -247,7 +247,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     };
 
   return (
-    <div className="bg-[var(--theme-card-bg)] p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)] relative flex flex-col">
+    <div className="bg-[var(--theme-card-bg)] backdrop-blur-xl p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)] relative flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-[var(--theme-green)]">Generated Description</h2>
         {hasOutput && !isLoading && (
