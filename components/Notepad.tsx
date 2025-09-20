@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Note } from '../App';
 import { PlusIcon } from './icons/PlusIcon';
@@ -8,6 +7,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
+import { CheckIcon } from './icons/CheckIcon';
 
 // --- Helper Functions ---
 const getPreview = (htmlContent: string): { type: 'text' | 'checklist', content: string } => {
@@ -210,9 +210,19 @@ const NoteEditor = ({ note, onUpdate, onDelete, onBack }: { note: Note; onUpdate
                             className="text-2xl font-bold bg-transparent focus:outline-none w-full text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] truncate"
                         />
                     </div>
-                    <button onClick={() => onDelete(note.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] flex-shrink-0 ml-2">
-                        <TrashIcon />
-                    </button>
+                     <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <button
+                            onClick={onBack}
+                            className="hidden lg:flex items-center justify-center gap-2 bg-[var(--theme-green)] text-black font-bold py-2 px-4 rounded-md hover:opacity-90 text-sm"
+                            aria-label="Finish editing"
+                        >
+                            <CheckIcon />
+                            <span>Done</span>
+                        </button>
+                        <button onClick={() => onDelete(note.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]">
+                            <TrashIcon />
+                        </button>
+                    </div>
                 </div>
                  <div className="mt-3 flex items-center gap-2 text-sm pl-1 lg:pl-0">
                     <label htmlFor="due-date" className="flex items-center gap-2 text-[var(--theme-text-secondary)] cursor-pointer">
@@ -258,15 +268,23 @@ const NoteEditor = ({ note, onUpdate, onDelete, onBack }: { note: Note; onUpdate
 export const Notepad: React.FC<{ notes: Note[]; onSave: (note: Note) => Promise<void>; onUpdate: (note: Note) => Promise<void>; onDelete: (id: string) => Promise<void>; }> = ({ notes, onSave, onUpdate, onDelete }) => {
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const isInitialLoad = useRef(true);
 
     useEffect(() => {
         const noteExists = notes.some(n => n.id === selectedNoteId);
-        const sortedNotes = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
-        if (selectedNoteId && !noteExists) {
-            setSelectedNoteId(sortedNotes.length > 0 ? sortedNotes[0].id : null);
-        } else if (!selectedNoteId && sortedNotes.length > 0) {
+        // On initial mount, select the newest note if none is selected
+        if (isInitialLoad.current && !selectedNoteId && notes.length > 0) {
+            const sortedNotes = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             setSelectedNoteId(sortedNotes[0].id);
+            isInitialLoad.current = false; // Prevent this from running again
+            return;
+        }
+
+        // If the currently selected note is deleted, select the new newest note
+        if (selectedNoteId && !noteExists) {
+            const sortedNotes = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setSelectedNoteId(sortedNotes.length > 0 ? sortedNotes[0].id : null);
         }
     }, [notes, selectedNoteId]);
 

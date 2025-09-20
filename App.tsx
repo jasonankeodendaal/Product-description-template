@@ -24,14 +24,25 @@ import { InstallOptionsModal } from './components/InstallOptionsModal';
 // FIX: Import the MobileHeader component to resolve the 'Cannot find name' error.
 import { MobileHeader } from './components/MobileHeader';
 import { projectFiles } from './utils/sourceCode';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
 
-const supabaseUrl = 'https://izeispyzinvnblbxuxfc.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6ZWlzcHl6aW52bmJsYnh1eGZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyNTA2ODksImV4cCI6MjA2NTgyNjY4OX0.wDwli6ndOgsoAiXO7lHSfIbZ4_s8hvlVwiYUpwalzfc';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use environment variables for Supabase, assuming they are available in the execution context.
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// Create a single Supabase client instance, handling missing environment variables
+const supabase: SupabaseClient | null = 
+    (supabaseUrl && supabaseAnonKey) 
+    ? createClient(supabaseUrl, supabaseAnonKey) 
+    : null;
+
+if (!supabase) {
+    console.error("Supabase client could not be initialized. Please ensure SUPABASE_URL and SUPABASE_ANON_KEY are set in the environment.");
+}
+
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -306,6 +317,10 @@ const App: React.FC = () => {
     
     useEffect(() => {
         const fetchTodos = async () => {
+            if (!supabase) {
+                console.warn('Skipping Supabase fetch: client not initialized.');
+                return;
+            }
             console.log('Fetching from Supabase...');
             const { data, error } = await supabase.from('todos').select();
 
