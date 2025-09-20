@@ -12,8 +12,7 @@
     "@google/genai": "^1.20.0",
     "react-dom": "^19.1.1",
     "react": "^19.1.1",
-    "@vercel/node": "^5.3.22",
-    "@supabase/supabase-js": "2"
+    "@vercel/node": "^5.3.22"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

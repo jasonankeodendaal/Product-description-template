@@ -24,25 +24,9 @@ import { InstallOptionsModal } from './components/InstallOptionsModal';
 // FIX: Import the MobileHeader component to resolve the 'Cannot find name' error.
 import { MobileHeader } from './components/MobileHeader';
 import { projectFiles } from './utils/sourceCode';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
-
-// Use environment variables for Supabase, assuming they are available in the execution context.
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-// Create a single Supabase client instance, handling missing environment variables
-const supabase: SupabaseClient | null = 
-    (supabaseUrl && supabaseAnonKey) 
-    ? createClient(supabaseUrl, supabaseAnonKey) 
-    : null;
-
-if (!supabase) {
-    console.error("Supabase client could not be initialized. Please ensure SUPABASE_URL and SUPABASE_ANON_KEY are set in the environment.");
-}
-
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -315,24 +299,6 @@ const App: React.FC = () => {
         initializeApp();
     }, []);
     
-    useEffect(() => {
-        const fetchTodos = async () => {
-            if (!supabase) {
-                console.warn('Skipping Supabase fetch: client not initialized.');
-                return;
-            }
-            console.log('Fetching from Supabase...');
-            const { data, error } = await supabase.from('todos').select();
-
-            if (error) {
-                console.error('Error fetching Supabase data:', error);
-            } else {
-                console.log('Supabase data:', data);
-            }
-        };
-        fetchTodos();
-    }, []);
-
     // FIX: Handle auth modal logic in an effect to avoid side-effects in render.
     useEffect(() => {
         if (isDashboardOpen && !isUnlocked) {
