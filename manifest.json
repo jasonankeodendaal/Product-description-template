@@ -2,6 +2,23 @@
   "short_name": "Ai tools",
   "name": "Ai tools - AI Product Description Generator",
   "description": "An AI-powered application to automatically generate structured and professional product descriptions.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "orientation": "any",
+  "theme_color": "#1F2937",
+  "background_color": "#000000",
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "src": "https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png",
@@ -16,11 +33,11 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
-  "display": "standalone",
-  "theme_color": "#1F2937",
-  "background_color": "#000000",
-  "categories": ["business", "productivity", "developer_tools"],
+  "categories": [
+    "business",
+    "productivity",
+    "developer_tools"
+  ],
   "screenshots": [
     {
       "src": "https://i.ibb.co/Rz7xWdY/screenshot-generator.webp",
@@ -42,6 +59,27 @@
       "type": "image/webp",
       "form_factor": "wide",
       "label": "Photo Library and Management"
+    },
+    {
+      "src": "https://i.ibb.co/b3D0z0p/screenshot-generator-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "AI Generator on Mobile"
+    },
+    {
+      "src": "https://i.ibb.co/4Z58f6d/screenshot-recordings-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Recordings on Mobile"
+    },
+    {
+      "src": "https://i.ibb.co/yq4503s/screenshot-photos-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Photos on Mobile"
     }
   ],
   "shortcuts": [
@@ -50,21 +88,36 @@
       "short_name": "Record",
       "description": "Start a new voice recording",
       "url": "/?view=recordings",
-      "icons": [{ "src": "https://i.ibb.co/6y1jV1h/shortcut-mic.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "https://i.ibb.co/6y1jV1h/shortcut-mic.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "New Sticky Note",
       "short_name": "Note",
       "description": "Create a new sticky note",
       "url": "/?view=notepad",
-      "icons": [{ "src": "https://i.ibb.co/L6Szk5X/shortcut-note.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "https://i.ibb.co/L6Szk5X/shortcut-note.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Open Image Squarer",
       "short_name": "Image Tool",
       "description": "Open the image processing tool",
       "url": "/?view=image-tool",
-      "icons": [{ "src": "https://i.ibb.co/8Y4B05y/shortcut-image.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "https://i.ibb.co/wJ4tS0V/shortcut-image.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

@@ -668,7 +668,7 @@ const App: React.FC = () => {
         };
         initializeApp();
     }, []);
-
+    
     // FIX: Handle auth modal logic in an effect to avoid side-effects in render.
     useEffect(() => {
         if (isDashboardOpen && !isUnlocked) {
@@ -1146,723 +1146,127 @@ const App: React.FC = () => {
 };
 
 export default App;`,
-    "components/Dashboard.tsx": `import React, { useState } from 'react';
-import { Template, Recording, Photo, Note } from '../App';
-import { XIcon } from './icons/XIcon';
-import { DataManagement } from './DataManagement';
-import { SiteSettingsEditor } from './SiteSettingsEditor';
-import { createBackup } from '../utils/dataUtils';
-import { SiteSettings } from '../constants';
-import { DatabaseIcon } from './icons/DatabaseIcon';
-import { SettingsIcon } from './icons/SettingsIcon';
-import { InfoIcon } from './icons/InfoIcon';
-import { CodeIcon } from './icons/CodeIcon';
-import { NavButton } from './NavButton';
-import { AboutThisApp } from './AboutThisApp';
-import { SetupGuide } from './SetupGuide';
-import { AndroidIcon } from './icons/AndroidIcon';
-import { AppPublishingGuide } from './AppPublishingGuide';
-
-interface DashboardProps {
-  onClose: () => void;
-  onLock: () => void;
-  templates: Template[];
-  recordings: Recording[];
-  photos: Photo[];
-  notes: Note[];
-  siteSettings: SiteSettings;
-  onUpdateSettings: (newSettings: SiteSettings) => Promise<void>;
-  onRestore: (data: File) => void;
-  directoryHandle: FileSystemDirectoryHandle | null;
-  onSyncDirectory: () => void;
-  onDisconnectDirectory: () => void;
-  onClearLocalData: () => void;
-  onApiConnect: (apiUrl: string, apiKey: string) => Promise<void>;
-  onApiDisconnect: () => void;
-  isApiConnecting: boolean;
-  isApiConnected: boolean;
-  onDownloadSource: () => void;
-}
-
-type Section = 'data' | 'settings' | 'setup' | 'about' | 'publishing';
-
-export const Dashboard: React.FC<DashboardProps> = ({ 
-  onClose, 
-  onLock,
-  templates,
-  recordings,
-  photos,
-  notes,
-  siteSettings,
-  onUpdateSettings,
-  onRestore,
-  directoryHandle,
-  onSyncDirectory,
-  onDisconnectDirectory,
-  onClearLocalData,
-  onApiConnect,
-  onApiDisconnect,
-  isApiConnecting,
-  isApiConnected,
-  onDownloadSource,
-}) => {
-  const [activeSection, setActiveSection] = useState<Section>('about');
-
-  const handleBackup = async () => {
-    try {
-        await createBackup(siteSettings, templates, recordings, photos, notes);
-    } catch (err) {
-        alert(\`Error creating backup: \${err instanceof Error ? err.message : String(err)}\`);
+    "manifest.json": `{
+  "short_name": "Ai tools",
+  "name": "Ai tools - AI Product Description Generator",
+  "description": "An AI-powered application to automatically generate structured and professional product descriptions.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "orientation": "any",
+  "theme_color": "#1F2937",
+  "background_color": "#000000",
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
-  };
-  
-  return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
-      <div className="bg-[var(--theme-dark-bg)] border-t md:border border-[var(--theme-border)] w-full h-full md:max-w-6xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in">
-        <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-bold text-[var(--theme-text-primary)]">Dashboard</h2>
-            <p className="text-[var(--theme-text-secondary)] mt-1 text-sm">Manage your application's data, settings, and local folder connection.</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <button onClick={onLock} className="text-sm font-semibold text-[var(--theme-red)] hover:opacity-80 transition-opacity">Lock Dashboard</button>
-            <button onClick={onClose} className="text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
-          </div>
-        </header>
-        
-        <div className="flex-grow flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
-            <aside className="w-full md:w-64 p-4 border-b md:border-b-0 md:border-r border-[var(--theme-border)] flex-shrink-0">
-                <nav className="space-y-2">
-                    <NavButton active={activeSection === 'about'} onClick={() => setActiveSection('about')} icon={<InfoIcon />}>About This App</NavButton>
-                    <NavButton active={activeSection === 'data'} onClick={() => setActiveSection('data')} icon={<DatabaseIcon />}>Data Management</NavButton>
-                    <NavButton active={activeSection === 'settings'} onClick={() => setActiveSection('settings')} icon={<SettingsIcon />}>Site & Creator Settings</NavButton>
-                    <NavButton active={activeSection === 'setup'} onClick={() => setActiveSection('setup')} icon={<CodeIcon />}>Setup Guide</NavButton>
-                    <NavButton active={activeSection === 'publishing'} onClick={() => setActiveSection('publishing')} icon={<AndroidIcon />}>App Publishing (APK)</NavButton>
-                </nav>
-            </aside>
-
-            <main className="flex-grow md:overflow-y-auto p-4 bg-[var(--theme-bg)]/30">
-                {activeSection === 'data' && (
-                    <DataManagement 
-                        templates={templates}
-                        recordings={recordings}
-                        photos={photos}
-                        notes={notes}
-                        onBackup={handleBackup}
-                        onRestore={onRestore}
-                        directoryHandle={directoryHandle}
-                        onSyncDirectory={onSyncDirectory}
-                        onDisconnectDirectory={onDisconnectDirectory}
-                        onClearLocalData={onClearLocalData}
-                        siteSettings={siteSettings}
-                        onUpdateSettings={onUpdateSettings}
-                        onApiConnect={onApiConnect}
-                        onApiDisconnect={onApiDisconnect}
-                        isApiConnecting={isApiConnecting}
-                        isApiConnected={isApiConnected}
-                    />
-                )}
-                {activeSection === 'settings' && (
-                    <SiteSettingsEditor 
-                        settings={siteSettings}
-                        onSave={onUpdateSettings}
-                    />
-                )}
-                {activeSection === 'setup' && <SetupGuide />}
-                {activeSection === 'about' && <AboutThisApp onNavigateToSetup={() => setActiveSection('setup')} />}
-                {activeSection === 'publishing' && <AppPublishingGuide onDownloadSource={onDownloadSource} />}
-            </main>
-        </div>
-      </div>
-    </div>
-  );
-};`,
-    "components/icons/AndroidIcon.tsx": `import React from 'react';
-
-export const AndroidIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-        <path d="M17 18c-2 0-2-2-4-2s-2 2-4 2" />
-        <line x1="8" y1="14" x2="8" y2="14" />
-        <line x1="16" y1="14" x2="16" y2="14" />
-        <path d="M17.5 10.5c0 .5-.5 1-1 1s-1-.5-1-1 .5-1 1-1 1 .5 1 1z" fill="currentColor" />
-        <path d="M7.5 10.5c0 .5-.5 1-1 1s-1-.5-1-1 .5-1 1-1 1 .5 1 1z" fill="currentColor" />
-        <path d="M14 5L12 3 10 5" />
-        <path d="M19 8a7 7 0 0 0-14 0" />
-        <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
-    </svg>
-);`,
-    "components/AppPublishingGuide.tsx": `import React from 'react';
-import { DownloadIcon } from './icons/DownloadIcon';
-
-const CodeBlock: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <pre className="bg-black/50 p-3 rounded-md text-sm text-[var(--theme-text-primary)] font-mono overflow-x-auto whitespace-pre-wrap">
-        <code>{children}</code>
-    </pre>
-);
-
-const Step: React.FC<{ num: string; title: string; children: React.ReactNode; }> = ({ num, title, children }) => (
-    <div className="pt-4">
-        <h4 className="text-md font-semibold text-[var(--theme-text-primary)] mb-2">Step {num}: {title}</h4>
-        <div className="pl-4 border-l-2 border-[var(--theme-border)]/50 space-y-3 text-[var(--theme-text-secondary)] text-sm">
-            {children}
-        </div>
-    </div>
-);
-
-interface AppPublishingGuideProps {
-    onDownloadSource: () => void;
-}
-
-export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownloadSource }) => {
-    return (
-        <div className="space-y-10 text-sm leading-relaxed animate-fade-in-down max-w-4xl">
-            <section>
-                <h2 className="text-2xl font-bold text-[var(--theme-text-primary)]">Publishing Your App to Android</h2>
-                <p className="mt-2 text-[var(--theme-text-secondary)]">
-                    This guide provides a complete walkthrough for packaging your Progressive Web App (PWA) into an Android APK file. This file can be installed directly on Android devices or submitted to the Google Play Store. We will use free, industry-standard tools for this process.
-                </p>
-            </section>
-
-            <div className="p-4 bg-[var(--theme-green)]/10 rounded-lg border border-[var(--theme-green)]/30">
-                <h4 className="font-semibold text-[var(--theme-green)]">The Big Picture</h4>
-                 <p className="mt-2 text-sm text-[var(--theme-text-secondary)]">
-                    A web app can't magically become an APK on its own. The process involves two main stages:
-                 </p>
-                 <ol className="list-decimal list-inside mt-2 text-sm text-[var(--theme-text-secondary)] space-y-1">
-                    <li><strong className="text-white">Hosting:</strong> First, we need to put your app's code on the public internet so it has a live URL (e.g., \\\`https://my-awesome-app.com\\\`).</li>
-                    <li><strong className="text-white">Packaging:</strong> Then, we'll use a free online tool called PWABuilder to wrap your live web app in a native Android "shell," creating an Android Studio project.</li>
-                    <li><strong className="text-white">Building:</strong> Finally, you'll open this project in Android Studio (the official tool for Android development) to build the final APK file.</li>
-                </ol>
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 1: Deploying Your Web App</h3>
-                 <div className="space-y-6">
-                    <Step num="1" title="Download Your App's Source Code">
-                        <p>The first step is to get a complete copy of the application's code. Click the button below to download a \`.zip\` file containing everything you need.</p>
-                        <button onClick={onDownloadSource} className="bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2">
-                            <DownloadIcon /> Download Source Code (.zip)
-                        </button>
-                    </Step>
-                    
-                    <Step num="2" title="Choose a Hosting Provider">
-                        <p>You need to host this code on a platform that makes it available online. We recommend <strong className="text-white">Vercel</strong> because it's free, incredibly easy to use, and hosts the AI functions for this app.</p>
-                        <p>Go to <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-green)] hover:underline">vercel.com</a> and sign up for a free account. Connecting with GitHub is the easiest option.</p>
-                    </Step>
-
-                    <Step num="3" title="Deploy on Vercel">
-                        <p>1. Unzip the source code you downloaded in Step 1.</p>
-                        <p>2. On your Vercel dashboard, click "Add New... &gt; Project".</p>
-                        <p>3. Vercel will prompt you to connect a Git repository. Instead, look for the option to <strong className="text-white">"Deploy a Project from Your Computer"</strong> and drag your unzipped folder into the browser window.</p>
-                        <p>4. Vercel will detect it's a web app. You don't need to change any build settings. Just click <strong className="text-white">"Deploy"</strong>.</p>
-                        <p>5. You'll need to add your API keys as Environment Variables in Vercel. Go to your new project's settings, find "Environment Variables", and add your \`API_KEY\` and \`API_SECRET_KEY\` just like you did in your local \`.env\` file.</p>
-                    </Step>
-                     <Step num="4" title="Get Your Public URL">
-                        <p>Once deployed, Vercel will give you a public URL, like <code className="bg-black/30 px-1 py-0.5 rounded text-xs">https://your-project-name.vercel.app</code>. Congratulations, your app is live! Copy this URL for the next part.</p>
-                    </Step>
-                </div>
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 2: Packaging for Android with PWABuilder</h3>
-                <div className="space-y-6">
-                    <Step num="1" title="Go to PWABuilder">
-                        <p>PWABuilder is a free tool from Microsoft that helps package PWAs for app stores. Open <a href="https://www.pwabuilder.com" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-green)] hover:underline">www.pwabuilder.com</a> in your browser.</p>
-                    </Step>
-                    <Step num="2" title="Enter Your URL">
-                        <p>Paste the public URL you got from Vercel into the input box and click <strong className="text-white">"Start"</strong>.</p>
-                    </Step>
-                    <Step num="3" title="Package for Android">
-                        <p>PWABuilder will analyze your app. Once it's done, look for the "Package for Stores" section and click the <strong className="text-white">"Generate"</strong> button under the Android logo.</p>
-                         <p>You can customize app details like the package ID if you wish, but the defaults are fine to start. Click <strong className="text-white">"Download"</strong> to get a \`.zip\` file of your Android Studio project.</p>
-                    </Step>
-                </div>
-            </div>
-
-            <div>
-                <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 3: Building the APK in Android Studio</h3>
-                 <div className="space-y-6">
-                     <Step num="1" title="Install Android Studio">
-                        <p>If you don't have it, download and install Android Studio from the <a href="https://developer.android.com/studio" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-green)] hover:underline">official Android developer website</a>. This is a large application, so the download and installation may take some time.</p>
-                    </Step>
-                     <Step num="2" title="Open the Project">
-                        <p>1. Unzip the file you downloaded from PWABuilder.</p>
-                        <p>2. Open Android Studio.</p>
-                        <p>3. Click <strong className="text-white">"Open"</strong> (do not choose "Import Project").</p>
-                        <p>4. Navigate to and select the unzipped folder. Android Studio will then load and sync the project. This can take several minutes the first time.</p>
-                    </Step>
-                     <Step num="3" title="Build the APK">
-                        <p>Once the project is loaded and all processes have finished (check the bottom status bar), go to the top menu and select:</p>
-                        <p><strong className="text-white">Build &gt; Build Bundle(s) / APK(s) &gt; Build APK(s)</strong></p>
-                        <p>Android Studio will start building your app. When it's finished, a notification will appear in the bottom-right corner.</p>
-                    </Step>
-                     <Step num="4" title="Locate Your APK File">
-                        <p>In the notification, click the <strong className="text-white">"locate"</strong> link. This will open your computer's file explorer directly to the folder containing your APK.</p>
-                        <p>The file is usually named <code className="bg-black/30 px-1 py-0.5 rounded text-xs">app-debug.apk</code>. You can now copy this file to an Android device and install it!</p>
-                    </Step>
-                </div>
-            </div>
-        </div>
-    );
-};`,
-    "components/icons/ZipIcon.tsx": `import React from 'react';
-
-export const ZipIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <defs>
-            <linearGradient id="zip-grad-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#6B7280" />
-                <stop offset="100%" stopColor="#4B5563" />
-            </linearGradient>
-            <linearGradient id="zip-grad-tag" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#F9FAFB" />
-                <stop offset="100%" stopColor="#E5E7EB" />
-            </linearGradient>
-            <filter id="zip-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.3"/>
-            </filter>
-        </defs>
-        <g filter="url(#zip-shadow)">
-            <path d="M20 6v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l5 5z" fill="url(#zip-grad-bg)" />
-            <path d="M13 2v5h5" fill="#9CA3AF" />
-            <rect x="8" y="11" width="8" height="6" rx="1" fill="url(#zip-grad-tag)" />
-            <path d="M12 11v-1h-1v1h-1v1h1v1h1v-1h1v1h1v-1h-1z" fill="#4B5563" />
-        </g>
-    </svg>
-);`,
-"components/InstallOptionsModal.tsx": `import React from 'react';
-import { XIcon } from './icons/XIcon';
-import { PwaIcon } from './icons/PwaIcon';
-import { SiteSettings } from '../constants';
-import { ZipIcon } from './icons/ZipIcon';
-
-interface InstallOptionsModalProps {
-    onClose: () => void;
-    onPwaInstall: () => void;
-    onDownloadSource: () => void;
-    siteSettings: SiteSettings;
-}
-
-const InstallOption: React.FC<{ title: string; description: string; icon: React.ReactNode; onClick: () => void }> = ({ title, description, icon, onClick }) => (
-    <button
-        onClick={onClick}
-        className="w-full text-left p-4 bg-[var(--theme-bg)]/50 hover:bg-[var(--theme-bg)] rounded-lg border border-[var(--theme-border)]/50 flex items-start gap-4 transition-colors"
-    >
-        <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center">{icon}</div>
-        <div>
-            <h4 className="font-semibold text-base text-[var(--theme-text-primary)]">{title}</h4>
-            <p className="text-sm text-[var(--theme-text-secondary)] mt-1">{description}</p>
-        </div>
-    </button>
-);
-
-export const InstallOptionsModal: React.FC<InstallOptionsModalProps> = ({ onClose, onPwaInstall, onDownloadSource, siteSettings }) => {
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
-            <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-lg shadow-xl border border-[var(--theme-border)] relative animate-modal-scale-in">
-                <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
-                    <div>
-                        <h2 className="text-lg font-bold text-[var(--theme-text-primary)]">Install App</h2>
-                        <p className="text-sm text-[var(--theme-text-secondary)]">Choose your preferred installation method.</p>
-                    </div>
-                    <button onClick={onClose} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]" aria-label="Close">
-                        <XIcon />
-                    </button>
-                </header>
-                <div className="p-6 space-y-4">
-                    <InstallOption
-                        title="Install Web App (Recommended)"
-                        description="Fast, lightweight, and works on all devices (Desktop, iOS, Android). Always up-to-date."
-                        icon={<PwaIcon />}
-                        onClick={onPwaInstall}
-                    />
-                    <InstallOption
-                        title="Download App Source (.zip)"
-                        description="Download a complete package of the application's source code for offline use or self-hosting."
-                        icon={<ZipIcon />}
-                        onClick={onDownloadSource}
-                    />
-                </div>
-            </div>
-        </div>
-    );
-};`,
-"components/Notepad.tsx": `import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Note } from '../App';
-import { PlusIcon } from './icons/PlusIcon';
-import { TrashIcon } from './icons/TrashIcon';
-import { ChecklistIcon } from './icons/ChecklistIcon';
-import { useDebounce } from '../hooks/useDebounce';
-import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import { CalendarIcon } from './icons/CalendarIcon';
-import { NotepadIcon } from './icons/NotepadIcon';
-
-// --- Helper Functions ---
-const getPreview = (htmlContent: string): { type: 'text' | 'checklist', content: string } => {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-    
-    const checklist = tempDiv.querySelector('ul[data-type="checklist"]');
-    if (checklist) {
-        const items = Array.from(checklist.querySelectorAll('li')).slice(0, 3).map(li => li.textContent || '').filter(Boolean);
-        if (items.length > 0) {
-            return { type: 'checklist', content: items.join(', ') };
-        }
+  ],
+  "categories": [
+    "business",
+    "productivity",
+    "developer_tools"
+  ],
+  "screenshots": [
+    {
+      "src": "https://i.ibb.co/Rz7xWdY/screenshot-generator.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "AI Generator Workspace"
+    },
+    {
+      "src": "https://i.ibb.co/2vXQZtP/screenshot-recordings.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Recording and Transcription Manager"
+    },
+    {
+      "src": "https://i.ibb.co/1K5x2L1/screenshot-photos.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Photo Library and Management"
+    },
+    {
+      "src": "https://i.ibb.co/b3D0z0p/screenshot-generator-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "AI Generator on Mobile"
+    },
+    {
+      "src": "https://i.ibb.co/4Z58f6d/screenshot-recordings-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Recordings on Mobile"
+    },
+    {
+      "src": "https://i.ibb.co/yq4503s/screenshot-photos-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Photos on Mobile"
     }
-    
-    const text = tempDiv.textContent || 'No additional content';
-    return { type: 'text', content: text.substring(0, 120) + (text.length > 120 ? '...' : '') };
-};
-
-const getFirstImage = (htmlContent: string): string | null => {
-    const match = htmlContent.match(/<img[^>]+src="([^">]+)"/);
-    return match ? match[1] : null;
-};
-
-
-// --- Child Components ---
-
-const NoteCard: React.FC<{ note: Note; isSelected: boolean; onClick: () => void; onDelete: (id: string) => void; }> = React.memo(({ note, isSelected, onClick, onDelete }) => {
-    const preview = useMemo(() => getPreview(note.content), [note.content]);
-    const imageUrl = useMemo(() => getFirstImage(note.content), [note.content]);
-    const noteDate = useMemo(() => new Date(note.date), [note.date]);
-    
-    const handleDelete = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent card click when deleting
-        onDelete(note.id);
-    };
-
-    return (
-        <div className="relative group">
-            <button
-                onClick={onClick}
-                className={\`w-full text-left rounded-lg transition-all duration-200 overflow-hidden flex flex-col h-full shadow-md \${
-                    isSelected 
-                        ? 'bg-[var(--theme-green)]/20 ring-2 ring-[var(--theme-green)]' 
-                        : 'bg-[var(--theme-card-bg)] hover:bg-[var(--theme-card-bg)]/80 hover:shadow-xl hover:-translate-y-1'
-                }\`}
-            >
-                {imageUrl && (
-                    <div className="h-32 w-full overflow-hidden">
-                        <img src={imageUrl} alt="Note attachment" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    </div>
-                )}
-                <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="font-bold text-lg font-lora text-[var(--theme-text-primary)] break-words">{note.title}</h3>
-                    <p className="text-sm text-[var(--theme-text-secondary)] mt-2 flex-grow break-words">
-                        {preview.type === 'checklist' && <ChecklistIcon />}
-                        {preview.content}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-[var(--theme-text-secondary)]/80 mt-4">
-                        <span>{noteDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                        {note.category && note.category !== 'General' && <span className="font-semibold bg-white/5 px-2 py-1 rounded">{note.category}</span>}
-                    </div>
-                </div>
-            </button>
-             <button
-                onClick={handleDelete}
-                className="absolute top-2 right-2 p-1.5 bg-[var(--theme-bg)] rounded-full text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                aria-label={\`Delete note \${note.title}\`}
-            >
-                <TrashIcon />
-            </button>
-        </div>
-    );
-});
-
-
-const NoteEditor = ({ note, onUpdate, onDelete, onBack }: { note: Note; onUpdate: (note: Note) => void; onDelete: (id: string) => void; onBack: () => void; }) => {
-    const editorRef = useRef<HTMLDivElement>(null);
-    const [title, setTitle] = useState(note.title);
-    const [content, setContent] = useState(note.content);
-    const [dueDate, setDueDate] = useState<string | null>(note.dueDate || null);
-
-    const draggedItemRef = useRef<HTMLElement | null>(null);
-    const dropIndicatorRef = useRef<HTMLElement | null>(null);
-
-    const debouncedTitle = useDebounce(title, 500);
-    const debouncedContent = useDebounce(content, 500);
-    const debouncedDueDate = useDebounce(dueDate, 500);
-
-    useEffect(() => {
-        setTitle(note.title);
-        setContent(note.content);
-        setDueDate(note.dueDate || null);
-        if (editorRef.current && note.content !== editorRef.current.innerHTML) {
-            editorRef.current.innerHTML = note.content;
+  ],
+  "shortcuts": [
+    {
+      "name": "New Recording",
+      "short_name": "Record",
+      "description": "Start a new voice recording",
+      "url": "/?view=recordings",
+      "icons": [
+        {
+          "src": "https://i.ibb.co/6y1jV1h/shortcut-mic.png",
+          "sizes": "96x96"
         }
-        if (!dropIndicatorRef.current) {
-            const indicator = document.createElement('li');
-            indicator.className = 'drop-indicator-li';
-            indicator.innerHTML = \`<div class="drop-indicator"></div>\`;
-            dropIndicatorRef.current = indicator;
+      ]
+    },
+    {
+      "name": "New Sticky Note",
+      "short_name": "Note",
+      "description": "Create a new sticky note",
+      "url": "/?view=notepad",
+      "icons": [
+        {
+          "src": "https://i.ibb.co/L6Szk5X/shortcut-note.png",
+          "sizes": "96x96"
         }
-    }, [note]);
-
-    useEffect(() => {
-        if (debouncedTitle !== note.title || debouncedContent !== note.content || debouncedDueDate !== (note.dueDate || null)) {
-            onUpdate({ ...note, title: debouncedTitle, content: debouncedContent, dueDate: debouncedDueDate });
+      ]
+    },
+    {
+      "name": "Open Image Squarer",
+      "short_name": "Image Tool",
+      "description": "Open the image processing tool",
+      "url": "/?view=image-tool",
+      "icons": [
+        {
+          "src": "https://i.ibb.co/wJ4tS0V/shortcut-image.png",
+          "sizes": "96x96"
         }
-    }, [debouncedTitle, debouncedContent, debouncedDueDate, note, onUpdate]);
-
-    const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
-        if (draggedItemRef.current) return;
-        setContent(e.currentTarget.innerHTML);
-    };
-    
-    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setDueDate(e.target.value || null);
-    };
-
-    const handleChecklistClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'LI' && target.parentElement?.dataset.type === 'checklist') {
-            const isChecked = target.dataset.checked === 'true';
-            target.dataset.checked = isChecked ? 'false' : 'true';
-            setContent(editorRef.current?.innerHTML || '');
-        }
-    };
-    
-    const insertChecklist = () => {
-        if (editorRef.current) {
-            const checklistHtml = \`
-                <ul data-type="checklist">
-                    <li data-checked="false">To-do item 1</li>
-                    <li data-checked="false">To-do item 2</li>
-                </ul><p><br></p>\`;
-            editorRef.current.focus();
-            document.execCommand('insertHTML', false, checklistHtml);
-            setContent(editorRef.current.innerHTML);
-        }
-    };
-
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'LI' && target.parentElement?.dataset.type === 'checklist') {
-            draggedItemRef.current = target;
-            e.dataTransfer.effectAllowed = 'move';
-            setTimeout(() => target.classList.add('dragging'), 0);
-        } else {
-            e.preventDefault();
-        }
-    };
-
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const draggedItem = draggedItemRef.current;
-        const dropIndicator = dropIndicatorRef.current;
-        if (!draggedItem || !dropIndicator) return;
-        const targetLi = (e.target as HTMLElement).closest('li');
-        if (!targetLi || targetLi === draggedItem || targetLi.parentElement?.dataset.type !== 'checklist' || targetLi === dropIndicator) {
-             if (dropIndicator.parentElement) dropIndicator.parentElement.removeChild(dropIndicator);
-            return;
-        }
-        const parentUl = targetLi.parentElement;
-        if (!parentUl) return;
-        const rect = targetLi.getBoundingClientRect();
-        const isAfter = e.clientY > rect.top + rect.height / 2;
-        parentUl.insertBefore(dropIndicator, isAfter ? targetLi.nextSibling : targetLi);
-    };
-
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const draggedItem = draggedItemRef.current;
-        const dropIndicator = dropIndicatorRef.current;
-        if (!draggedItem || !dropIndicator || !dropIndicator.parentElement) return;
-        dropIndicator.parentElement.replaceChild(draggedItem, dropIndicator);
-        if (editorRef.current) setContent(editorRef.current.innerHTML);
-    };
-
-    const handleDragEnd = () => {
-        const draggedItem = draggedItemRef.current;
-        const dropIndicator = dropIndicatorRef.current;
-        if (draggedItem) draggedItem.classList.remove('dragging');
-        if (dropIndicator?.parentElement) dropIndicator.parentElement.removeChild(dropIndicator);
-        draggedItemRef.current = null;
-    };
-
-
-    return (
-        <div className="flex flex-col h-full bg-[var(--theme-bg)]">
-            <header className="flex-shrink-0 p-4 border-b border-[var(--theme-border)]">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-grow min-w-0">
-                        <button onClick={onBack} className="lg:hidden p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white">
-                            <ChevronLeftIcon />
-                        </button>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            placeholder="Note Title"
-                            className="text-2xl font-bold bg-transparent focus:outline-none w-full text-[var(--theme-text-primary)] placeholder:text-[var(--theme-text-secondary)] truncate"
-                        />
-                    </div>
-                    <button onClick={() => onDelete(note.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] flex-shrink-0 ml-2">
-                        <TrashIcon />
-                    </button>
-                </div>
-                 <div className="mt-3 flex items-center gap-2 text-sm pl-1 lg:pl-0">
-                    <label htmlFor="due-date" className="flex items-center gap-2 text-[var(--theme-text-secondary)] cursor-pointer">
-                        <CalendarIcon />
-                        <span>Due Date</span>
-                    </label>
-                    <input
-                        id="due-date"
-                        type="date"
-                        value={dueDate || ''}
-                        onChange={handleDateChange}
-                        className="bg-transparent border-b border-dashed border-transparent focus:border-[var(--theme-border)] focus:outline-none text-[var(--theme-text-primary)] p-1"
-                    />
-                    {dueDate && <button onClick={() => setDueDate(null)} className="text-xs text-[var(--theme-red)] hover:underline">Clear</button>}
-                </div>
-            </header>
-            <div className="flex-grow overflow-y-auto p-4 md:p-6" onClick={handleChecklistClick}>
-                <div
-                    ref={editorRef}
-                    contentEditable
-                    suppressContentEditableWarning
-                    onInput={handleContentChange}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onDragEnd={handleDragEnd}
-                    className="note-editor-content h-full leading-relaxed text-lg max-w-3xl mx-auto bg-[var(--theme-card-bg)]/50 rounded-lg p-4 sm:p-6 focus:ring-2 focus:ring-[var(--theme-green)] focus:outline-none"
-                    dangerouslySetInnerHTML={{ __html: content }}
-                />
-            </div>
-            <footer className="flex-shrink-0 p-2 border-t border-[var(--theme-border)] bg-[var(--theme-dark-bg)]/30">
-                <div className="flex items-center max-w-3xl mx-auto">
-                    <button onClick={insertChecklist} className="p-3 hover:bg-[var(--theme-bg)] rounded-md text-[var(--theme-text-secondary)]" title="Insert Checklist">
-                        <ChecklistIcon />
-                    </button>
-                </div>
-            </footer>
-        </div>
-    );
-};
-
-// --- Main Notepad Component ---
-export const Notepad: React.FC<{ notes: Note[]; onSave: (note: Note) => Promise<void>; onUpdate: (note: Note) => Promise<void>; onDelete: (id: string) => Promise<void>; }> = ({ notes, onSave, onUpdate, onDelete }) => {
-    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-
-    useEffect(() => {
-        const noteExists = notes.some(n => n.id === selectedNoteId);
-        const sortedNotes = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        if (selectedNoteId && !noteExists) {
-            setSelectedNoteId(sortedNotes.length > 0 ? sortedNotes[0].id : null);
-        } else if (!selectedNoteId && sortedNotes.length > 0) {
-            setSelectedNoteId(sortedNotes[0].id);
-        }
-    }, [notes, selectedNoteId]);
-
-    const filteredNotes = useMemo(() => {
-        const sorted = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        if (!searchTerm) return sorted;
-        return sorted.filter(note => 
-            note.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            note.content.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [notes, searchTerm]);
-
-    const handleAddNote = useCallback(async () => {
-        const newNote: Note = {
-            id: crypto.randomUUID(),
-            title: 'New Note',
-            content: '<p>Start writing here...</p>',
-            category: 'General',
-            tags: [],
-            date: new Date().toISOString(),
-            dueDate: null,
-        };
-        await onSave(newNote);
-        setSelectedNoteId(newNote.id);
-    }, [onSave]);
-    
-    const handleDeleteNote = useCallback(async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
-            await onDelete(id);
-        }
-    }, [onDelete]);
-
-    const selectedNote = useMemo(() => notes.find(n => n.id === selectedNoteId) || null, [notes, selectedNoteId]);
-    
-    return (
-        <div className="flex flex-1 overflow-hidden bg-[var(--theme-bg)] backdrop-blur-2xl text-[var(--theme-text-primary)]">
-            {/* Note List Pane */}
-            <aside className={\`w-full lg:w-[450px] xl:w-[550px] flex-shrink-0 flex flex-col border-r border-[var(--theme-border)] \${selectedNoteId ? 'hidden lg:flex' : 'flex'}\`}>
-                <header className="p-4 flex-shrink-0 flex items-center justify-between border-b border-[var(--theme-border)]">
-                    <h1 className="text-3xl font-bold font-lora">Notes</h1>
-                </header>
-                <div className="p-4 flex-shrink-0">
-                    <input 
-                        type="text" 
-                        placeholder="Search your notes..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-[var(--theme-dark-bg)] border border-[var(--theme-border)] rounded-md pl-4 pr-4 py-2" 
-                    />
-                </div>
-                <div className="flex-grow overflow-y-auto no-scrollbar pb-24 lg:pb-4">
-                   {filteredNotes.length > 0 ? (
-                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-                            {filteredNotes.map(note => (
-                                <NoteCard 
-                                    key={note.id} 
-                                    note={note} 
-                                    isSelected={selectedNoteId === note.id} 
-                                    onClick={() => setSelectedNoteId(note.id)} 
-                                    onDelete={handleDeleteNote}
-                                />
-                            ))}
-                        </div>
-                   ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]">
-                            <NotepadIcon />
-                            <h3 className="text-lg font-semibold text-[var(--theme-text-primary)] mt-4">Your notepad is empty</h3>
-                            <p className="text-sm mt-1">Click the '+' button to capture your first thought.</p>
-                        </div>
-                   )}
-                </div>
-            </aside>
-            
-            {/* Note Editor Pane */}
-            <main className={\`flex-1 flex-col \${selectedNoteId ? 'flex' : 'hidden lg:flex'}\`}>
-                {selectedNote ? (
-                    <NoteEditor 
-                        note={selectedNote} 
-                        onUpdate={onUpdate} 
-                        onDelete={handleDeleteNote} 
-                        onBack={() => setSelectedNoteId(null)} 
-                    />
-                ) : (
-                    <div className="hidden lg:flex flex-col items-center justify-center h-full text-center p-8 text-[var(--theme-text-secondary)]">
-                        <NotepadIcon />
-                        <h2 className="mt-4 text-xl font-semibold text-[var(--theme-text-primary)]">Your notes live here</h2>
-                        <p className="mt-1">Select a note from the list, or create a new one to get started.</p>
-                    </div>
-                )}
-            </main>
-
-             <button 
-                onClick={handleAddNote}
-                className="absolute bottom-20 right-6 lg:bottom-8 lg:right-8 z-40 bg-[var(--theme-green)] text-black rounded-full p-4 fab-shadow hover:opacity-90 transform hover:scale-110 transition-transform"
-                aria-label="Create new note"
-            >
-                <PlusIcon />
-            </button>
-        </div>
-    );
-};`,
-"components/icons/ChecklistIcon.tsx": `import React from 'react';
-
-export const ChecklistIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="8.5" cy="7.5" r="4.5" />
-        <polyline points="17 11 19 13 23 9" />
-    </svg>
-);`
+      ]
+    }
+  ]
+}`
 };
