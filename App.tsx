@@ -19,6 +19,7 @@ import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
 import { MobileHeader } from './components/MobileHeader';
+import { ManualInstallModal } from './components/ManualInstallModal';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
@@ -124,21 +125,24 @@ const App: React.FC = () => {
     
     // PWA Install Prompt State
     const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
-    const [isInstallButtonVisible, setIsInstallButtonVisible] = useState(false);
+    const [isAppInstalled, setIsAppInstalled] = useState(
+        () => window.matchMedia('(display-mode: standalone)').matches
+    );
+    const [isManualInstallModalOpen, setIsManualInstallModalOpen] = useState(false);
+
 
     // --- PWA Installation Logic ---
     useEffect(() => {
         const handleBeforeInstallPrompt = (event: Event) => {
             event.preventDefault();
             setInstallPromptEvent(event as BeforeInstallPromptEvent);
-            setIsInstallButtonVisible(true);
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
         const handleAppInstalled = () => {
-            setIsInstallButtonVisible(false);
             setInstallPromptEvent(null);
+            setIsAppInstalled(true);
         };
 
         window.addEventListener('appinstalled', handleAppInstalled);
@@ -149,16 +153,24 @@ const App: React.FC = () => {
         };
     }, []);
 
-    const handleInstallClick = async () => {
+    const handleBrowserInstall = async () => {
         if (!installPromptEvent) return;
         
         installPromptEvent.prompt();
         const { outcome } = await installPromptEvent.userChoice;
         
         console.log(`User response to the install prompt: ${outcome}`);
-        
         setInstallPromptEvent(null);
-        setIsInstallButtonVisible(false);
+    };
+    
+    const handleInstallButtonClick = () => {
+        // If the install prompt is available, show it.
+        if (installPromptEvent) {
+            handleBrowserInstall();
+        } else {
+            // Otherwise, show instructions on how to install manually.
+            setIsManualInstallModalOpen(true);
+        }
     };
 
 
@@ -622,8 +634,8 @@ const App: React.FC = () => {
                 onOpenDashboard={() => setIsDashboardOpen(true)}
                 onOpenInfo={() => setIsInfoModalOpen(true)}
                 onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
-                isInstallButtonVisible={isInstallButtonVisible}
-                onInstall={handleInstallClick}
+                showInstallButton={!isAppInstalled}
+                onInstallClick={handleInstallButtonClick}
             />
             
             <main className="flex-1 pt-[76px] flex flex-col overflow-hidden">
@@ -674,6 +686,7 @@ const App: React.FC = () => {
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
             {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
+            {isManualInstallModalOpen && <ManualInstallModal onClose={() => setIsManualInstallModalOpen(false)} />}
         </div>
     );
 };

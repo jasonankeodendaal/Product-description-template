@@ -14,8 +14,8 @@ interface MobileHeaderProps {
   onOpenDashboard: () => void;
   onOpenInfo: () => void;
   onOpenCreatorInfo: () => void;
-  isInstallButtonVisible: boolean;
-  onInstall: () => void;
+  showInstallButton: boolean;
+  onInstallClick: () => void;
 }
 
 const MoreMenuItem: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void }> = ({ label, icon, onClick }) => (
@@ -28,7 +28,7 @@ const MoreMenuItem: React.FC<{ label: string; icon: React.ReactNode; onClick: ()
     </button>
 );
 
-export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, onOpenCreatorInfo, isInstallButtonVisible, onInstall }) => {
+export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, onOpenCreatorInfo, showInstallButton, onInstallClick }) => {
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const moreMenuRef = useRef<HTMLDivElement>(null);
 
@@ -57,9 +57,9 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
             </div>
             
             <div className="flex items-center gap-2">
-                 {isInstallButtonVisible && (
+                 {showInstallButton && (
                     <button
-                        onClick={onInstall}
+                        onClick={onInstallClick}
                         className="flex items-center gap-2 bg-[var(--theme-green)] text-black font-bold py-2 px-3 rounded-full text-sm animate-fade-in-down shadow-lg"
                         aria-label="Install App"
                     >
