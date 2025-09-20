@@ -44,11 +44,13 @@ export const ImageTool: React.FC = () => {
         contrast: 100,
         grayscale: 0,
         sepia: 0,
+        saturation: 100,
+        hue: 0,
     });
     const dragStartPos = useRef({ x: 0, y: 0 });
     const imageStartPos = useRef({ x: 0, y: 0 });
     
-    const filterString = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) grayscale(${filters.grayscale}%) sepia(${filters.sepia}%)`;
+    const filterString = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) grayscale(${filters.grayscale}%) sepia(${filters.sepia}%) saturate(${filters.saturation}%) hue-rotate(${filters.hue}deg)`;
 
     useEffect(() => {
         const observer = new ResizeObserver(entries => {
@@ -70,12 +72,23 @@ export const ImageTool: React.FC = () => {
         };
     }, []);
 
+    const resetFilters = () => {
+        setFilters({
+            brightness: 100,
+            contrast: 100,
+            grayscale: 0,
+            sepia: 0,
+            saturation: 100,
+            hue: 0,
+        });
+    };
+
     const resetTool = useCallback(() => {
         setSourceImage(null);
         setFileName('squared-image.jpg');
         setZoom(1);
         setPosition({ x: 0, y: 0 });
-        setFilters({ brightness: 100, contrast: 100, grayscale: 0, sepia: 0 });
+        resetFilters();
     }, []);
 
     const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,9 +197,14 @@ export const ImageTool: React.FC = () => {
                                 <FilterSlider label="Zoom" value={zoom} onChange={setZoom} min={0.1} max={5} step={0.01} />
                                 <FilterSlider label="Brightness" value={filters.brightness} onChange={(v) => updateFilter('brightness', v)} />
                                 <FilterSlider label="Contrast" value={filters.contrast} onChange={(v) => updateFilter('contrast', v)} />
+                                <FilterSlider label="Saturation" value={filters.saturation} onChange={(v) => updateFilter('saturation', v)} />
+                                <FilterSlider label="Hue" value={filters.hue} onChange={(v) => updateFilter('hue', v)} max={360} />
                                 <FilterSlider label="Grayscale" value={filters.grayscale} onChange={(v) => updateFilter('grayscale', v)} max={100} />
                                 <FilterSlider label="Sepia" value={filters.sepia} onChange={(v) => updateFilter('sepia', v)} max={100} />
-                                <button onClick={() => { setPosition({ x: 0, y: 0 }); setZoom(1); }} className="text-sm text-[var(--theme-green)] hover:underline">Reset Position & Zoom</button>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <button onClick={() => { setPosition({ x: 0, y: 0 }); setZoom(1); }} className="text-sm text-[var(--theme-green)] hover:underline">Reset Position & Zoom</button>
+                                    <button onClick={resetFilters} className="text-sm text-[var(--theme-green)] hover:underline">Reset Filters</button>
+                                </div>
                             </div>
                             
                              <h2 className="text-xl font-semibold mt-6 mb-4">3. Download</h2>
