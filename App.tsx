@@ -113,6 +113,14 @@ const App: React.FC = () => {
 
     // --- Data Loading and Initialization ---
     useEffect(() => {
+        // Handle URL-based view navigation from PWA shortcuts
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedView = urlParams.get('view') as View;
+        const validViews: View[] = ['generator', 'recordings', 'photos', 'notepad', 'image-tool'];
+        if (requestedView && validViews.includes(requestedView)) {
+            setCurrentView(requestedView);
+        }
+
         const initializeApp = async () => {
             try {
                 const storedSettings = localStorage.getItem('siteSettings');

@@ -1,8 +1,9 @@
-const CACHE_NAME = 'ai-product-gen-cache-v6'; // Incremented version
+const CACHE_NAME = 'ai-product-gen-cache-v7'; // Incremented version
 const APP_SHELL_URLS = [
-  '/index.html',
+  '/',
   '/manifest.json',
-  '/index.tsx' // Add main script to pre-cache
+  '/index.tsx', // Add main script to pre-cache
+  'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png'
 ];
 
 // Install event: cache the application shell and manifest, then force activation.
@@ -74,7 +75,7 @@ self.addEventListener('fetch', event => {
       fetch(request)
         .catch(() => {
           console.log('Service Worker: Network failed for navigation. Serving cached app shell.');
-          return caches.match('/index.html'); // Always fall back to the main app shell
+          return caches.match('/'); // Always fall back to the main app shell
         })
     );
     return;
