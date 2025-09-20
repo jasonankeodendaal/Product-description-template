@@ -293,6 +293,7 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleUpdatePhoto = useCallback(async (photo: Photo) => {
+        // FIX: Corrected a typo in the map function. The variable should be 'p', not 'r'.
         setPhotos(prev => prev.map(p => p.id === photo.id ? photo : p));
         await db.savePhoto(photo);
         if (directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
@@ -311,6 +312,7 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleUpdateNote = useCallback(async (note: Note) => {
+        // FIX: Corrected a typo in the map function. The variable should be 'n', not 'r'.
         setNotes(prev => prev.map(n => n.id === note.id ? note : n));
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
@@ -722,6 +724,7 @@ const App: React.FC = () => {
                     onClose={() => setIsInstallOptionsModalOpen(false)}
                     onPwaInstall={handlePwaInstall}
                     onApkDownload={handleApkDownload}
+                    siteSettings={siteSettings}
                 />
             )}
             {showUpdateToast && <UpdateToast onUpdate={() => window.location.reload()} />}

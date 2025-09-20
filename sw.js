@@ -1,5 +1,5 @@
-const STATIC_CACHE_NAME = 'site-static-v11';
-const DYNAMIC_CACHE_NAME = 'site-dynamic-v11';
+const STATIC_CACHE_NAME = 'site-static-v12';
+const DYNAMIC_CACHE_NAME = 'site-dynamic-v12';
 
 // Comprehensive list of assets needed for the app to work offline
 const APP_SHELL_URLS = [
@@ -7,7 +7,7 @@ const APP_SHELL_URLS = [
   '/index.html', // Explicitly cache the main HTML file
   '/index.tsx',
   '/manifest.json',
-  'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png',
+  'https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png',
   'https://i.postimg.cc/KzMqzb9P/d0bb3312-3297-4f16-b7bf-9f1442d29e20.jpg', // Main background
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
