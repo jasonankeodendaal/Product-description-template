@@ -66,10 +66,10 @@ root.render(
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ai tools | AI Product Description Generator</title>
-  <link rel="icon" href="https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png" type="image/png">
+  <link rel="icon" href="https://i.postimg.cc/689dWfF4/image-removebg-preview-1.png" type="image/png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1F2937">
-  <link rel="apple-touch-icon" href="https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png">
+  <link rel="apple-touch-icon" href="https://i.postimg.cc/689dWfF4/image-removebg-preview-1.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -1169,13 +1169,13 @@ export default App;`,
   },
   "icons": [
     {
-      "src": "https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png",
+      "src": "https://i.postimg.cc/689dWfF4/image-removebg-preview-1.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png",
+      "src": "https://i.postimg.cc/689dWfF4/image-removebg-preview-1.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
