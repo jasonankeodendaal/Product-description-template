@@ -19,9 +19,21 @@ import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
 import { MobileHeader } from './components/MobileHeader';
+import { InstallPwaButton } from './components/InstallPwaButton';
 
 // FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
+
+// A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed',
+    platform: string,
+  }>;
+  prompt(): Promise<void>;
+}
+
 
 // --- Type Definitions ---
 export type View = 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool';
@@ -110,6 +122,46 @@ const App: React.FC = () => {
     const [isApiConnected, setIsApiConnected] = useState(false);
 
     const [currentView, setCurrentView] = useState<View>('generator');
+    
+    // PWA Install Prompt State
+    const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
+    const [isInstallButtonVisible, setIsInstallButtonVisible] = useState(false);
+
+    // --- PWA Installation Logic ---
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (event: Event) => {
+            event.preventDefault();
+            setInstallPromptEvent(event as BeforeInstallPromptEvent);
+            setIsInstallButtonVisible(true);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        const handleAppInstalled = () => {
+            setIsInstallButtonVisible(false);
+            setInstallPromptEvent(null);
+        };
+
+        window.addEventListener('appinstalled', handleAppInstalled);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('appinstalled', handleAppInstalled);
+        };
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!installPromptEvent) return;
+        
+        installPromptEvent.prompt();
+        const { outcome } = await installPromptEvent.userChoice;
+        
+        console.log(`User response to the install prompt: ${outcome}`);
+        
+        setInstallPromptEvent(null);
+        setIsInstallButtonVisible(false);
+    };
+
 
     // --- Data Loading and Initialization ---
     useEffect(() => {
@@ -625,6 +677,7 @@ const App: React.FC = () => {
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
             {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
+            {isInstallButtonVisible && <InstallPwaButton onInstall={handleInstallClick} />}
         </div>
     );
 };

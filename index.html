@@ -8,6 +8,9 @@
   <link rel="icon" href="https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png" type="image/png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1F2937">
+  <link rel="apple-touch-icon" href="https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -46,7 +49,7 @@
       --theme-yellow: #D49E3C;
     }
     body {
-      background-image: url('https://i.postimg.cc/PL3Fjmnb/e6814b76-a4eb-4bb0-9583-e96955608323.png');
+      background-image: url('https://i.postimg.cc/KzMqzb9P/d0bb3312-3297-4f16-b7bf-9f1442d29e20.jpg');
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -191,6 +194,19 @@
     @keyframes flex-modal-scale-out {
         from { transform: scale(1); opacity: 1; }
         to { transform: scale(0.9); opacity: 0; }
+    }
+    @keyframes slide-in-bottom {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    .animate-slide-in-bottom {
+      animation: slide-in-bottom 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
     }
 
     .creator-modal-animate-in {

@@ -28,7 +28,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',
   slogan: 'Ai your friend!',
   logoSrc: 'https://i.postimg.cc/YCF8xX3R/image-removebg-preview-1.png',
-  heroImageSrc: 'https://i.postimg.cc/YvN7W9QT/360-F-558892033-6e7ao-HZ0g1s-ZPv1y-J6-NMpi-UJSa-E9-Gt2e.jpg',
+  heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
   website: '',

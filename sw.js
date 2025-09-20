@@ -1,9 +1,13 @@
-const CACHE_NAME = 'ai-product-gen-cache-v7'; // Incremented version
+const CACHE_NAME = 'ai-product-gen-cache-v8'; // Incremented version
 const APP_SHELL_URLS = [
   '/',
   '/manifest.json',
   '/index.tsx', // Add main script to pre-cache
-  'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png'
+  'https://i.ibb.co/7jZ0z3T/ai-tools-logo-v2.png', // Main Icon
+  // Pre-cache shortcut icons for a complete offline experience
+  'https://i.ibb.co/6y1jV1h/shortcut-mic.png',
+  'https://i.ibb.co/L6Szk5X/shortcut-note.png',
+  'https://i.ibb.co/8Y4B05y/shortcut-image.png'
 ];
 
 // Install event: cache the application shell and manifest, then force activation.
