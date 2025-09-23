@@ -28,23 +28,23 @@
 
   <style>
     :root {
-      /* New Dark & Green Theme */
+      /* New Ember Theme: Orange, Dark Black, Grey, White */
       --theme-bg: rgba(17, 24, 39, 0.8); /* Dark Slate Blue-Grey w/ transparency */
       --theme-card-bg: rgba(31, 41, 55, 0.85); /* Lighter Slate w/ transparency */
       --theme-dark-bg: #000000; /* Pure Black */
       --theme-border: #4B5563; /* Medium Grey */
-      --theme-green: #34D399; /* Candy Apple Green (Emerald) */
+      --theme-green: #F97316; /* Bright Orange */
       --theme-red: #F87171; /* Softer Red */
       --theme-text-primary: #F9FAFB; /* Off-white */
       --theme-text-secondary: #9CA3AF; /* Light Grey */
       
-      /* Recorder Light Theme (Updated with Green Accent) */
+      /* Recorder Light Theme (Updated with Orange Accent) */
       --theme-bg-light: #F9FAFB;
       --theme-card-bg-light: #FFFFFF;
       --theme-text-primary-light: #1F2937;
       --theme-text-secondary-light: #6B7280;
       --theme-border-light: #E5E7EB;
-      --theme-green-light: #10B981; /* Darker Green for contrast on light BG */
+      --theme-green-light: #EA580C; /* Darker Orange for contrast on light BG */
       --theme-red-light: #EF4444;
       --theme-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 
@@ -84,8 +84,8 @@
     /* Layer 2: A subtle, moving grid overlay and vignette */
     body::after {
         background-image: 
-            linear-gradient(to right, rgba(52, 211, 153, 0.08) 1px, transparent 1px), /* Vertical lines */
-            linear-gradient(to bottom, rgba(52, 211, 153, 0.08) 1px, transparent 1px), /* Horizontal lines */
+            linear-gradient(to right, rgba(249, 115, 22, 0.08) 1px, transparent 1px), /* Vertical lines */
+            linear-gradient(to bottom, rgba(249, 115, 22, 0.08) 1px, transparent 1px), /* Horizontal lines */
             radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 1) 100%); /* Vignette */
         background-size: 40px 40px, 40px 40px, 100% 100%;
         animation: move-grid 25s linear infinite;
@@ -184,7 +184,7 @@
 
     /* Logo Glow Effect */
     .logo-glow-effect {
-      /* A subtle white "fog" and a stronger green "glow" */
+      /* A subtle white "fog" and a stronger orange "glow" */
       filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1)) 
               drop-shadow(0 0 8px var(--theme-green));
       transition: filter 0.3s ease-in-out;
@@ -360,10 +360,10 @@
     .camera-filter-invert { filter: invert(100%); }
 
     /* Helper for Message of the day */
-    .bg-grid-emerald-500\/10 {
+    .bg-grid-orange-500\/10 {
         background-image: 
-            linear-gradient(to right, rgba(52, 211, 153, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(52, 211, 153, 0.05) 1px, transparent 1px);
+            linear-gradient(to right, rgba(249, 115, 22, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(249, 115, 22, 0.05) 1px, transparent 1px);
         background-size: 1.5rem 1.5rem;
     }
 

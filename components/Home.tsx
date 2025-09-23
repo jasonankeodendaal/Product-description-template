@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Note, Photo, Recording, LogEntry, CalendarEvent } from '../App';
+import React, { useState, useEffect } from 'react';
+import { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../App';
 import { SiteSettings } from '../constants';
 import { ClockWidget } from './widgets/ClockWidget';
 import { TimesheetWidget } from './widgets/TimesheetWidget';
@@ -15,6 +15,7 @@ import { ImageToolTile } from './tiles/ImageToolTile';
 import { DashboardTile } from './tiles/DashboardTile';
 import { StorageBreakdownWidget } from './widgets/StorageBreakdownWidget';
 import { StorageUsage } from '../utils/storageUtils';
+import { XIcon } from './icons/XIcon';
 
 interface HomeProps {
     onNavigate: (view: View) => void;
@@ -27,9 +28,10 @@ interface HomeProps {
     onOpenCalendar: () => void;
     onOpenDashboard: () => void;
     calendarEvents: CalendarEvent[];
-    getWeatherInfo: (city: string) => Promise<any>;
+    getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }) => Promise<any>;
     storageUsage: StorageUsage;
     onLogout: () => void;
+    userRole: UserRole;
 }
 
 const LogoutIcon: React.FC = () => (
@@ -42,6 +44,14 @@ const LogoutIcon: React.FC = () => (
 
 
 export const Home: React.FC<HomeProps> = (props) => {
+    const [showWelcome, setShowWelcome] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowWelcome(false);
+        }, 5000); // Hide after 5 seconds
+        return () => clearTimeout(timer);
+    }, []);
     
     const tiles = [
         { component: <ClockWidget />, className: "col-span-4 row-span-1" },
@@ -60,6 +70,16 @@ export const Home: React.FC<HomeProps> = (props) => {
 
     return (
         <div className="flex-1 overflow-hidden p-2 sm:p-3 font-inter relative">
+             {showWelcome && (
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-auto animate-fade-in-down">
+                    <div className="bg-[var(--theme-card-bg)] border border-[var(--theme-green)] text-[var(--theme-text-primary)] text-sm font-semibold px-4 py-2 rounded-full flex items-center gap-3 shadow-lg">
+                        <span>Logged in as: <span className="capitalize font-bold text-[var(--theme-green)]">{props.userRole}</span></span>
+                        <button onClick={() => setShowWelcome(false)} className="text-[var(--theme-text-secondary)] hover:text-white">
+                            <XIcon />
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="grid grid-cols-4 grid-rows-7 h-full gap-2 sm:gap-3">
                  {tiles.map((tile, index) => (
                     <HomeTile 
@@ -73,7 +93,7 @@ export const Home: React.FC<HomeProps> = (props) => {
             </div>
             <button
                 onClick={props.onLogout}
-                className="fixed bottom-[8rem] sm:bottom-[7rem] lg:bottom-6 right-4 sm:right-6 z-40 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full w-16 h-16 flex items-center justify-center shadow-lg transform transition-transform hover:scale-110 fab-shadow"
+                className="fixed bottom-28 sm:bottom-28 lg:bottom-6 right-4 sm:right-6 z-40 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full w-16 h-16 flex items-center justify-center shadow-lg transform transition-transform hover:scale-110 fab-shadow"
                 aria-label="Logout"
             >
                 <LogoutIcon />

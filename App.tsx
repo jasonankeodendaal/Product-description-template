@@ -362,6 +362,20 @@ const App: React.FC = () => {
 
         const initializeApp = async () => {
             try {
+                // Check for persisted login
+                const loginDataString = localStorage.getItem('loginData');
+                if (loginDataString) {
+                  const loginData = JSON.parse(loginDataString);
+                  const now = new Date().getTime();
+                  const oneDay = 24 * 60 * 60 * 1000;
+                  if (now - loginData.timestamp < oneDay) {
+                    setIsAuthenticated(true);
+                    setUserRole(loginData.role);
+                  } else {
+                    localStorage.removeItem('loginData');
+                  }
+                }
+
                 const storedSettings = localStorage.getItem('siteSettings');
                 let settings: SiteSettings = storedSettings ? JSON.parse(storedSettings) : DEFAULT_SITE_SETTINGS;
 
@@ -852,12 +866,18 @@ const App: React.FC = () => {
         setUserRole(role);
         setIsAuthenticated(true);
         handleSaveLogEntry({ type: 'Clock In', timestamp: new Date().toISOString() });
+        const loginData = {
+          timestamp: new Date().getTime(),
+          role: role
+        };
+        localStorage.setItem('loginData', JSON.stringify(loginData));
     };
 
     const handleLogout = useCallback(() => {
         handleSaveLogEntry({ type: 'Clock Out', timestamp: new Date().toISOString() });
         setIsAuthenticated(false);
         setUserRole('user');
+        localStorage.removeItem('loginData');
     }, [handleSaveLogEntry]);
 
     const handleDashboardLockAndLogout = () => {
@@ -897,6 +917,7 @@ const App: React.FC = () => {
                         getWeatherInfo={getWeatherInfo}
                         storageUsage={storageUsage}
                         onLogout={handleLogout}
+                        userRole={userRole}
                     />
                 );
             case 'generator':

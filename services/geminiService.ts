@@ -145,7 +145,7 @@ export async function describeImage(
 }
 
 export async function getWeatherInfo(
-    city: string,
+    location: { city?: string; lat?: number; lon?: number },
     customApiUrl?: string | null,
     customApiAuthKey?: string | null
 ): Promise<any> {
@@ -154,7 +154,7 @@ export async function getWeatherInfo(
         const response = await fetch(`${baseUrl}/api/weather`, {
             method: 'POST',
             headers: getHeaders(customApiAuthKey),
-            body: JSON.stringify({ city }),
+            body: JSON.stringify({ location }),
         });
         return await handleFetchErrors(response);
     } catch (error) {

@@ -17,12 +17,12 @@ export const MessageOfTheDay: React.FC = () => {
     const [message, reference] = dailyMessage.split(' - ');
 
     return (
-        <div className="relative text-center p-4 h-full rounded-xl overflow-hidden bg-gray-900/50 border border-emerald-500/20 shadow-lg flex flex-col justify-center">
-            <div className="absolute inset-0 -z-10 bg-grid-emerald-500/10 [mask-image:radial-gradient(ellipse_at_center,white_20%,transparent_80%)]"></div>
+        <div className="relative text-center p-4 h-full rounded-xl overflow-hidden bg-gray-900/50 border border-orange-500/20 shadow-lg flex flex-col justify-center">
+            <div className="absolute inset-0 -z-10 bg-grid-orange-500/10 [mask-image:radial-gradient(ellipse_at_center,white_20%,transparent_80%)]"></div>
             <blockquote className="space-y-2">
                 <p 
-                    className="text-lg md:text-xl font-bold font-inter text-emerald-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]" 
-                    style={{ textShadow: '0 0 10px rgba(52, 211, 153, 0.5)' }}
+                    className="text-lg md:text-xl font-bold font-inter text-orange-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]" 
+                    style={{ textShadow: '0 0 10px rgba(249, 115, 22, 0.5)' }}
                 >
                     “{message}”
                 </p>

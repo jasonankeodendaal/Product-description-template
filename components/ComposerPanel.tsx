@@ -137,4 +137,4 @@ const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void
     >
         {label}
     </button>
-)
+);
