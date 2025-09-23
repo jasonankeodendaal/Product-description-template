@@ -53,7 +53,6 @@ export interface ParsedProductData {
     sku: string;
     name: string;
     fullText: string;
-    csvText: string;
 }
 
 export interface Recording {
@@ -79,14 +78,20 @@ export interface Photo {
     tags: string[];
 }
 
+// Updated data model for Notepad to match new design
 export interface Note {
     id: string;
     title: string;
-    content: string; // Can be simple text or HTML for checklists
+    content: string; // Rich text content stored as an HTML string
     category: string;
     tags: string[];
     date: string;
+    color: string; // e.g., 'sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'
     isLocked?: boolean;
+    // New fields for advanced editor
+    heroImage?: string | null; // Data URL for the hero image
+    paperStyle: string; // 'paper-white', 'paper-dark', 'paper-yellow-lined', 'paper-grid'
+    fontStyle: string; // 'font-sans', 'font-serif', 'font-mono'
     dueDate?: string | null;
 }
 
@@ -97,6 +102,40 @@ export interface BackupData {
     photos: Photo[];
     notes: Note[];
 }
+
+// Function to migrate old notes to the new format
+const migrateNote = (note: any): Note => {
+    const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
+    const randomColor = () => defaultColors[Math.floor(Math.random() * defaultColors.length)];
+
+    const baseNote: Partial<Note> = {
+        id: note.id || crypto.randomUUID(),
+        title: note.title || 'Untitled',
+        content: '<p></p>',
+        category: note.category || 'General',
+        tags: note.tags || [],
+        date: note.date || new Date().toISOString(),
+        color: note.color || randomColor(),
+        heroImage: note.heroImage || null,
+        paperStyle: note.paperStyle || 'paper-dark',
+        fontStyle: note.fontStyle || 'font-sans',
+        dueDate: note.dueDate || null,
+    };
+
+    // Old canvas format (content is an object with 'elements')
+    if (typeof note.content === 'object' && note.content && note.content.elements) {
+        const textElement = note.content.elements.find((e: any) => e.type === 'text');
+        baseNote.content = textElement ? textElement.html : '<p></p>';
+    } 
+    // Old simple text format or already migrated format
+    else if (typeof note.content === 'string') {
+        // Ensure content is wrapped in a paragraph tag if it's plain text
+        baseNote.content = note.content.trim().startsWith('<') ? note.content : `<p>${note.content}</p>`;
+    }
+
+    return baseNote as Note;
+};
+
 
 const App: React.FC = () => {
     // --- State ---
@@ -126,7 +165,8 @@ const App: React.FC = () => {
     const [isApiConnecting, setIsApiConnecting] = useState(false);
     const [isApiConnected, setIsApiConnected] = useState(false);
 
-    const [currentView, setCurrentView] = useState<View>('generator');
+    const [currentView, setCurrentView] = useState<View>('photos');
+    const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
     
     // PWA Install Prompt State
     const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -138,6 +178,9 @@ const App: React.FC = () => {
     
     // App Update State
     const [showUpdateToast, setShowUpdateToast] = useState(false);
+    
+    // Trigger for FAB actions
+    const [newNoteCount, setNewNoteCount] = useState(0);
 
 
     // --- PWA Installation Logic ---
@@ -285,7 +328,7 @@ const App: React.FC = () => {
                     ]);
                     setRecordings(dbRecordings);
                     setPhotos(dbPhotos);
-                    setNotes(dbNotes);
+                    setNotes(dbNotes.map(migrateNote));
                 }
                 setSiteSettings(settings);
 
@@ -346,13 +389,22 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleSaveNote = useCallback(async (note: Note) => {
-        setNotes(prev => [note, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setNotes(prevNotes => {
+            const existing = prevNotes.find(n => n.id === note.id);
+            let newNotes;
+            if (!existing) {
+                newNotes = [note, ...prevNotes];
+            } else {
+                newNotes = prevNotes.map(n => (n.id === note.id ? note : n));
+            }
+            return newNotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        });
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
     }, [directoryHandle]);
+    
 
     const handleUpdateNote = useCallback(async (note: Note) => {
-        // FIX: Corrected a typo in the map function. The variable should be 'n', not 'r'.
         setNotes(prev => prev.map(n => n.id === note.id ? note : n));
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
@@ -391,13 +443,13 @@ const App: React.FC = () => {
       }
     };
     
-    const handleSaveToFolder = useCallback(async (item: ParsedProductData) => {
+    const handleSaveToFolder = useCallback(async (item: ParsedProductData, structuredData: Record<string, string>) => {
         if (!directoryHandle) {
              alert("Local folder connection is required to use this feature. Please connect a folder in the Dashboard.");
              throw new Error("Directory not connected");
         }
         try {
-            await fileSystemService.saveProductDescription(directoryHandle, item);
+            await fileSystemService.saveProductDescription(directoryHandle, item, structuredData);
         } catch(e) {
             console.error("Error saving to folder:", e);
             alert(`Failed to save to folder: ${e instanceof Error ? e.message : String(e)}`);
@@ -421,12 +473,17 @@ const App: React.FC = () => {
         if(directoryHandle) await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
     }, [templates, directoryHandle]);
 
-    const onEditTemplate = useCallback(async (id: string, newName: string) => {
-        const updatedTemplates = templates.map(t => t.id === id ? { ...t, name: newName } : t);
+    const onEditTemplate = useCallback(async (id: string, newName: string, newPrompt: string) => {
+        const updatedTemplates = templates.map(t => t.id === id ? { ...t, name: newName, prompt: newPrompt } : t);
         setTemplates(updatedTemplates);
         localStorage.setItem('templates', JSON.stringify(updatedTemplates));
         if(directoryHandle) await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
     }, [templates, directoryHandle]);
+
+    const handleEditImage = (photo: Photo) => {
+        setImageToEdit(photo);
+        setCurrentView('image-tool');
+    };
 
     const syncFromDirectory = async (handle: FileSystemDirectoryHandle, showSuccess = false) => {
         setLoadingMessage('Syncing from folder...');
@@ -444,7 +501,7 @@ const App: React.FC = () => {
             if (dirTemplates) setTemplates(dirTemplates);
             setRecordings(dirRecordings);
             setPhotos(dirPhotos);
-            setNotes(dirNotes);
+            setNotes(dirNotes.map(migrateNote));
             
             if (showSuccess) alert('Sync from folder complete!');
 
@@ -494,7 +551,7 @@ const App: React.FC = () => {
             ]);
             setRecordings(dbRecordings);
             setPhotos(dbPhotos);
-            setNotes(dbNotes);
+            setNotes(dbNotes.map(migrateNote));
         }
     }, []);
 
@@ -521,7 +578,7 @@ const App: React.FC = () => {
                 setTemplates(data.templates);
                 setRecordings(newRecordings);
                 setPhotos(newPhotos);
-                setNotes(data.notes);
+                setNotes(data.notes.map(migrateNote));
                 setIsApiConnected(true);
                 if (!silent) alert("Successfully connected to API server and synced data.");
             } else {
@@ -608,7 +665,7 @@ const App: React.FC = () => {
             setTemplates(metadata.templates);
             setRecordings(restoredRecordings);
             setPhotos(restoredPhotos);
-            setNotes(metadata.notes);
+            setNotes(metadata.notes.map(migrateNote));
 
             alert("Backup restored successfully!");
 
@@ -648,10 +705,11 @@ const App: React.FC = () => {
                             siteSettings={siteSettings}
                             photos={photos}
                             onSavePhoto={handleSavePhoto}
-                            // FIX: Pass the handleDeletePhoto function to GeneratorView to resolve prop error in child component.
                             onDeletePhoto={handleDeletePhoto}
                             recordings={recordings}
                             notes={notes}
+                            onEditImage={handleEditImage}
+                            onUpdatePhoto={handleUpdatePhoto}
                         />
                     </>
                 );
@@ -678,9 +736,10 @@ const App: React.FC = () => {
                     onSave={handleSaveNote}
                     onUpdate={handleUpdateNote}
                     onDelete={handleDeleteNote}
+                    newNoteTrigger={newNoteCount}
                 />;
             case 'image-tool':
-                return <ImageTool />;
+                return <ImageTool initialImage={imageToEdit} onClearInitialImage={() => setImageToEdit(null)} />;
             default:
                 return null;
         }
@@ -688,37 +747,42 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen font-sans text-[var(--theme-text-primary)] flex flex-col">
-            {/* --- Desktop Navigation --- */}
-            <Header 
-                siteSettings={siteSettings} 
-                isApiConnected={isApiConnected}
-                currentView={currentView}
-                onNavigate={setCurrentView}
-                onOpenDashboard={() => setIsDashboardOpen(true)}
-                onOpenInfo={() => setIsInfoModalOpen(true)}
-                onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
-                showInstallButton={!isAppInstalled}
-                onInstallClick={() => setIsInstallOptionsModalOpen(true)}
-            />
-
-            {/* --- Mobile Navigation --- */}
-            <MobileHeader 
-                siteSettings={siteSettings}
-                onNavigate={setCurrentView}
-                onOpenDashboard={() => setIsDashboardOpen(true)}
-                onOpenInfo={() => setIsInfoModalOpen(true)}
-                onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
-                showInstallButton={!isAppInstalled}
-                onInstallClick={() => setIsInstallOptionsModalOpen(true)}
-            />
             
-            <main className="flex-1 pt-[76px] flex flex-col overflow-hidden">
-                {renderView()}
+            {/* --- Mobile App Shell (Remains fixed at top for mobile) --- */}
+            <div className="lg:hidden">
+                 <MobileHeader 
+                    siteSettings={siteSettings}
+                    onNavigate={setCurrentView}
+                    onOpenDashboard={() => setIsDashboardOpen(true)}
+                    onOpenInfo={() => setIsInfoModalOpen(true)}
+                    onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+                    showInstallButton={!isAppInstalled}
+                    onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                />
+            </div>
+            
+            <main className="flex-1 pt-[76px] lg:p-4 flex flex-col pb-24 lg:pb-4">
+                 <div className="bg-slate-950/70 flex-1 w-full mx-auto max-w-7xl rounded-2xl overflow-hidden flex flex-col backdrop-blur-sm">
+                    {/* --- Desktop Header (Now inside the main panel) --- */}
+                    <Header 
+                        siteSettings={siteSettings} 
+                        isApiConnected={isApiConnected}
+                        currentView={currentView}
+                        onNavigate={setCurrentView}
+                        onOpenDashboard={() => setIsDashboardOpen(true)}
+                        onOpenInfo={() => setIsInfoModalOpen(true)}
+                        onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+                        showInstallButton={!isAppInstalled}
+                        onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                    />
+                    {renderView()}
+                </div>
             </main>
             
             <BottomNavBar
                  currentView={currentView} 
-                 onNavigate={setCurrentView} 
+                 onNavigate={setCurrentView}
+                 onNewNote={() => setNewNoteCount(c => c + 1)}
             />
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
@@ -726,7 +790,6 @@ const App: React.FC = () => {
             {isAuthModalOpen && <AuthModal 
                 onClose={() => {
                     setIsAuthModalOpen(false);
-                    // Also close dashboard if auth is cancelled to prevent re-opening modal
                     setIsDashboardOpen(false);
                 }}
                 onUnlock={() => {

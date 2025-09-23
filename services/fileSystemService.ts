@@ -1,6 +1,8 @@
 import { Recording, Template, Photo, Note, ParsedProductData } from "../App";
 import { SiteSettings } from "../constants";
-import { blobToBase64 } from "../utils/dataUtils";
+
+// Declare the docx library which is loaded from a CDN script in index.html
+declare var docx: any;
 
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
     if (!('showDirectoryPicker' in window)) throw new Error('File System Access API is not supported.');
@@ -196,14 +198,51 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
     for (const note of data.notes) await saveNoteToDirectory(dirHandle, note);
 }
 
-const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item: ParsedProductData) => {
+const createDocxBlob = (structuredData: Record<string, string>): Promise<Blob> => {
+    if (typeof docx === 'undefined') {
+        throw new Error('DOCX library is not loaded.');
+    }
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+
+    const children: any[] = [];
+    
+    children.push(new Paragraph({ text: structuredData['Name'] || 'Unnamed Product', heading: HeadingLevel.HEADING_1, spacing: { after: 200 } }));
+
+    const sections = [
+        'Brand', 'SKU', 'Short Description', 'What’s in the Box',
+        'Description', 'Key Features', 'Material Used',
+        'Product Dimensions (CM) & Weight (KG)', 'Buying This Product Means',
+        'Key Specifications', 'Terms & Conditions'
+    ];
+    
+    sections.forEach(sectionTitle => {
+        if (structuredData[sectionTitle]) {
+            children.push(new Paragraph({ text: sectionTitle, heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 100 } }));
+            // Handle multi-line sections like Key Features by splitting them
+            const contentLines = structuredData[sectionTitle].split('\n');
+            contentLines.forEach(line => {
+                if (line.trim()) {
+                    children.push(new Paragraph({ text: line.trim() }));
+                }
+            });
+        }
+    });
+
+    const doc = new Document({
+        sections: [{ children }],
+    });
+    
+    return Packer.toBlob(doc);
+};
+
+const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item: ParsedProductData, structuredData: Record<string, string>) => {
     const brandFolder = item.brand.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || 'Unbranded';
     const skuFile = item.sku.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || `product_${Date.now()}`;
     
     const brandDirHandle = await getOrCreateDirectory(dirHandle, brandFolder);
 
-    await writeFile(brandDirHandle, `${skuFile}.txt`, item.fullText);
-    await writeFile(brandDirHandle, `${skuFile}.csv`, item.csvText);
+    const docxBlob = await createDocxBlob(structuredData);
+    await writeFile(brandDirHandle, `${skuFile}.docx`, docxBlob);
 }
 
 export const fileSystemService = {

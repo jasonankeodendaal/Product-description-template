@@ -13,19 +13,21 @@ interface GeneratorViewProps {
     error: string | null;
     templates: Template[];
     onAddTemplate: (name: string, prompt: string) => void;
-    onEditTemplate: (id: string, newName: string) => void;
+    onEditTemplate: (id: string, newName: string, newPrompt: string) => void;
     selectedTemplateId: string;
     onTemplateChange: (id: string) => void;
     tone: string;
     onToneChange: (tone: string) => void;
     onGenerate: () => void;
-    onSaveToFolder: (item: ParsedProductData) => Promise<void>;
+    onSaveToFolder: (item: ParsedProductData, structuredData: Record<string, string>) => Promise<void>;
     siteSettings: SiteSettings;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
     onDeletePhoto: (photo: Photo) => Promise<void>;
     recordings: Recording[];
     notes: Note[];
+    onEditImage: (photo: Photo) => void;
+    onUpdatePhoto: (photo: Photo) => Promise<void>;
 }
 
 export const GeneratorView: React.FC<GeneratorViewProps> = ({
@@ -49,6 +51,8 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
     onDeletePhoto,
     recordings,
     notes,
+    onEditImage,
+    onUpdatePhoto,
 }) => {
     return (
         <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
@@ -86,6 +90,8 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                         syncMode={siteSettings.syncMode}
                         photos={photos}
                         onSavePhoto={onSavePhoto}
+                        onEditImage={onEditImage}
+                        onUpdatePhoto={onUpdatePhoto}
                     />
                 </div>
             </div>

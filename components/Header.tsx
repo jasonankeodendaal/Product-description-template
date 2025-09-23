@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
   }, []);
   
   return (
-    <header className="bg-[var(--theme-card-bg)]/80 backdrop-blur-sm border-b border-[var(--theme-border)]/50 fixed w-full top-0 z-20 hidden lg:flex">
+    <header className="border-b border-white/10 flex-shrink-0 hidden lg:flex">
       <div className="container mx-auto px-4 flex justify-between items-center h-[76px]">
         <div className="relative" ref={dropdownRef}>
             <button 

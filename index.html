@@ -27,7 +27,7 @@
       /* New Dark & Green Theme */
       --theme-bg: rgba(17, 24, 39, 0.8); /* Dark Slate Blue-Grey w/ transparency */
       --theme-card-bg: rgba(31, 41, 55, 0.85); /* Lighter Slate w/ transparency */
-      --theme-dark-bg: #000000; /* Pure Black */
+      --theme-dark-bg: #0B101B; /* Main App Background */
       --theme-border: #4B5563; /* Medium Grey */
       --theme-green: #34D399; /* Candy Apple Green (Emerald) */
       --theme-red: #F87171; /* Softer Red */
@@ -57,7 +57,7 @@
       position: relative;
       overflow-x: hidden;
     }
-
+    
     body::before,
     body::after {
         content: '';
@@ -67,6 +67,7 @@
         width: 100%;
         height: 100%;
         z-index: -2;
+        pointer-events: none;
     }
 
     /* Layer 1: The main image with a slow zoom (Ken Burns effect) */
@@ -82,7 +83,7 @@
         background-image: 
             linear-gradient(to right, rgba(52, 211, 153, 0.08) 1px, transparent 1px), /* Vertical lines */
             linear-gradient(to bottom, rgba(52, 211, 153, 0.08) 1px, transparent 1px), /* Horizontal lines */
-            radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 0.9) 100%); /* Vignette */
+            radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 1) 100%); /* Vignette */
         background-size: 40px 40px, 40px 40px, 100% 100%;
         animation: move-grid 25s linear infinite;
     }
@@ -105,76 +106,66 @@
 
 
     /* Notepad checklist styles */
-    .note-editor-content ul[data-type="checklist"],
-    ul[data-type="checklist"] {
+    .note-editor-content ul[data-type="checklist"] {
       list-style-type: none;
       padding-left: 0;
       margin: 1rem 0;
     }
-    .note-editor-content ul[data-type="checklist"] > li,
-    ul[data-type="checklist"] > li {
+    .note-editor-content ul[data-type="checklist"] > li {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 0.75rem;
       padding: 0.25rem 0;
-      cursor: grab;
     }
-    .note-editor-content ul[data-type="checklist"] > li::before,
-    ul[data-type="checklist"] > li::before {
+    .note-editor-content ul[data-type="checklist"] > li::before {
       content: '';
       display: inline-block;
       width: 1.25em;
       height: 1.25em;
-      border: 2px solid var(--theme-border);
+      border: 2px solid var(--theme-border); /* Updated to use theme variable */
       border-radius: 50%;
       cursor: pointer;
       flex-shrink: 0;
       background-color: transparent;
       transition: background-color 0.2s ease, border-color 0.2s ease;
+      margin-top: 0.125em; /* Align with first line of text */
     }
-    .note-editor-content ul[data-type="checklist"] > li[data-checked="true"]::before,
-    ul[data-type="checklist"] > li[data-checked="true"]::before {
-      background-color: var(--theme-green);
-      border-color: var(--theme-green);
+    .note-editor-content ul[data-type="checklist"] > li[data-checked="true"]::before {
+      background-color: var(--theme-green); /* Updated to use theme variable */
+      border-color: var(--theme-green); /* Updated to use theme variable */
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
       background-size: 80%;
       background-position: center;
       background-repeat: no-repeat;
     }
-     .note-editor-content ul[data-type="checklist"] > li[data-checked="true"],
-     ul[data-type="checklist"] li[data-checked="true"] {
+     .note-editor-content ul[data-type="checklist"] > li[data-checked="true"] {
       text-decoration: line-through;
-      color: var(--theme-text-secondary);
+      color: var(--theme-text-secondary); /* Updated to use theme variable */
     }
     
     .note-editor-content > *:first-child { margin-top: 0; }
     .note-editor-content > *:last-child { margin-bottom: 0; }
     .note-editor-content:focus { outline: none; }
 
-    /* Drag & Drop for Notepad Checklist */
-    .note-editor-content ul[data-type="checklist"] > li.dragging {
-      opacity: 0.4;
-      background-color: var(--theme-bg);
-      border-radius: 4px;
-    }
-    .drop-indicator {
-      height: 2px;
-      background-color: var(--theme-green);
-      margin: 4px 0;
-      animation: hologram-pulse 1.5s infinite;
-    }
-    li.drop-indicator-li {
-      list-style-type: none !important;
-      padding: 0 !important;
-      cursor: default !important;
-      /* Override the default li styles */
-      display: block !important;
-      gap: 0 !important;
-    }
-    li.drop-indicator-li::before {
-      display: none !important;
-    }
+    /* Note Editor Paper Styles */
+    .note-editor-container.paper-white { background-color: #ffffff; color: #111827; }
+    .note-editor-container.paper-dark { background-color: #1f2937; color: #f9fafb; }
+    .note-editor-container.paper-dark .note-editor-title,
+    .note-editor-container.paper-dark .note-editor-content,
+    .note-editor-container.paper-dark input { color: #f9fafb !important; }
+    .note-editor-container.paper-dark .note-editor-title::placeholder { color: #6b7280; }
+    .note-editor-container.paper-dark input::-webkit-calendar-picker-indicator { filter: invert(1); }
+    .note-editor-container.paper-yellow-lined { background-color: #fefce8; color: #374151; background-image: repeating-linear-gradient(to bottom, #e5e7eb 1px, transparent 1px, transparent 1.5rem); line-height: 1.5rem; }
+    .note-editor-container.paper-yellow-lined .note-editor-content p, 
+    .note-editor-container.paper-yellow-lined .note-editor-content div,
+    .note-editor-container.paper-yellow-lined .note-editor-content li { line-height: 1.5rem; }
+    .note-editor-container.paper-grid { background-color: #f9fafb; color: #1f2937; background-size: 20px 20px; background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px); }
 
+    /* Note Editor Font Styles */
+    .note-editor-container.font-sans, .note-editor-container.font-sans * { font-family: 'Inter', sans-serif; }
+    .note-editor-container.font-serif, .note-editor-container.font-serif * { font-family: 'Lora', serif; }
+    .note-editor-container.font-mono, .note-editor-container.font-mono * { font-family: monospace; }
+    
     /* Logo Glow Effect */
     .logo-glow-effect {
       /* A subtle white "fog" and a stronger green "glow" */
@@ -228,10 +219,6 @@
     @keyframes fade-in-down {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slow-zoom {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
     }
     @keyframes ken-burns {
         0%, 100% {

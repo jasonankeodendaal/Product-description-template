@@ -5,7 +5,10 @@ import { SaveIcon } from './icons/SaveIcon';
 import { ParsedProductData, Photo } from '../App';
 import { UploadIcon } from './icons/UploadIcon';
 import { dataURLtoBlob } from '../utils/dataUtils';
-import { resizeImage } from '../utils/imageUtils';
+import { resizeImage, squareImageAndGetBlob } from '../utils/imageUtils';
+import { CropIcon } from './icons/CropIcon';
+import { XIcon } from './icons/XIcon';
+import { Spinner } from './icons/Spinner';
 
 // Define GroundingChunk locally to remove dependency on @google/genai types on the client
 export interface GroundingChunk {
@@ -24,10 +27,12 @@ interface OutputPanelProps {
   output: GenerationResult | null;
   isLoading: boolean;
   error: string | null;
-  onSaveToFolder: (item: ParsedProductData) => Promise<void>;
+  onSaveToFolder: (item: ParsedProductData, structuredData: Record<string, string>) => Promise<void>;
   syncMode?: 'local' | 'folder' | 'api';
   photos: Photo[];
   onSavePhoto: (photo: Photo) => Promise<void>;
+  onUpdatePhoto: (photo: Photo) => Promise<void>;
+  onEditImage: (photo: Photo) => void; // Kept for other potential uses, but generator flow is changed
 }
 
 const SkeletonLoader: React.FC = () => (
@@ -101,27 +106,7 @@ const parseOutputToStructuredData = (text: string): Record<string, string> => {
     return data;
 };
 
-const convertToRequiredCSV = (data: Record<string, string>): string => {
-    const escapeCSV = (field: string = ''): string => {
-        const strField = String(field);
-        if (strField === 'No info.') return '""';
-        const escaped = strField.replace(/"/g, '""');
-        return `"${escaped}"`;
-    };
-
-    const requiredHeaders = ['name', 'sku', 'brandName', 'description'];
-    const name = data['Name'] || '';
-    const sku = data['SKU'] || '';
-    const brandName = data['Brand'] || '';
-    const description = data['Short Description'] || '';
-    
-    const dataRowValues = [name, sku, brandName, description];
-    const headerRow = requiredHeaders.join(',');
-    const dataRow = dataRowValues.map(v => escapeCSV(v)).join(',');
-    return `${headerRow}\n${dataRow}`;
-};
-
-const LinkedPhotoThumbnail: React.FC<{ photo: Photo }> = ({ photo }) => {
+const LinkedPhotoThumbnail: React.FC<{ photo: Photo; onOpenSquarer: (photo: Photo) => void; }> = ({ photo, onOpenSquarer }) => {
     const [url, setUrl] = useState<string | null>(null);
     useEffect(() => {
         const objectUrl = URL.createObjectURL(photo.imageBlob);
@@ -132,18 +117,86 @@ const LinkedPhotoThumbnail: React.FC<{ photo: Photo }> = ({ photo }) => {
     return (
         <div className="w-full aspect-square bg-black/20 rounded-md overflow-hidden group relative">
             {url ? <img src={url} alt={photo.name} className="w-full h-full object-cover" /> : <div className="animate-pulse bg-white/10 w-full h-full"></div>}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
-                <p className="text-white text-xs truncate font-medium">{photo.name}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-1.5">
+                <button
+                    onClick={() => onOpenSquarer(photo)}
+                    className="w-full flex items-center justify-center gap-1.5 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white rounded-md p-1.5 text-xs font-semibold"
+                    title="Square Image"
+                >
+                    <CropIcon />
+                    <span>Square</span>
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const ImageSquarerModal: React.FC<{
+    photo: Photo;
+    onSquare: (size: number) => Promise<void>;
+    onClose: () => void;
+}> = ({ photo, onSquare, onClose }) => {
+    const [isSquaring, setIsSquaring] = useState(false);
+    const imageUrl = useMemo(() => URL.createObjectURL(photo.imageBlob), [photo.imageBlob]);
+
+    const handleSquareClick = async (size: number) => {
+        setIsSquaring(true);
+        await onSquare(size);
+        // The parent component will close the modal upon completion.
+    };
+    
+    useEffect(() => {
+        return () => URL.revokeObjectURL(imageUrl);
+    }, [imageUrl]);
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in" onClick={e => e.stopPropagation()}>
+                <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-[var(--theme-text-primary)]">Square Image</h3>
+                    <button onClick={onClose} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]" aria-label="Close">
+                        <XIcon />
+                    </button>
+                </header>
+                <div className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6 items-center">
+                        <div className="w-40 h-40 flex-shrink-0 bg-black/20 rounded-md overflow-hidden">
+                            <img src={imageUrl} alt={photo.name} className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex-grow space-y-3">
+                            <p className="text-[var(--theme-text-secondary)] text-sm">Choose a size to create a high-quality, centered square image with a white background.</p>
+                             <div className="grid grid-cols-3 gap-3">
+                                {[500, 800, 1000].map(size => (
+                                     <button 
+                                        key={size}
+                                        onClick={() => handleSquareClick(size)}
+                                        disabled={isSquaring}
+                                        className="py-3 px-2 rounded-md font-semibold text-center transition-all border-2 bg-transparent border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-green)]/50 hover:text-white disabled:opacity-50"
+                                    >
+                                        {size}x{size}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    {isSquaring && (
+                        <div className="absolute inset-0 bg-[var(--theme-card-bg)]/80 rounded-xl flex flex-col items-center justify-center gap-2">
+                           <Spinner className="h-6 w-6 text-[var(--theme-green)]" />
+                           <p className="text-[var(--theme-text-primary)]">Processing...</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
 
-export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto }) => {
+export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto }) => {
     const [isCopied, setIsCopied] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
     const [isUploading, setIsUploading] = useState(false);
+    const [squaringPhoto, setSquaringPhoto] = useState<Photo | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const outputText = output?.text || '';
     const hasOutput = outputText.trim().length > 0;
@@ -175,18 +228,16 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     const handleSave = useCallback(async () => {
         if (!outputText || !structuredData) return;
         setSaveState('saving');
-        const csvText = convertToRequiredCSV(structuredData);
         
         const item: ParsedProductData = {
             brand: structuredData['Brand'] || 'Unbranded',
             sku: structuredData['SKU'] || `product-${Date.now()}`,
             name: structuredData['Name'] || 'Unnamed Product',
             fullText: outputText,
-            csvText: csvText,
         };
 
         try {
-            await onSaveToFolder(item);
+            await onSaveToFolder(item, structuredData);
             setSaveState('saved');
             setTimeout(() => setSaveState('idle'), 2500);
         } catch (e) {
@@ -224,6 +275,24 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         if(fileInputRef.current) fileInputRef.current.value = '';
 
     }, [structuredData, onSavePhoto]);
+
+    const handleSquareImage = async (photo: Photo, size: number) => {
+        try {
+            const squaredBlob = await squareImageAndGetBlob(photo.imageBlob, size);
+            const updatedPhoto: Photo = {
+                ...photo,
+                name: photo.name.startsWith('squared_') ? photo.name : `squared_${photo.name}`,
+                imageBlob: squaredBlob,
+                imageMimeType: 'image/jpeg',
+            };
+            await onUpdatePhoto(updatedPhoto);
+        } catch (err) {
+            alert('Failed to square image.');
+            console.error(err);
+        } finally {
+            setSquaringPhoto(null);
+        }
+    };
 
     const isFolderMode = syncMode === 'folder';
 
@@ -294,7 +363,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
             <h3 className="text-lg font-semibold text-[var(--theme-green)] mb-3">Linked Images</h3>
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} />)}
+                {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} onOpenSquarer={setSquaringPhoto} />)}
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -323,6 +392,13 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                 </button>
             </div>
         </div>
+      )}
+      {squaringPhoto && (
+        <ImageSquarerModal 
+            photo={squaringPhoto}
+            onClose={() => setSquaringPhoto(null)}
+            onSquare={(size) => handleSquareImage(squaringPhoto, size)}
+        />
       )}
     </div>
   );

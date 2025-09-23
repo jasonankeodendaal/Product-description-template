@@ -140,7 +140,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
     }, [onDelete]);
 
     return (
-        <div className="flex-1 flex flex-col bg-[var(--theme-bg)] backdrop-blur-2xl">
+        <div className="flex-1 flex flex-col bg-transparent backdrop-blur-2xl">
             {isCameraOpen && (
                 <CameraCapture 
                     onClose={() => setIsCameraOpen(false)} 
@@ -175,11 +175,23 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
            
             <div className="flex-grow flex overflow-hidden">
                 {/* Photo List/Grid Pane */}
-                <aside className={`w-full lg:w-1/3 lg:max-w-sm flex flex-col border-r border-[var(--theme-border)] ${selectedPhoto ? 'hidden lg:flex' : 'flex'}`}>
-                     <header className="p-4 flex-shrink-0 border-b border-[var(--theme-border)]">
-                        <div className="flex justify-between items-center">
-                            <h1 className="text-2xl font-bold text-[var(--theme-text-primary)]">Photo Library</h1>
-                            <div className="flex items-center gap-2">
+                <aside className={`w-full lg:w-1/3 lg:max-w-sm flex flex-col border-r border-transparent lg:border-[var(--theme-border)] ${selectedPhoto ? 'hidden lg:flex' : 'flex'}`}>
+                     <header className="p-4 flex-shrink-0 border-b border-white/10">
+                         <div className="relative">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <SearchIcon />
+                            </div>
+                            <input 
+                                type="text"
+                                placeholder="Search photos..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-800/60 border border-[var(--theme-border)] rounded-lg pl-10 pr-4 py-2.5 placeholder-slate-400 focus:ring-2 focus:ring-[var(--theme-green)] focus:border-transparent transition-colors duration-200"
+                            />
+                        </div>
+                    </header>
+                    <div className="flex-grow overflow-y-auto no-scrollbar pb-24 lg:pb-2">
+                        <div className="p-4 flex items-center justify-end gap-2">
                                 <label 
                                     htmlFor="photo-upload" 
                                     className={`font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2 transition-colors ${
@@ -200,22 +212,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
                                     <CameraIcon className="h-5 w-5" />
                                     <span className="hidden sm:inline">Capture</span>
                                 </button>
-                            </div>
                         </div>
-                         <div className="relative mt-4">
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <SearchIcon />
-                            </div>
-                            <input 
-                                type="text"
-                                placeholder="Search photos..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-[var(--theme-dark-bg)] border border-[var(--theme-border)] rounded-md pl-10 pr-4 py-2"
-                            />
-                        </div>
-                    </header>
-                    <div className="flex-grow overflow-y-auto no-scrollbar pb-24 lg:pb-2">
                          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2 p-2">
                             {isUploading && Array.from({ length: uploadCount }).map((_, index) => (
                                 <div key={`skeleton-${index}`} className="aspect-square bg-[var(--theme-card-bg)]/50 rounded-md animate-pulse"></div>
