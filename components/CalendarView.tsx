@@ -2,12 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { CalendarEvent, Photo } from '../App';
 import { XIcon } from './icons/XIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import { ChevronRightIcon } from './icons/ChevronRightIcon';
 import { EventEditorModal } from './EventEditorModal';
 import { BellIcon } from './icons/BellIcon';
 
 interface CalendarViewProps {
-    onClose: () => void;
     events: CalendarEvent[];
     onSaveEvent: (event: CalendarEvent) => Promise<void>;
     onDeleteEvent: (id: string) => Promise<void>;
@@ -24,7 +22,7 @@ const colorMap: Record<string, string> = {
     cyan: 'bg-cyan-500',
 };
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ onClose, events, onSaveEvent, onDeleteEvent, photos, onSavePhoto }) => {
+export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent, onDeleteEvent, photos, onSavePhoto }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -86,15 +84,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onClose, events, onS
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
-            <div className="bg-[var(--theme-dark-bg)] border-t md:border border-[var(--theme-border)] w-full h-full md:max-w-4xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in">
+        <div className="flex-1 flex flex-col p-2 sm:p-4">
+            <div className="bg-[var(--theme-card-bg)]/50 backdrop-blur-sm border border-white/10 w-full h-full rounded-xl shadow-2xl flex flex-col overflow-hidden">
                 <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => changeMonth(-1)}><ChevronLeftIcon /></button>
+                        <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/10"><ChevronLeftIcon /></button>
                         <h2 className="text-xl font-bold text-[var(--theme-text-primary)] w-48 text-center">
                             {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                         </h2>
-                        <button onClick={() => changeMonth(1)}><ChevronRightIcon /></button>
+                        <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-white/10"><ChevronRightIcon /></button>
                     </div>
                     <div className="flex items-center gap-4">
                          {notificationPermission === 'default' && (
@@ -102,7 +100,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onClose, events, onS
                                 <BellIcon /> Enable Reminders
                             </button>
                         )}
-                        <button onClick={onClose} className="text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
                     </div>
                 </header>
                 
@@ -116,7 +113,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onClose, events, onS
                         const isToday = date && date.toDateString() === new Date().toDateString();
 
                         return (
-                            <div key={index} className="border-b border-r border-[var(--theme-border)]/50 p-1.5 flex flex-col overflow-hidden relative" onClick={() => date && openEditorForNewEvent(date)}>
+                            <div key={index} className="border-b border-r border-[var(--theme-border)]/50 p-1.5 flex flex-col overflow-hidden relative transition-colors hover:bg-white/5 cursor-pointer" onClick={() => date && openEditorForNewEvent(date)}>
                                 {date && (
                                     <>
                                         <time dateTime={dateKey} className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[var(--theme-green)] text-black' : 'text-white'}`}>

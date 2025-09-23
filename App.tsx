@@ -43,7 +43,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 // --- Type Definitions ---
-export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet';
+export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet' | 'calendar';
 export type UserRole = 'user' | 'creator';
 
 export interface Template {
@@ -215,7 +215,6 @@ const App: React.FC = () => {
 
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     
     // PWA Install Prompt State
     const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -227,9 +226,6 @@ const App: React.FC = () => {
     
     // App Update State
     const [showUpdateToast, setShowUpdateToast] = useState(false);
-    
-    // Trigger for FAB actions
-    const [newNoteCount, setNewNoteCount] = useState(0);
 
     // Effect to recalculate storage whenever data changes
     useEffect(() => {
@@ -355,7 +351,7 @@ const App: React.FC = () => {
         // Handle URL-based view navigation from PWA shortcuts
         const urlParams = new URLSearchParams(window.location.search);
         const requestedView = urlParams.get('view') as View;
-        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet'];
+        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet', 'calendar'];
         if (requestedView && validViews.includes(requestedView)) {
             setCurrentView(requestedView);
         }
@@ -911,7 +907,7 @@ const App: React.FC = () => {
                         logEntries={logEntries}
                         onSaveLogEntry={(type) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
                         siteSettings={siteSettings}
-                        onOpenCalendar={() => setIsCalendarOpen(true)}
+                        onOpenCalendar={() => setCurrentView('calendar')}
                         onOpenDashboard={() => setIsDashboardOpen(true)}
                         calendarEvents={calendarEvents}
                         getWeatherInfo={getWeatherInfo}
@@ -973,7 +969,6 @@ const App: React.FC = () => {
                     onSave={handleSaveNote}
                     onUpdate={handleUpdateNote}
                     onDelete={handleDeleteNote}
-                    newNoteTrigger={newNoteCount}
                     noteRecordings={noteRecordings}
                     onSaveNoteRecording={handleSaveNoteRecording}
                     onDeleteNoteRecording={handleDeleteNoteRecording}
@@ -987,6 +982,16 @@ const App: React.FC = () => {
                     logEntries={logEntries}
                     onSaveLogEntry={handleSaveLogEntry}
                 />;
+            case 'calendar':
+                return (
+                    <CalendarView
+                        events={calendarEvents}
+                        onSaveEvent={handleSaveCalendarEvent}
+                        onDeleteEvent={handleDeleteCalendarEvent}
+                        photos={photos}
+                        onSavePhoto={handleSavePhoto}
+                    />
+                );
             default:
                 return null;
         }
@@ -1029,7 +1034,6 @@ const App: React.FC = () => {
             <BottomNavBar
                  currentView={currentView} 
                  onNavigate={setCurrentView}
-                 onNewNote={() => setNewNoteCount(c => c + 1)}
             />
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
@@ -1069,16 +1073,6 @@ const App: React.FC = () => {
                     onPwaInstall={handlePwaInstall}
                     onDownloadSource={handleDownloadSourceZip}
                     siteSettings={siteSettings}
-                />
-            )}
-            {isCalendarOpen && (
-                <CalendarView
-                    onClose={() => setIsCalendarOpen(false)}
-                    events={calendarEvents}
-                    onSaveEvent={handleSaveCalendarEvent}
-                    onDeleteEvent={handleDeleteCalendarEvent}
-                    photos={photos}
-                    onSavePhoto={handleSavePhoto}
                 />
             )}
             {showUpdateToast && <UpdateToast onUpdate={() => window.location.reload()} />}

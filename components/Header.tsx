@@ -14,6 +14,7 @@ import { UserIcon } from './icons/UserIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { ClockIcon } from './icons/ClockIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
 
 interface HeaderProps {
   siteSettings: SiteSettings;
@@ -104,6 +105,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             <HeaderNavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} />
             <HeaderNavItem label="Photos" icon={<PhotoIcon />} isActive={currentView === 'photos'} onClick={() => onNavigate('photos')} />
             <HeaderNavItem label="Notepad" icon={<NotepadIcon />} isActive={currentView === 'notepad'} onClick={() => onNavigate('notepad')} />
+            <HeaderNavItem label="Calendar" icon={<CalendarIcon />} isActive={currentView === 'calendar'} onClick={() => onNavigate('calendar')} />
             <HeaderNavItem label="Timesheet" icon={<ClockIcon />} isActive={currentView === 'timesheet'} onClick={() => onNavigate('timesheet')} />
             <HeaderNavItem label="Image Tool" icon={<ImageIcon />} isActive={currentView === 'image-tool'} onClick={() => onNavigate('image-tool')} />
         </nav>

@@ -27,7 +27,6 @@ interface NotepadProps {
     onSave: (note: Note) => Promise<void>;
     onUpdate: (note: Note) => Promise<void>;
     onDelete: (id: string) => Promise<void>;
-    newNoteTrigger: number;
     noteRecordings: NoteRecording[];
     onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
     onDeleteNoteRecording: (id: string) => Promise<void>;
@@ -249,7 +248,7 @@ const NoteEditor: React.FC<{
     );
 };
 
-export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDelete, newNoteTrigger, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onSavePhoto }) => {
+export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDelete, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onSavePhoto }) => {
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -298,13 +297,6 @@ export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDel
         setSelectedNote(updatedNote); // Update local state immediately
     };
 
-
-    useEffect(() => {
-        if (newNoteTrigger > 0) {
-            handleAddNewNote();
-        }
-    }, [newNoteTrigger, handleAddNewNote]);
-    
      const debouncedSelectedNote = useDebounce(selectedNote, 1000);
      useEffect(() => {
         if (debouncedSelectedNote) {
