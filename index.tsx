@@ -5,6 +5,7 @@ import App from './App';
 // Declare globals for TypeScript since they are loaded from a CDN
 declare var JSZip: any;
 declare var WaveSurfer: any;
+declare var docx: any;
 
 // Register the Service Worker to enable PWA offline functionality
 if ('serviceWorker' in navigator) {

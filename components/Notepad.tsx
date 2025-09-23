@@ -89,6 +89,8 @@ const NoteEditor: React.FC<{
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const moreMenuRef = useRef<HTMLDivElement>(null);
     const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
+    const draggedItemRef = useRef<HTMLLIElement | null>(null);
+    const dropIndicatorRef = useRef<HTMLLIElement | null>(null);
 
     useEffect(() => {
         setLocalNote(note);
@@ -163,6 +165,48 @@ const NoteEditor: React.FC<{
         }
     }, [handleLocalChange]);
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        const selection = window.getSelection();
+        if (!selection || !selection.rangeCount) return;
+
+        const range = selection.getRangeAt(0);
+        const node = range.commonAncestorContainer;
+        // FIX: Cast the selection node to 'Element' to access the 'closest' method, as the base 'Node' type does not have it.
+        const li = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node as Element)?.closest('ul[data-type="checklist"] > li');
+
+        if (e.key === 'Enter' && li) {
+            e.preventDefault();
+            const newLi = document.createElement('li');
+            newLi.setAttribute('data-checked', 'false');
+            newLi.innerHTML = '&#8203;'; // Zero-width space to make it editable
+
+            li.parentNode?.insertBefore(newLi, li.nextSibling);
+
+            const newRange = document.createRange();
+            newRange.setStart(newLi, 1); // Place cursor after the ZWS
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+
+            handleLocalChange(p => ({ ...p, content: editorRef.current?.innerHTML || '' }));
+        } else if (e.key === 'Backspace' && li) {
+            const isEffectivelyEmpty = li.textContent === '' || li.textContent === '\u200B';
+            if (isEffectivelyEmpty && range.startOffset <= 1) {
+                const prevLi = li.previousElementSibling as HTMLLIElement;
+                if (prevLi) {
+                    e.preventDefault();
+                    const newRange = document.createRange();
+                    newRange.selectNodeContents(prevLi);
+                    newRange.collapse(false); // Move to end of previous item
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                    li.remove();
+                    handleLocalChange(p => ({ ...p, content: editorRef.current?.innerHTML || '' }));
+                }
+            }
+        }
+    };
+
     const getSaveStatusText = () => {
         switch (saveStatus) {
             case 'unsaved': return 'Unsaved changes';
@@ -171,6 +215,88 @@ const NoteEditor: React.FC<{
             default: return '';
         }
     };
+    
+    // --- Checklist Drag and Drop Logic ---
+
+    const getLiFromEventTarget = (target: EventTarget | null): HTMLLIElement | null => {
+        let element = target as HTMLElement | null;
+        while (element && element !== editorRef.current) {
+            if (element.tagName === 'LI' && element.parentElement?.dataset.type === 'checklist') {
+                return element as HTMLLIElement;
+            }
+            element = element.parentElement;
+        }
+        return null;
+    };
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+        const li = getLiFromEventTarget(e.target);
+        if (!li) {
+            e.preventDefault();
+            return;
+        }
+        draggedItemRef.current = li;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', li.innerText);
+
+        setTimeout(() => {
+            li.classList.add('dragging');
+        }, 0);
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const li = getLiFromEventTarget(e.target);
+        const draggedItem = draggedItemRef.current;
+        if (!li || !draggedItem || li === draggedItem || li.contains(draggedItem)) return;
+
+        const rect = li.getBoundingClientRect();
+        const isAfter = e.clientY > rect.top + rect.height / 2;
+
+        if (!dropIndicatorRef.current) {
+            const indicator = document.createElement('li');
+            indicator.className = 'drop-indicator-li';
+            const innerDiv = document.createElement('div');
+            innerDiv.className = 'drop-indicator';
+            indicator.appendChild(innerDiv);
+            dropIndicatorRef.current = indicator;
+        }
+
+        if (isAfter) {
+            li.parentNode?.insertBefore(dropIndicatorRef.current, li.nextSibling);
+        } else {
+            li.parentNode?.insertBefore(dropIndicatorRef.current, li);
+        }
+    };
+    
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+         if (!e.relatedTarget || !(e.currentTarget as Node).contains(e.relatedTarget as Node)) {
+            dropIndicatorRef.current?.remove();
+            dropIndicatorRef.current = null;
+        }
+    };
+
+    const cleanupDrag = () => {
+        draggedItemRef.current?.classList.remove('dragging');
+        dropIndicatorRef.current?.remove();
+        draggedItemRef.current = null;
+        dropIndicatorRef.current = null;
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const draggedItem = draggedItemRef.current;
+        if (draggedItem && dropIndicatorRef.current) {
+            dropIndicatorRef.current.parentNode?.insertBefore(draggedItem, dropIndicatorRef.current);
+            handleLocalChange(p => ({...p, content: editorRef.current?.innerHTML || ''}));
+        }
+        cleanupDrag();
+    };
+
+    const handleDragEnd = () => {
+        cleanupDrag();
+    };
+
 
     return (
         <div className={`note-editor-container flex flex-col flex-1 h-full font-sans bg-transparent ${localNote.fontStyle}`}>
@@ -204,7 +330,20 @@ const NoteEditor: React.FC<{
                     <input type="text" placeholder="New Note" value={localNote.title} onChange={(e) => handleLocalChange(p => ({...p, title: e.target.value}))} className="note-editor-title w-full text-4xl font-bold bg-transparent border-none focus:ring-0 p-0 mb-2 text-slate-100 placeholder:text-slate-500" />
                     <div className="flex items-center gap-2 text-slate-400 mb-2"> <CalendarIcon /> <input type="text" placeholder="mm/dd/yyyy" value={localNote.dueDate || ''} onChange={(e) => handleLocalChange(p => ({ ...p, dueDate: e.target.value }))} className="text-sm bg-transparent border-none p-0 focus:ring-0 text-slate-400" /> </div>
                     <EditorToolbar onCommand={handleExecCommand} onImageUpload={() => inlineImageInputRef.current?.click()} />
-                    <div ref={editorRef} className="note-editor-content w-full prose prose-lg max-w-none prose-invert prose-p:text-slate-300 prose-headings:text-slate-100" contentEditable suppressContentEditableWarning onInput={() => handleLocalChange(p => ({...p, content: editorRef.current?.innerHTML || ''}))} onClick={handleEditorClick}></div>
+                    <div 
+                        ref={editorRef} 
+                        className="note-editor-content w-full prose prose-lg max-w-none prose-invert prose-p:text-slate-300 prose-headings:text-slate-100" 
+                        contentEditable 
+                        suppressContentEditableWarning 
+                        onInput={() => handleLocalChange(p => ({...p, content: editorRef.current?.innerHTML || ''}))} 
+                        onClick={handleEditorClick}
+                        onKeyDown={handleKeyDown}
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onDragEnd={handleDragEnd}
+                    ></div>
                 </div>
             </div>
         </div>

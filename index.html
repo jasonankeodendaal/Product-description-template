@@ -15,6 +15,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://unpkg.com/wavesurfer.js@7"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -113,9 +114,10 @@
     }
     .note-editor-content ul[data-type="checklist"] > li {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 0.75rem;
       padding: 0.25rem 0;
+      cursor: grab;
     }
     .note-editor-content ul[data-type="checklist"] > li::before {
       content: '';
@@ -128,7 +130,6 @@
       flex-shrink: 0;
       background-color: transparent;
       transition: background-color 0.2s ease, border-color 0.2s ease;
-      margin-top: 0.125em; /* Align with first line of text */
     }
     .note-editor-content ul[data-type="checklist"] > li[data-checked="true"]::before {
       background-color: var(--theme-green); /* Updated to use theme variable */
@@ -143,6 +144,29 @@
       color: var(--theme-text-secondary); /* Updated to use theme variable */
     }
     
+    /* Drag & Drop for Notepad Checklist */
+    .note-editor-content ul[data-type="checklist"] > li.dragging {
+      opacity: 0.4;
+      background-color: var(--theme-bg);
+      border-radius: 4px;
+    }
+    .drop-indicator {
+      height: 2px;
+      background-color: var(--theme-green);
+      margin: 4px 0;
+      animation: hologram-pulse 1.5s infinite;
+    }
+    li.drop-indicator-li {
+      list-style-type: none !important;
+      padding: 0 !important;
+      cursor: default !important;
+      display: block !important;
+      gap: 0 !important;
+    }
+    li.drop-indicator-li::before {
+      display: none !important;
+    }
+
     .note-editor-content > *:first-child { margin-top: 0; }
     .note-editor-content > *:last-child { margin-bottom: 0; }
     .note-editor-content:focus { outline: none; }
