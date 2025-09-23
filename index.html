@@ -17,6 +17,8 @@
   <script src="https://unpkg.com/wavesurfer.js@7"></script>
   <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
   <script src="https://unpkg.com/docx@8.2.2/build/index.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -270,6 +272,16 @@
         from { transform: scale(1); opacity: 1; }
         to { transform: scale(0.9); opacity: 0; }
     }
+    @keyframes tile-enter {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
 
     .creator-modal-animate-in {
         animation: slide-in-up 0.3s ease-out forwards;
@@ -346,6 +358,14 @@
     .camera-filter-contrast { filter: contrast(1.5); }
     .camera-filter-saturate { filter: saturate(2); }
     .camera-filter-invert { filter: invert(100%); }
+
+    /* Helper for Message of the day */
+    .bg-grid-emerald-500\/10 {
+        background-image: 
+            linear-gradient(to right, rgba(52, 211, 153, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(52, 211, 153, 0.05) 1px, transparent 1px);
+        background-size: 1.5rem 1.5rem;
+    }
 
     /* md breakpoint: 768px */
     @media (min-width: 768px) {

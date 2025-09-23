@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const CloudIcon: React.FC<{ isConnected: boolean }> = ({ isConnected }) => (
+export const CloudIcon: React.FC<{ isConnected: boolean } & React.SVGProps<SVGSVGElement>> = ({ isConnected, className, ...props }) => (
     <svg 
         xmlns="http://www.w3.org/2000/svg" 
         width="24" 
@@ -11,7 +11,9 @@ export const CloudIcon: React.FC<{ isConnected: boolean }> = ({ isConnected }) =
         strokeWidth="2" 
         strokeLinecap="round" 
         strokeLinejoin="round" 
-        className={`h-6 w-6 transition-colors ${isConnected ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'}`}
+        // FIX: Accept a className prop to allow overriding default styles for flexibility.
+        className={className || `h-6 w-6 transition-colors ${isConnected ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'}`}
+        {...props}
     >
         <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
     </svg>

@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN } from './constants';
 import { GeneratorView } from './components/GeneratorView';
-import { generateProductDescription } from './services/geminiService';
+import { generateProductDescription, getWeatherInfo } from './services/geminiService';
 import { GenerationResult } from './components/OutputPanel';
 import { FullScreenLoader } from './components/FullScreenLoader';
 import { db } from './services/db';
@@ -26,6 +26,8 @@ import { projectFiles } from './utils/sourceCode';
 import { Home } from './components/Home';
 import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
+import { TimesheetManager } from './components/TimesheetManager';
+import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
 
 declare var JSZip: any;
 
@@ -41,7 +43,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 // --- Type Definitions ---
-export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool';
+export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet';
 export type UserRole = 'user' | 'creator';
 
 export interface Template {
@@ -109,9 +111,13 @@ export interface Note {
 
 export interface LogEntry {
     id: string;
-    type: 'Clock In' | 'Clock Out' | 'Note Created' | 'Photo Added' | 'Recording Added';
-    timestamp: string;
+    type: 'Clock In' | 'Clock Out' | 'Note Created' | 'Photo Added' | 'Recording Added' | 'Manual Task';
+    timestamp: string; // For auto-events, this is the main time. For manual, it's the date.
+    task?: string;     // For manual tasks
+    startTime?: string; // ISO string for manual tasks
+    endTime?: string;   // ISO string for manual tasks
 }
+
 
 export interface CalendarEvent {
   id: string;
@@ -184,6 +190,7 @@ const App: React.FC = () => {
     const [noteRecordings, setNoteRecordings] = useState<NoteRecording[]>([]);
     const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
     const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+    const [storageUsage, setStorageUsage] = useState<StorageUsage>({ total: 0, breakdown: [] });
     
     const [isInitialized, setIsInitialized] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -196,13 +203,12 @@ const App: React.FC = () => {
     const [tone, setTone] = useState('Professional');
     
     const [directoryHandle, setDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(null);
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isDashboardOpen, setIsDashboardOpen] = useState(false);
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     const [isCreatorInfoOpen, setIsCreatorInfoOpen] = useState(false);
-    const [isUnlocked, setIsUnlocked] = useState(false);
     const [userRole, setUserRole] = useState<UserRole>('user');
     const [isPinSetupModalOpen, setIsPinSetupModalOpen] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const [isApiConnecting, setIsApiConnecting] = useState(false);
     const [isApiConnected, setIsApiConnected] = useState(false);
@@ -225,6 +231,10 @@ const App: React.FC = () => {
     // Trigger for FAB actions
     const [newNoteCount, setNewNoteCount] = useState(0);
 
+    // Effect to recalculate storage whenever data changes
+    useEffect(() => {
+        setStorageUsage(calculateStorageUsage({ photos, recordings, notes, logEntries, templates, calendarEvents }));
+    }, [photos, recordings, notes, logEntries, templates, calendarEvents]);
 
     // --- PWA Installation Logic ---
     useEffect(() => {
@@ -328,12 +338,24 @@ const App: React.FC = () => {
     };
 
 
+    // --- Generic Data Handlers (Centralized) ---
+    const handleSaveLogEntry = useCallback(async (entry: Omit<LogEntry, 'id'>) => {
+        const newEntry: LogEntry = {
+            id: crypto.randomUUID(),
+            ...entry
+        };
+        const updatedEntries = [newEntry, ...logEntries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setLogEntries(updatedEntries);
+        await db.saveLogEntry(newEntry);
+        if (directoryHandle) await fileSystemService.saveLogEntryToDirectory(directoryHandle, newEntry);
+    }, [directoryHandle, logEntries]);
+
     // --- Data Loading and Initialization ---
     useEffect(() => {
         // Handle URL-based view navigation from PWA shortcuts
         const urlParams = new URLSearchParams(window.location.search);
         const requestedView = urlParams.get('view') as View;
-        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool'];
+        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet'];
         if (requestedView && validViews.includes(requestedView)) {
             setCurrentView(requestedView);
         }
@@ -394,11 +416,6 @@ const App: React.FC = () => {
         initializeApp();
     }, []);
     
-    useEffect(() => {
-        if (isDashboardOpen && !isUnlocked) {
-            setIsAuthModalOpen(true);
-        }
-    }, [isDashboardOpen, isUnlocked]);
     
     // --- Reminder Service ---
     const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent = false) => {
@@ -443,22 +460,11 @@ const App: React.FC = () => {
         setIsPinSetupModalOpen(false);
     };
 
-    const handleSaveLogEntry = useCallback(async (type: LogEntry['type']) => {
-        const newEntry: LogEntry = {
-            id: crypto.randomUUID(),
-            type,
-            timestamp: new Date().toISOString()
-        };
-        setLogEntries(prev => [newEntry, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
-        await db.saveLogEntry(newEntry);
-        if (directoryHandle) await fileSystemService.saveLogEntryToDirectory(directoryHandle, newEntry);
-    }, [directoryHandle]);
-
     const handleSaveRecording = useCallback(async (recording: Recording) => {
         setRecordings(prev => [recording, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         await db.saveRecording(recording);
         if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, recording);
-        await handleSaveLogEntry('Recording Added');
+        await handleSaveLogEntry({type: 'Recording Added', timestamp: new Date().toISOString()});
     }, [directoryHandle, handleSaveLogEntry]);
 
     const handleUpdateRecording = useCallback(async (recording: Recording) => {
@@ -477,7 +483,7 @@ const App: React.FC = () => {
         setPhotos(prev => [photo, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         await db.savePhoto(photo);
         if (directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
-        await handleSaveLogEntry('Photo Added');
+        await handleSaveLogEntry({type: 'Photo Added', timestamp: new Date().toISOString()});
     }, [directoryHandle, handleSaveLogEntry]);
 
     const handleUpdatePhoto = useCallback(async (photo: Photo) => {
@@ -498,7 +504,7 @@ const App: React.FC = () => {
             let newNotes;
             if (!existing) {
                 newNotes = [note, ...prevNotes];
-                handleSaveLogEntry('Note Created'); // Only log on creation
+                handleSaveLogEntry({ type: 'Note Created', timestamp: new Date().toISOString() }); // Only log on creation
             } else {
                 newNotes = prevNotes.map(n => (n.id === note.id ? note : n));
             }
@@ -608,7 +614,7 @@ const App: React.FC = () => {
         setCurrentView('image-tool');
     };
 
-    const syncFromDirectory = async (handle: FileSystemDirectoryHandle, showSuccess = false) => {
+    const syncFromDirectory = useCallback(async (handle: FileSystemDirectoryHandle, showSuccess = false) => {
         setLoadingMessage('Syncing from folder...');
         setIsLoading(true);
         try {
@@ -640,16 +646,13 @@ const App: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
     
     const handleSyncDirectory = useCallback(async () => {
         try {
             const handle = await fileSystemService.getDirectoryHandle();
             if (await fileSystemService.directoryHasData(handle)) {
-                if (!window.confirm("The selected folder contains data. Do you want to overwrite your current session with the folder's data?")) {
-                    return;
-                }
-                await syncFromDirectory(handle);
+                await syncFromDirectory(handle, true);
             } else {
                 await Promise.all([
                     fileSystemService.saveSettings(handle, siteSettings),
@@ -666,7 +669,7 @@ const App: React.FC = () => {
             if (err instanceof DOMException && err.name === 'AbortError') return;
             alert(`Could not connect to directory: ${err instanceof Error ? err.message : String(err)}`);
         }
-    }, [siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents]);
+    }, [siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents, syncFromDirectory]);
 
     const handleDisconnectDirectory = useCallback(async () => {
         if(window.confirm("Are you sure you want to disconnect? The app will switch back to using local browser storage.")) {
@@ -845,9 +848,36 @@ const App: React.FC = () => {
       return doc.body.textContent || "";
     };
 
+     const handleLogin = (role: UserRole) => {
+        setUserRole(role);
+        setIsAuthenticated(true);
+        handleSaveLogEntry({ type: 'Clock In', timestamp: new Date().toISOString() });
+    };
+
+    const handleLogout = useCallback(() => {
+        handleSaveLogEntry({ type: 'Clock Out', timestamp: new Date().toISOString() });
+        setIsAuthenticated(false);
+        setUserRole('user');
+    }, [handleSaveLogEntry]);
+
+    const handleDashboardLockAndLogout = () => {
+        setIsDashboardOpen(false);
+        handleLogout();
+    };
+
+
     if (!isInitialized) {
         return <FullScreenLoader message="Initializing App..." />;
     }
+    
+    if (!siteSettings.pinIsSet) {
+        return <PinSetupModal onSetPin={handleSetUserPin} />;
+    }
+
+    if (!isAuthenticated) {
+        return <AuthModal onUnlock={handleLogin} userPin={siteSettings.userPin} />;
+    }
+
 
     const renderView = () => {
         switch (currentView) {
@@ -859,10 +889,14 @@ const App: React.FC = () => {
                         photos={photos}
                         recordings={recordings}
                         logEntries={logEntries}
-                        onSaveLogEntry={(type) => handleSaveLogEntry(type)}
+                        onSaveLogEntry={(type) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
                         siteSettings={siteSettings}
                         onOpenCalendar={() => setIsCalendarOpen(true)}
+                        onOpenDashboard={() => setIsDashboardOpen(true)}
                         calendarEvents={calendarEvents}
+                        getWeatherInfo={getWeatherInfo}
+                        storageUsage={storageUsage}
+                        onLogout={handleLogout}
                     />
                 );
             case 'generator':
@@ -927,6 +961,11 @@ const App: React.FC = () => {
                 />;
             case 'image-tool':
                 return <ImageTool initialImage={imageToEdit} onClearInitialImage={() => setImageToEdit(null)} />;
+            case 'timesheet':
+                return <TimesheetManager 
+                    logEntries={logEntries}
+                    onSaveLogEntry={handleSaveLogEntry}
+                />;
             default:
                 return null;
         }
@@ -974,27 +1013,10 @@ const App: React.FC = () => {
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
             
-            {isPinSetupModalOpen && <PinSetupModal onSetPin={handleSetUserPin} />}
-            
-            {isAuthModalOpen && <AuthModal 
-                onClose={() => {
-                    setIsAuthModalOpen(false);
-                    setIsDashboardOpen(false);
-                }}
-                onUnlock={(role) => {
-                    setUserRole(role);
-                    setIsUnlocked(true);
-                    setIsAuthModalOpen(false);
-                }}
-                userPin={siteSettings.userPin}
-            />}
-            {isDashboardOpen && isUnlocked && (
+            {isDashboardOpen && (
                 <Dashboard 
                     onClose={() => setIsDashboardOpen(false)}
-                    onLock={() => {
-                        setIsUnlocked(false);
-                        setIsDashboardOpen(false);
-                    }}
+                    onLock={handleDashboardLockAndLogout}
                     templates={templates}
                     recordings={recordings}
                     photos={photos}

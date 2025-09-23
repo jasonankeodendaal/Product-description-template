@@ -41,7 +41,7 @@ export interface SiteSettings {
   pinIsSet?: boolean;
 }
 
-export const CREATOR_PIN = '1723';
+export const CREATOR_PIN = '1723j';
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',

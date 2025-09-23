@@ -33,7 +33,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ onOpenCalendar, 
                 return eventDate >= now && eventDate <= sevenDaysFromNow;
             })
             .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime())
-            .slice(0, 4);
+            .slice(0, 3); // Show fewer events for compact view
     }, [events]);
 
     const formatEventTime = (isoString: string) => {
@@ -52,14 +52,14 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ onOpenCalendar, 
                      <h3 className="text-white font-bold text-lg">Calendar</h3>
                 </div>
                 <div className="text-right flex-shrink-0">
-                    <p className="text-4xl font-bold text-white -mb-1">{day}</p>
-                    <p className="text-lg font-semibold text-gray-300 leading-tight">{month}</p>
+                    <p className="text-3xl font-bold text-white -mb-1">{day}</p>
+                    <p className="text-md font-semibold text-gray-300 leading-tight">{month}</p>
                 </div>
             </div>
-            <div className="flex-grow my-4 space-y-2 overflow-hidden">
+            <div className="flex-grow my-2 space-y-1.5 overflow-hidden">
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map(event => (
-                        <div key={event.id} className="flex items-center gap-2 text-sm animate-fade-in-down">
+                        <div key={event.id} className="flex items-center gap-2 text-xs animate-fade-in-down">
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colorMap[event.color] || 'bg-gray-400'}`}></div>
                             <span className="text-gray-300 font-mono text-xs">{formatEventTime(event.startDateTime)}</span>
                             <p className="text-white truncate">{event.title}</p>
@@ -71,7 +71,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ onOpenCalendar, 
                     </div>
                 )}
             </div>
-            <div className="text-right text-gray-300 font-semibold">{weekday}</div>
+            <div className="text-right text-gray-300 font-semibold text-sm">{weekday}</div>
         </button>
     );
 };

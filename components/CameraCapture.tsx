@@ -88,8 +88,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       setZoom(1);
       
       try {
-        const deviceId = videoDevices[activeDeviceIndex].deviceId;
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+        const deviceId = videoDevices[activeDeviceIndex]?.deviceId;
+        const constraints: MediaStreamConstraints = {
+            video: {
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                facingMode: 'environment', // Prefer back camera
+                width: { ideal: 4096 },
+                height: { ideal: 2160 }
+            }
+        };
+
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         
         if (!isCancelled) {
           streamRef.current = mediaStream;
@@ -133,7 +142,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     const filterToApply = mode === 'document' ? 'grayscale(1) contrast(1.8)' : (activeFilter === 'camera-filter-none' ? 'none' : FILTERS.find(f => f.css === activeFilter)?.css.replace('camera-filter-', ''));
     context.filter = filterToApply || 'none';
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
     context.filter = 'none'; // Reset filter for next use
 
     if (mode === 'document') {

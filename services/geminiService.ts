@@ -143,3 +143,22 @@ export async function describeImage(
         throw error;
     }
 }
+
+export async function getWeatherInfo(
+    city: string,
+    customApiUrl?: string | null,
+    customApiAuthKey?: string | null
+): Promise<any> {
+    try {
+        const baseUrl = customApiUrl || '';
+        const response = await fetch(`${baseUrl}/api/weather`, {
+            method: 'POST',
+            headers: getHeaders(customApiAuthKey),
+            body: JSON.stringify({ city }),
+        });
+        return await handleFetchErrors(response);
+    } catch (error) {
+        console.error("Error calling /api/weather:", error);
+        throw error;
+    }
+}

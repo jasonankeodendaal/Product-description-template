@@ -13,6 +13,7 @@ import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
 import { UserIcon } from './icons/UserIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { HomeIcon } from './icons/HomeIcon';
+import { ClockIcon } from './icons/ClockIcon';
 
 interface HeaderProps {
   siteSettings: SiteSettings;
@@ -97,12 +98,13 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             {isDropdownOpen && <CompanyInfoDropdown settings={siteSettings} onClose={() => setIsDropdownOpen(false)} />}
         </div>
 
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1.5">
             <HeaderNavItem label="Home" icon={<HomeIcon />} isActive={currentView === 'home'} onClick={() => onNavigate('home')} />
             <HeaderNavItem label="Generator" icon={<SparklesIcon />} isActive={currentView === 'generator'} onClick={() => onNavigate('generator')} />
             <HeaderNavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} />
             <HeaderNavItem label="Photos" icon={<PhotoIcon />} isActive={currentView === 'photos'} onClick={() => onNavigate('photos')} />
             <HeaderNavItem label="Notepad" icon={<NotepadIcon />} isActive={currentView === 'notepad'} onClick={() => onNavigate('notepad')} />
+            <HeaderNavItem label="Timesheet" icon={<ClockIcon />} isActive={currentView === 'timesheet'} onClick={() => onNavigate('timesheet')} />
             <HeaderNavItem label="Image Tool" icon={<ImageIcon />} isActive={currentView === 'image-tool'} onClick={() => onNavigate('image-tool')} />
         </nav>
 

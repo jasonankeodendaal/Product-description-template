@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import { Note, Photo, Recording, LogEntry } from '../../App';
+import { useRecharts } from '../../hooks/useRecharts';
+import { Spinner } from '../icons/Spinner';
 
 interface ActivityChartWidgetProps {
     notes: Note[];
@@ -9,8 +11,7 @@ interface ActivityChartWidgetProps {
 }
 
 export const ActivityChartWidget: React.FC<ActivityChartWidgetProps> = ({ notes, photos, recordings, logEntries }) => {
-    // Recharts is loaded from a CDN, so we access it from the global scope when the component renders.
-    const Recharts = (window as any).Recharts;
+    const Recharts = useRecharts();
 
     const chartData = useMemo(() => {
         const data: { name: string; notes: number; photos: number; recordings: number; logs: number }[] = [];
@@ -44,7 +45,8 @@ export const ActivityChartWidget: React.FC<ActivityChartWidgetProps> = ({ notes,
     if (!Recharts) {
          return (
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col items-center justify-center">
-                <p className="text-white">Loading chart data...</p>
+                <Spinner />
+                <p className="text-white/70 mt-2 text-sm">Loading chart...</p>
             </div>
         );
     }
