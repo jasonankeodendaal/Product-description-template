@@ -761,8 +761,8 @@ const App: React.FC = () => {
                 />
             </div>
             
-            <main className="flex-1 pt-[76px] lg:p-4 flex flex-col pb-24 lg:pb-4">
-                 <div className="bg-slate-950/70 flex-1 w-full mx-auto max-w-7xl rounded-2xl overflow-hidden flex flex-col backdrop-blur-sm">
+            <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
+                 <div className="bg-slate-950/70 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
                     {/* --- Desktop Header (Now inside the main panel) --- */}
                     <Header 
                         siteSettings={siteSettings} 

@@ -56,7 +56,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
 }) => {
     return (
         <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex flex-col flex-1">
+            <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex flex-col flex-1">
                 <div className="flex-shrink-0 mb-8">
                      <TemplateManager 
                         templates={templates} 

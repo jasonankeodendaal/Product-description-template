@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
   
   return (
     <header className="border-b border-white/10 flex-shrink-0 hidden lg:flex">
-      <div className="container mx-auto px-4 flex justify-between items-center h-[76px]">
+      <div className="w-full px-4 sm:px-6 lg:px-8 flex justify-between items-center h-[76px]">
         <div className="relative" ref={dropdownRef}>
             <button 
                 onClick={() => setIsDropdownOpen(prev => !prev)}

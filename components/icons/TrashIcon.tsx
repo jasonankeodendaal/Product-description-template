@@ -1,7 +1,8 @@
 import React from 'react';
 
-export const TrashIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+// FIX: Correctly typed props to allow className and other SVG attributes.
+export const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" {...props}>
         <style>
             {`
                 .trash-lid {

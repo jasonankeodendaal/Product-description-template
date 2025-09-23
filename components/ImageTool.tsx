@@ -192,7 +192,7 @@ export const ImageTool: React.FC<ImageToolProps> = ({ initialImage, onClearIniti
     }, [imageItems, outputSize]);
 
     return (
-        <div className="container mx-auto p-4 lg:py-8 flex-1 flex flex-col overflow-y-auto">
+        <div className="w-full p-4 lg:py-8 sm:px-6 lg:px-8 flex-1 flex flex-col overflow-y-auto">
             <h1 className="text-3xl font-bold text-[var(--theme-green)]">HQ Image Squarer</h1>
             <p className="text-[var(--theme-text-secondary)] mt-2">Create broadcast-quality, perfectly square images. Upload multiple photos and download them all in a zip.</p>
             
