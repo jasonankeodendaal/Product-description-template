@@ -137,7 +137,7 @@ export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownlo
                      <Step num="3" title="Configure Gradle for Signing">
                         <p>1. In the Project pane on the left, make sure you are in "Android" view.</p>
                         <p>2. Expand the <strong className="text-white">"Gradle Scripts"</strong> section and double-click on <strong className="text-white">`build.gradle (Module :app)`</strong> to open it.</p>
-                        <p>3. Scroll to the bottom of the file. Inside the `android {`}`}` block, paste the following code, replacing the placeholder values with your own details. (It's often best to place this right before the closing `}`}`}` of the `android` block).</p>
+                        <p>3. Scroll to the bottom of the file. Inside the <code>android {'{}'}</code> block, paste the following code, replacing the placeholder values with your own details. (It's often best to place this right before the closing <code>{'}'}</code> of the <code>android</code> block).</p>
                         <CodeBlock>
 {
 [
