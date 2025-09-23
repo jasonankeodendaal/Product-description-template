@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface HomeTileProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -13,7 +12,7 @@ export const HomeTile: React.FC<HomeTileProps> = ({ children, className, style, 
             {...props}
         >
             {children}
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl group-hover:ring-white/20 transition-shadow"></div>
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl group-hover:ring-white/20 transition-shadow pointer-events-none"></div>
         </div>
     );
 };

@@ -39,6 +39,7 @@ export interface SiteSettings {
   syncMode?: 'local' | 'folder' | 'api';
   userPin?: string;
   pinIsSet?: boolean;
+  onboardingCompleted?: boolean;
 }
 
 export const CREATOR_PIN = '1723j';
@@ -65,6 +66,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   syncMode: 'local',
   userPin: '',
   pinIsSet: false,
+  onboardingCompleted: false,
 };
 
 export const DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE = `

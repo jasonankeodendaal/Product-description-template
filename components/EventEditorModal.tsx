@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { CalendarEvent, Photo } from '../App';
+import React, { useState, useEffect, useCallback } from 'react';
+import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { PhotoThumbnail } from './PhotoThumbnail';
+import { useRecorder } from '../hooks/useRecorder';
+import { MicIcon } from './icons/MicIcon';
+import { formatTime } from '../utils/formatters';
+import { LiveWaveform } from './LiveWaveform';
+import { WaveformPlayer } from './WaveformPlayer';
 
 interface EventEditorModalProps {
     onClose: () => void;
@@ -15,6 +20,8 @@ interface EventEditorModalProps {
     event: CalendarEvent | null;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
+    recordings: Recording[];
+    onSaveRecording: (recording: Recording) => Promise<Recording>;
 }
 
 const colorMap: Record<string, { bg: string; ring: string }> = {
@@ -36,7 +43,7 @@ const reminderOptions = [
     { label: '1 day before', value: 1440 },
 ];
 
-export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onSave, onDelete, targetDate, event, photos, onSavePhoto }) => {
+export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onSave, onDelete, targetDate, event, photos, onSavePhoto, recordings, onSaveRecording }) => {
     const [title, setTitle] = useState(event?.title || '');
     const [notes, setNotes] = useState(event?.notes || '');
     const [time, setTime] = useState(() => {
@@ -46,9 +53,13 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
     const [color, setColor] = useState(event?.color || defaultColors[0]);
     const [reminderOffset, setReminderOffset] = useState(event?.reminderOffset ?? -1);
     const [photoId, setPhotoId] = useState(event?.photoId);
+    const [recordingIds, setRecordingIds] = useState<string[]>(event?.recordingIds || []);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
+    
+    const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode } = useRecorder();
 
     const attachedPhoto = photos.find(p => p.id === photoId);
+    const attachedRecordings = recordings.filter(r => recordingIds.includes(r.id));
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -66,6 +77,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
             reminderOffset,
             reminderFired: event?.reminderFired || false,
             photoId,
+            recordingIds,
             createdAt: event?.createdAt || new Date().toISOString(),
         };
         onSave(newEvent);
@@ -94,20 +106,39 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
         await onSavePhoto(newPhoto);
         setPhotoId(newPhoto.id);
     };
+    
+    const handleSaveRecording = useCallback(async () => {
+        if (!audioBlob) return;
+        const newRecData: Omit<Recording, 'id' | 'isTranscribing'> = {
+            name: `Rec for ${title || 'Event'} on ${targetDate.toLocaleDateString()}`,
+            date: new Date().toISOString(),
+            transcript: '',
+            notes: `Attached to calendar event.`,
+            audioBlob,
+            tags: ['calendar-event'],
+            photoIds: [],
+        };
+        const savedRecording = await onSaveRecording(newRecData as Recording);
+        setRecordingIds(prev => [...prev, savedRecording.id]);
+    }, [audioBlob, onSaveRecording, title, targetDate]);
+
+    const handleUnlinkRecording = (id: string) => {
+        setRecordingIds(prev => prev.filter(recId => recId !== id));
+    };
 
     return (
         <>
             {isCameraOpen && <CameraCapture onCapture={handleCapture} onClose={() => setIsCameraOpen(false)} />}
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={onClose}>
-                <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in" onClick={e => e.stopPropagation()}>
-                    <form onSubmit={handleSubmit}>
-                        <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
+                <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+                        <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
                             <h3 className="text-lg font-bold text-[var(--theme-text-primary)]">
                                 {event ? 'Edit Event' : 'New Event'} on {targetDate.toLocaleDateString()}
                             </h3>
                             <button type="button" onClick={onClose} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]"><XIcon /></button>
                         </header>
-                        <div className="p-6 space-y-4">
+                        <div className="p-6 space-y-4 overflow-y-auto">
                             <input
                                 type="text"
                                 value={title}
@@ -120,7 +151,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                                 value={notes}
                                 onChange={e => setNotes(e.target.value)}
                                 placeholder="Notes..."
-                                rows={4}
+                                rows={3}
                                 className="w-full bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)]"
                             />
                             <div className="grid grid-cols-2 gap-4">
@@ -144,8 +175,8 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                                 </div>
                             </div>
                              <div>
-                                <label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">Attachment</label>
-                                <div className="flex items-center gap-3">
+                                <h4 className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">Attachments</h4>
+                                <div className="flex items-start gap-3">
                                     {attachedPhoto ? (
                                         <div className="w-20 h-20"><PhotoThumbnail photo={attachedPhoto} onSelect={() => {}} onDelete={() => setPhotoId(undefined)} /></div>
                                     ) : (
@@ -154,10 +185,28 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                                             <span className="text-xs mt-1">Add Photo</span>
                                         </button>
                                     )}
+                                    <div className="flex-1 space-y-2">
+                                        {attachedRecordings.map(rec => (
+                                            <div key={rec.id} className="flex items-center gap-2 bg-black/20 p-1 rounded-md">
+                                                <div className="flex-grow"><WaveformPlayer audioBlob={rec.audioBlob} /></div>
+                                                <button type="button" onClick={() => handleUnlinkRecording(rec.id)} className="p-1 text-gray-400 hover:text-red-400"><XIcon/></button>
+                                            </div>
+                                        ))}
+                                         <div className="flex items-center gap-2 bg-[var(--theme-bg)]/50 p-1 rounded">
+                                            <div className="flex-1 h-10 rounded-md overflow-hidden bg-black/20">
+                                                {isRecording && <LiveWaveform analyserNode={analyserNode} />}
+                                            </div>
+                                            <button type="button" onClick={isRecording ? stopRecording : startRecording} className="p-2 bg-[var(--theme-green)] text-black rounded-full">
+                                                <MicIcon className="text-black" />
+                                            </button>
+                                            <span className="text-xs font-mono">{formatTime(recordingTime)}</span>
+                                            <button type="button" onClick={handleSaveRecording} disabled={!audioBlob} className="text-xs bg-[var(--theme-green)] text-black font-semibold px-2 py-1 rounded disabled:opacity-50">Save</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <footer className="p-4 bg-black/20 border-t border-[var(--theme-border)] flex justify-between items-center">
+                        <footer className="p-4 bg-black/20 border-t border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
                             {event ? (
                                 <button type="button" onClick={handleDelete} className="text-sm font-semibold text-[var(--theme-red)] hover:opacity-80 flex items-center gap-2">
                                     <TrashIcon /> Delete

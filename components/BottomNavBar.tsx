@@ -13,79 +13,99 @@ interface BottomNavBarProps {
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavigate }) => {
     const navRef = useRef<HTMLElement>(null);
-    const [indicatorStyle, setIndicatorStyle] = useState({});
+    const [pathD, setPathD] = useState('');
+    const [navWidth, setNavWidth] = useState(0);
 
     const navItems = useMemo(() => [
-        { view: 'home', label: 'Home', icon: <HomeIcon /> },
-        { view: 'recordings', label: 'Recordings', icon: <RecordingIcon /> },
-        { view: 'notepad', label: 'Notepad', icon: <NotepadIcon /> },
-        { view: 'photos', label: 'Photos', icon: <PhotoIcon /> },
-        { view: 'generator', label: 'Generator', icon: <SparklesIcon /> }
+        { view: 'home', label: 'Home', icon: HomeIcon },
+        { view: 'recordings', label: 'Recordings', icon: RecordingIcon },
+        { view: 'notepad', label: 'Notepad', icon: NotepadIcon },
+        { view: 'photos', label: 'Photos', icon: PhotoIcon },
+        { view: 'generator', label: 'Generator', icon: SparklesIcon }
     ], []);
 
     const activeIndex = useMemo(() => navItems.findIndex(item => item.view === currentView), [currentView, navItems]);
 
     useEffect(() => {
-        const calculateIndicator = () => {
-            if (navRef.current && activeIndex > -1) {
-                const navWidth = navRef.current.offsetWidth;
-                const itemCount = navItems.length;
-                const itemWidth = navWidth / itemCount;
-                const newLeft = itemWidth * activeIndex;
-                setIndicatorStyle({
-                    transform: `translateX(${newLeft}px)`,
-                    width: `${itemWidth}px`
-                });
+        const observer = new ResizeObserver(entries => {
+            if (entries[0]) {
+                const newWidth = entries[0].contentRect.width;
+                if (newWidth > 0) {
+                    setNavWidth(newWidth);
+                }
             }
-        };
-
-        calculateIndicator();
-
-        const resizeObserver = new ResizeObserver(calculateIndicator);
+        });
         if (navRef.current) {
-            resizeObserver.observe(navRef.current);
+            observer.observe(navRef.current);
         }
-        return () => resizeObserver.disconnect();
-    }, [activeIndex, navItems.length]);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (navWidth > 0 && activeIndex > -1) {
+            const itemCount = navItems.length;
+            const itemWidth = navWidth / itemCount;
+            const center = itemWidth * activeIndex + itemWidth / 2;
+            
+            const scoopWidth = 80;
+            const scoopDepth = 28;
+            const topMargin = 16;
+            const navHeight = 64;
+
+            const startX = center - scoopWidth / 2;
+            const endX = center + scoopWidth / 2;
+
+            const d = `
+                M 0,${topMargin}
+                L ${startX},${topMargin}
+                C ${startX + 10},${topMargin} ${startX + 12},${topMargin + scoopDepth} ${center},${topMargin + scoopDepth}
+                C ${endX - 12},${topMargin + scoopDepth} ${endX - 10},${topMargin} ${endX},${topMargin}
+                L ${navWidth},${topMargin}
+                L ${navWidth},${navHeight}
+                L 0,${navHeight} Z
+            `;
+            setPathD(d);
+        } else if (navWidth > 0) {
+            // Path for when no item is selected (or an unlisted view)
+            const topMargin = 16;
+            const navHeight = 64;
+             const d = `
+                M 0,${topMargin}
+                L ${navWidth},${topMargin}
+                L ${navWidth},${navHeight}
+                L 0,${navHeight} Z
+            `;
+            setPathD(d);
+        }
+    }, [activeIndex, navWidth, navItems.length]);
 
     return (
-        <footer className="fixed bottom-0 left-0 right-0 z-30 lg:hidden p-4">
-            <nav ref={navRef} className="relative w-full h-16 flex items-center bg-gray-900 rounded-full shadow-lg border border-white/10">
-                
-                {/* Moving Indicator */}
-                <div
-                    className="absolute top-0 h-full transition-transform duration-300 ease-out pointer-events-none"
-                    style={indicatorStyle}
-                >
-                    {/* The actual orange circle, centered within the container and scaled based on active state */}
-                    <div className={`
-                        w-16 h-16 bg-[var(--theme-green)] rounded-full absolute top-1/2 left-1/2 
-                        -translate-x-1/2 -translate-y-1/2 transition-transform duration-300
-                        ${activeIndex > -1 ? 'scale-100' : 'scale-0'}
-                    `}></div>
+        <footer className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-4 pb-4 pt-2">
+            <nav ref={navRef} className="relative w-full h-16">
+                <div className="absolute inset-0">
+                    <svg width="100%" height="100%" viewBox={`0 0 ${navWidth} 64`} preserveAspectRatio="none">
+                        <path d={pathD} fill="#111827" className="transition-all duration-300 ease-out" style={{ filter: 'drop-shadow(0 -5px 10px rgba(0,0,0,0.3))' }} />
+                    </svg>
                 </div>
                 
-                {/* Nav Items */}
-                {navItems.map((item, index) => {
-                    const isActive = activeIndex === index;
-                    return (
-                        <button
-                            key={item.view}
-                            onClick={() => onNavigate(item.view as View)}
-                            className="relative flex-1 h-full flex flex-col items-center justify-center gap-1 z-10"
-                            aria-label={item.label}
-                        >
-                            <div className={`transition-all duration-300 ease-out ${isActive ? '-translate-y-2' : ''}`}>
-                                {React.cloneElement(item.icon, {
-                                    className: `h-7 w-7 transition-colors ${isActive ? 'text-gray-900' : 'text-gray-400 group-hover:text-white'}`
-                                })}
-                            </div>
-                            <span className={`absolute bottom-1 text-xs font-bold transition-opacity duration-300 ${isActive ? 'opacity-0' : 'opacity-100 text-gray-400'}`}>
-                                {item.label}
-                            </span>
-                        </button>
-                    );
-                })}
+                <div className="relative w-full h-full flex items-center">
+                    {navItems.map((item, index) => {
+                        const isActive = activeIndex === index;
+                        const Icon = item.icon;
+                        return (
+                            <button
+                                key={item.view}
+                                onClick={() => onNavigate(item.view as View)}
+                                className="relative flex-1 h-full flex items-center justify-center z-10"
+                                aria-label={item.label}
+                            >
+                                <div className={`transition-transform duration-300 ease-out ${isActive ? '-translate-y-4' : 'translate-y-0'}`}>
+                                    <Icon className={`h-6 w-6 transition-colors duration-200 ${isActive ? 'text-[var(--theme-green)]' : 'text-gray-400'}`} />
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
             </nav>
         </footer>
     );

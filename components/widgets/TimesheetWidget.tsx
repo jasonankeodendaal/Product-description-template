@@ -11,11 +11,55 @@ interface TimesheetWidgetProps {
 
 export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, onSaveLogEntry, onNavigate }) => {
     
-    const lastClockInOrOut = useMemo(() => {
-        return logEntries.find(entry => entry.type === 'Clock In' || entry.type === 'Clock Out');
+    const { isClockedIn, workedHours } = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        const todayLogEntries = logEntries
+            .filter(entry => {
+                const entryDate = new Date(entry.timestamp);
+                return entryDate >= today && entryDate < tomorrow;
+            })
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        
+        const lastRelevantClockEntry = [...todayLogEntries].reverse().find(e => e.type === 'Clock In' || e.type === 'Clock Out');
+        const isCurrentlyClockedIn = lastRelevantClockEntry?.type === 'Clock In';
+        
+        let totalMilliseconds = 0;
+        
+        // --- Calculate Clock In/Out session time ---
+        let lastClockInTime: Date | null = null;
+        todayLogEntries.forEach(entry => {
+            if (entry.type === 'Clock In') {
+                lastClockInTime = new Date(entry.timestamp);
+            } else if (entry.type === 'Clock Out' && lastClockInTime) {
+                totalMilliseconds += new Date(entry.timestamp).getTime() - lastClockInTime.getTime();
+                lastClockInTime = null; // Reset after a pair is completed
+            }
+        });
+
+        // If still clocked in, add time from last clock-in until now
+        if (lastClockInTime) {
+            totalMilliseconds += new Date().getTime() - lastClockInTime.getTime();
+        }
+
+        // --- Calculate Manual Task time ---
+        todayLogEntries.forEach(entry => {
+            if (entry.type === 'Manual Task' && entry.startTime && entry.endTime) {
+                totalMilliseconds += new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime();
+            }
+        });
+
+        const hours = Math.floor(totalMilliseconds / (1000 * 60 * 60));
+        const minutes = Math.floor((totalMilliseconds % (1000 * 60 * 60)) / (1000 * 60));
+
+        return {
+            isClockedIn: isCurrentlyClockedIn,
+            workedHours: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+        };
     }, [logEntries]);
-    
-    const isClockedIn = lastClockInOrOut?.type === 'Clock In';
 
     const formatRelativeTime = (timestamp: string) => {
         const now = new Date();
@@ -34,6 +78,10 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, on
             <div className="flex justify-between items-center mb-2">
                  <h3 className="text-white font-bold text-lg">Timesheet</h3>
                  <button onClick={() => onNavigate('timesheet')} className="text-xs font-semibold text-gray-300 hover:text-white hover:underline">View Log →</button>
+            </div>
+             <div className="text-center my-2">
+                <p className="text-4xl font-bold text-white tracking-tighter">{workedHours}</p>
+                <p className="text-sm text-gray-400 font-semibold">Today's Hours</p>
             </div>
             <div className="grid grid-cols-2 gap-2 mb-2">
                 <button
@@ -54,7 +102,7 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, on
                 </button>
             </div>
             <div className="flex-grow space-y-1 overflow-y-auto no-scrollbar pr-2 -mr-2 text-xs">
-                {logEntries.length > 0 ? logEntries.slice(0, 4).map(entry => (
+                {logEntries.length > 0 ? logEntries.slice(0, 2).map(entry => (
                     <div key={entry.id} className="flex justify-between items-center p-1.5 bg-white/5 rounded">
                         <span className={`font-medium truncate max-w-[60%] ${entry.type === 'Clock In' ? 'text-emerald-400' : entry.type === 'Clock Out' ? 'text-rose-400' : 'text-gray-300'}`}>
                             {entry.task || entry.type}

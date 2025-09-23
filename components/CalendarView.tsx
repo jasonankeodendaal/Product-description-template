@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CalendarEvent, Photo } from '../App';
+import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { EventEditorModal } from './EventEditorModal';
@@ -11,6 +11,9 @@ interface CalendarViewProps {
     onDeleteEvent: (id: string) => Promise<void>;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
+    onClose: () => void;
+    recordings: Recording[];
+    onSaveRecording: (recording: Recording) => Promise<Recording>;
 }
 
 const colorMap: Record<string, string> = {
@@ -22,7 +25,7 @@ const colorMap: Record<string, string> = {
     cyan: 'bg-cyan-500',
 };
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent, onDeleteEvent, photos, onSavePhoto }) => {
+export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent, onDeleteEvent, photos, onSavePhoto, onClose, recordings, onSaveRecording }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -84,8 +87,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-        <div className="flex-1 flex flex-col p-2 sm:p-4">
-            <div className="bg-[var(--theme-card-bg)]/50 backdrop-blur-sm border border-white/10 w-full h-full rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300 animate-flex-modal-scale-in" aria-modal="true" role="dialog">
+            <div className="bg-[var(--theme-dark-bg)] border-t md:border border-[var(--theme-border)] w-full h-full md:max-w-6xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden">
                 <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
                     <div className="flex items-center gap-4">
                         <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/10"><ChevronLeftIcon /></button>
@@ -100,6 +103,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
                                 <BellIcon /> Enable Reminders
                             </button>
                         )}
+                         <button onClick={onClose} className="text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
                     </div>
                 </header>
                 
@@ -142,6 +146,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
                     event={selectedEvent}
                     photos={photos}
                     onSavePhoto={onSavePhoto}
+                    recordings={recordings}
+                    onSaveRecording={onSaveRecording}
                 />
             )}
         </div>
@@ -150,7 +156,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
 
 // ChevronRightIcon component
 const ChevronRightIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
         <polyline points="9 18 15 12 9 6"></polyline>
     </svg>
 );

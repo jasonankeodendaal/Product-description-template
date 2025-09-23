@@ -28,6 +28,7 @@ import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
 import { TimesheetManager } from './components/TimesheetManager';
 import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
+import { OnboardingTour } from './components/OnboardingTour';
 
 declare var JSZip: any;
 
@@ -126,6 +127,7 @@ export interface CalendarEvent {
   title: string;
   notes: string;
   photoId?: string;
+  recordingIds?: string[];
   color: string; // e.g., 'sky', 'purple', 'emerald'
   reminderOffset: number; // in minutes before the event. -1 for no reminder.
   reminderFired: boolean;
@@ -209,12 +211,14 @@ const App: React.FC = () => {
     const [userRole, setUserRole] = useState<UserRole>('user');
     const [isPinSetupModalOpen, setIsPinSetupModalOpen] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
     const [isApiConnecting, setIsApiConnecting] = useState(false);
     const [isApiConnected, setIsApiConnected] = useState(false);
 
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     
     // PWA Install Prompt State
     const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -468,6 +472,10 @@ const App: React.FC = () => {
         const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true };
         await handleUpdateSettings(newSettings);
         setIsPinSetupModalOpen(false);
+        // After setting pin for the first time, show onboarding.
+        if (!siteSettings.onboardingCompleted) {
+            setIsOnboardingOpen(true);
+        }
     };
 
     const handleSaveRecording = useCallback(async (recording: Recording) => {
@@ -475,6 +483,7 @@ const App: React.FC = () => {
         await db.saveRecording(recording);
         if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, recording);
         await handleSaveLogEntry({type: 'Recording Added', timestamp: new Date().toISOString()});
+        return recording; // Return the saved recording so its ID can be used
     }, [directoryHandle, handleSaveLogEntry]);
 
     const handleUpdateRecording = useCallback(async (recording: Recording) => {
@@ -603,6 +612,12 @@ const App: React.FC = () => {
             await fileSystemService.saveSettings(directoryHandle, newSettings);
         }
     }, [directoryHandle]);
+    
+    const handleFinishOnboarding = useCallback(async () => {
+        const newSettings = { ...siteSettings, onboardingCompleted: true };
+        await handleUpdateSettings(newSettings);
+        setIsOnboardingOpen(false);
+    }, [siteSettings, handleUpdateSettings]);
 
     const handleAddTemplate = useCallback(async (name: string, prompt: string) => {
         const newTemplate: Template = { id: crypto.randomUUID(), name, prompt };
@@ -889,6 +904,10 @@ const App: React.FC = () => {
     if (!siteSettings.pinIsSet) {
         return <PinSetupModal onSetPin={handleSetUserPin} />;
     }
+    
+    if (isOnboardingOpen) {
+        return <OnboardingTour onFinish={handleFinishOnboarding} />;
+    }
 
     if (!isAuthenticated) {
         return <AuthModal onUnlock={handleLogin} userPin={siteSettings.userPin} />;
@@ -907,7 +926,7 @@ const App: React.FC = () => {
                         logEntries={logEntries}
                         onSaveLogEntry={(type) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
                         siteSettings={siteSettings}
-                        onOpenCalendar={() => setCurrentView('calendar')}
+                        onOpenCalendar={() => setIsCalendarOpen(true)}
                         onOpenDashboard={() => setIsDashboardOpen(true)}
                         calendarEvents={calendarEvents}
                         getWeatherInfo={getWeatherInfo}
@@ -983,15 +1002,8 @@ const App: React.FC = () => {
                     onSaveLogEntry={handleSaveLogEntry}
                 />;
             case 'calendar':
-                return (
-                    <CalendarView
-                        events={calendarEvents}
-                        onSaveEvent={handleSaveCalendarEvent}
-                        onDeleteEvent={handleDeleteCalendarEvent}
-                        photos={photos}
-                        onSavePhoto={handleSavePhoto}
-                    />
-                );
+                // This view is now handled by the modal
+                return null;
             default:
                 return null;
         }
@@ -1038,6 +1050,19 @@ const App: React.FC = () => {
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
             
+            {isCalendarOpen && (
+                <CalendarView
+                    onClose={() => setIsCalendarOpen(false)}
+                    events={calendarEvents}
+                    onSaveEvent={handleSaveCalendarEvent}
+                    onDeleteEvent={handleDeleteCalendarEvent}
+                    photos={photos}
+                    onSavePhoto={handleSavePhoto}
+                    recordings={recordings}
+                    onSaveRecording={handleSaveRecording}
+                />
+            )}
+
             {isDashboardOpen && (
                 <Dashboard 
                     onClose={() => setIsDashboardOpen(false)}
