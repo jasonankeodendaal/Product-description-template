@@ -4,6 +4,7 @@ import { SparklesIcon } from './icons/SparklesIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
+import { HomeIcon } from './icons/HomeIcon';
 
 interface BottomNavBarProps {
   currentView: View;
@@ -37,14 +38,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
       <div className="relative w-full h-20">
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[rgba(4,120,87,0.6)] to-[rgba(52,211,153,0.7)] backdrop-blur-md rounded-2xl shadow-[0_0_25px_rgba(52,211,153,0.4)] border border-white/10">
             <nav className="h-full flex justify-around items-center">
+                <div className="w-1/5"><NavItem label="Home" icon={<HomeIcon />} isActive={currentView === 'home'} onClick={() => onNavigate('home')} /></div>
                 <div className="w-1/5"><NavItem label="Generator" icon={<SparklesIcon />} isActive={currentView === 'generator'} onClick={() => onNavigate('generator')} /></div>
-                <div className="w-1/5"><NavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} /></div>
                 <div className="w-1/5"></div>
+                <div className="w-1/5"><NavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} /></div>
                 <div className="w-1/5"><NavItem label="Photos" icon={<PhotoIcon />} isActive={currentView === 'photos'} onClick={() => onNavigate('photos')} /></div>
-                <div className="w-1/5"><NavItem label="Notepad" icon={<NotepadIcon />} isActive={currentView === 'notepad'} onClick={() => onNavigate('notepad')} /></div>
             </nav>
           </div>
-           {currentView === 'notepad' && (
+           {currentView === 'notepad' ? (
                 <div className="absolute left-1/2 top-0 -translate-x-1/2">
                     <button 
                         onClick={onNewNote}
@@ -52,6 +53,15 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
                     >
                         <PlusIcon />
                         <span className="text-xs font-bold -mt-1">New Note</span>
+                    </button>
+                </div>
+            ) : (
+                <div className="absolute left-1/2 top-0 -translate-x-1/2">
+                     <button
+                        onClick={() => onNavigate('notepad')}
+                        className="w-16 h-16 bg-gradient-to-br from-slate-700 to-slate-800 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-slate-950"
+                     >
+                        <NotepadIcon className="w-7 h-7 text-white"/>
                     </button>
                 </div>
             )}

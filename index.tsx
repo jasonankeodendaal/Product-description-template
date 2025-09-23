@@ -6,6 +6,7 @@ import App from './App';
 declare var JSZip: any;
 declare var WaveSurfer: any;
 declare var docx: any;
+declare var Recharts: any;
 
 // Register the Service Worker to enable PWA offline functionality
 if ('serviceWorker' in navigator) {

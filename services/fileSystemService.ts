@@ -1,4 +1,4 @@
-import { Recording, Template, Photo, Note, ParsedProductData } from "../App";
+import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent } from "../App";
 import { SiteSettings } from "../constants";
 
 // Declare the docx library which is loaded from a CDN script in index.html
@@ -81,6 +81,40 @@ const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle)
     return { recordings, errors };
 };
 
+// --- Note Recordings ---
+const saveNoteRecordingToDirectory = async (dirHandle: FileSystemDirectoryHandle, recording: NoteRecording) => {
+    const recsDir = await getOrCreateDirectory(dirHandle, 'note_recordings');
+    const metadata: Omit<NoteRecording, 'audioBlob'> = { ...recording };
+    delete (metadata as any).audioBlob;
+    await writeFile(recsDir, `${recording.id}.json`, JSON.stringify(metadata, null, 2));
+    await writeFile(recsDir, `${recording.id}.webm`, recording.audioBlob);
+};
+
+const deleteNoteRecordingFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
+    const recsDir = await getOrCreateDirectory(dirHandle, 'note_recordings');
+    try { await recsDir.removeEntry(`${id}.json`); } catch(e) {}
+    try { await recsDir.removeEntry(`${id}.webm`); } catch(e) {}
+};
+
+const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<NoteRecording[]> => {
+    const recordings: NoteRecording[] = [];
+    try {
+        const recsDir = await dirHandle.getDirectoryHandle('note_recordings');
+        for await (const entry of recsDir.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    const metadata = JSON.parse(await file.text());
+                    const audioHandle = await recsDir.getFileHandle(`${metadata.id}.webm`);
+                    const audioBlob = await audioHandle.getFile();
+                    recordings.push({ ...metadata, audioBlob });
+                } catch (e) { console.error(`Failed to load note recording ${entry.name}: ${e}`); }
+            }
+        }
+    } catch (e) { /* note_recordings dir doesn't exist, return empty */ }
+    return recordings;
+};
+
 // --- Photos ---
 const getOrCreateNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle> => {
     let current = root;
@@ -138,8 +172,6 @@ const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Pr
         const processDirectory = async (dir: FileSystemDirectoryHandle) => {
             for await (const entry of dir.values()) {
                 if (entry.kind === 'directory') {
-                    // FIX: TypeScript can fail to narrow the type of `entry` within an async iterator.
-                    // Explicitly cast `entry` to FileSystemDirectoryHandle to fix the type mismatch for the recursive call.
                     await processDirectory(entry as FileSystemDirectoryHandle);
                 } else if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                     try {
@@ -192,10 +224,72 @@ const loadNotesFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Pro
     return notes;
 }
 
-const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data: { recordings: Recording[], photos: Photo[], notes: Note[] }) => {
+// --- Log Entries ---
+const saveLogEntryToDirectory = async (dirHandle: FileSystemDirectoryHandle, entry: LogEntry) => {
+    const logsDir = await getOrCreateDirectory(dirHandle, 'logs');
+    await writeFile(logsDir, `${entry.id}.json`, JSON.stringify(entry, null, 2));
+};
+
+const deleteLogEntryFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
+    try {
+        const logsDir = await dirHandle.getDirectoryHandle('logs');
+        await logsDir.removeEntry(`${id}.json`);
+    } catch(e) {}
+}
+
+const loadLogEntriesFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<LogEntry[]> => {
+    const entries: LogEntry[] = [];
+    try {
+        const logsDir = await dirHandle.getDirectoryHandle('logs');
+        for await (const entry of logsDir.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    entries.push(JSON.parse(await file.text()));
+                } catch(e) { console.error(`Failed to load log entry ${entry.name}`, e); }
+            }
+        }
+    } catch(e) { /* logs dir doesn't exist */ }
+    return entries;
+}
+
+// --- Calendar Events ---
+const saveCalendarEventToDirectory = async (dirHandle: FileSystemDirectoryHandle, event: CalendarEvent) => {
+    const eventsDir = await getOrCreateDirectory(dirHandle, 'calendar_events');
+    await writeFile(eventsDir, `${event.id}.json`, JSON.stringify(event, null, 2));
+};
+
+const deleteCalendarEventFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
+    try {
+        const eventsDir = await dirHandle.getDirectoryHandle('calendar_events');
+        await eventsDir.removeEntry(`${id}.json`);
+    } catch(e) {}
+}
+
+const loadCalendarEventsFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<CalendarEvent[]> => {
+    const events: CalendarEvent[] = [];
+    try {
+        const eventsDir = await dirHandle.getDirectoryHandle('calendar_events');
+        for await (const entry of eventsDir.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    events.push(JSON.parse(await file.text()));
+                } catch(e) { console.error(`Failed to load calendar event ${entry.name}`, e); }
+            }
+        }
+    } catch(e) { /* calendar_events dir doesn't exist */ }
+    return events;
+}
+
+
+const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data: { recordings: Recording[], photos: Photo[], notes: Note[], noteRecordings: NoteRecording[], logEntries: LogEntry[], calendarEvents: CalendarEvent[] }) => {
     for (const rec of data.recordings) await saveRecordingToDirectory(dirHandle, rec);
     for (const photo of data.photos) await savePhotoToDirectory(dirHandle, photo);
     for (const note of data.notes) await saveNoteToDirectory(dirHandle, note);
+    for (const noteRec of data.noteRecordings) await saveNoteRecordingToDirectory(dirHandle, noteRec);
+    for (const log of data.logEntries) await saveLogEntryToDirectory(dirHandle, log);
+    for (const event of data.calendarEvents) await saveCalendarEventToDirectory(dirHandle, event);
 }
 
 const createDocxBlob = (structuredData: Record<string, string>): Promise<Blob> => {
@@ -261,6 +355,15 @@ export const fileSystemService = {
     saveNoteToDirectory,
     loadNotesFromDirectory,
     deleteNoteFromDirectory,
+    saveNoteRecordingToDirectory,
+    loadNoteRecordingsFromDirectory,
+    deleteNoteRecordingFromDirectory,
+    saveLogEntryToDirectory,
+    loadLogEntriesFromDirectory,
+    deleteLogEntryFromDirectory,
+    saveCalendarEventToDirectory,
+    loadCalendarEventsFromDirectory,
+    deleteCalendarEventFromDirectory,
     saveAllDataToDirectory,
     saveProductDescription,
 };

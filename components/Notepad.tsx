@@ -1,456 +1,418 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Note } from '../App';
-import { SearchIcon } from './icons/SearchIcon';
-import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import { ShareIcon } from './icons/ShareIcon';
-import { MoreVerticalIcon } from './icons/MoreVerticalIcon';
-import { TrashIcon } from './icons/TrashIcon';
-import { CalendarIcon } from './icons/CalendarIcon';
-import { resizeImage } from '../utils/imageUtils';
-import { ImageIcon } from './icons/ImageIcon';
-import { NotepadIcon } from './icons/NotepadIcon';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Note, NoteRecording, Photo } from '../App';
 import { useDebounce } from '../hooks/useDebounce';
+import { useRecorder } from '../hooks/useRecorder';
+import { SearchIcon } from './icons/SearchIcon';
 import { PlusIcon } from './icons/PlusIcon';
+import { NotepadIcon } from './icons/NotepadIcon';
+import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
+import { TrashIcon } from './icons/TrashIcon';
+import { BoldIcon } from './icons/BoldIcon';
+import { ItalicIcon } from './icons/ItalicIcon';
+import { UnderlineIcon } from './icons/UnderlineIcon';
+import { ListIcon } from './icons/ListIcon';
+import { MicIcon } from './icons/MicIcon';
+import { WaveformPlayer } from './WaveformPlayer';
+import { formatTime } from '../utils/formatters';
+import { LiveWaveform } from './LiveWaveform';
+import { XIcon } from './icons/XIcon';
+import { CameraCapture } from './CameraCapture';
+import { dataURLtoBlob } from '../utils/dataUtils';
+import { PhotoThumbnail } from './PhotoThumbnail';
+import { ScanIcon } from './icons/ScanIcon';
 
-// --- ICONS ---
-// FIX: Correctly typed icon components to accept standard SVG props, resolving potential type errors.
-const BoldIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" {...props}><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg>;
-const ItalicIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" {...props}><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg>;
-const StrikethroughIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" {...props}><path d="M16 4H9a3 3 0 0 0-2.83 4" /><path d="M14 12a4 4 0 0 1 0 8H6" /><line x1="4" y1="12" x2="20" y2="12" /></svg>;
-const HighlighterIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" {...props}><path d="m16 5-4.5 4.5 4.5 4.5 5.5-5.5-5.5-3.5Z"/><path d="m5 16 4.5-4.5-4.5-4.5-3.5 5.5 3.5 3.5Z"/><path d="m14 7 3-3, 3 3-3 3-3-3Z"/><path d="m3 15 3 3-3 3-3-3 3-3Z"/><path d="m9 18 3-3, 3 3-3 3-3-3Z"/><path d="M9 6 6 3 3 6l3 3 3-3Z"/></svg>;
-const ChecklistIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" {...props}><path d="m9 12 2 2 4-4" /><path d="M3 12h.01" /><path d="M3 18h.01" /><path d="M3 6h.01" /><path d="M7 12h12" /><path d="M7 18h12" /><path d="M7 6h12" /></svg>;
-
-
-// --- HELPER FUNCTIONS ---
-const stripHtml = (html: string) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return doc.body.textContent || "";
-};
-
-// --- CHILD COMPONENTS ---
-
-const NoteCard: React.FC<{ note: Note; onClick: () => void; isSelected: boolean; onDelete: (id: string) => void; }> = React.memo(({ note, onClick, isSelected, onDelete }) => {
-    const contentPreview = useMemo(() => stripHtml(note.content), [note.content]);
-    
-    const handleDelete = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent selecting the note when deleting
-        if (window.confirm(`Are you sure you want to delete "${note.title}"?`)) {
-            onDelete(note.id);
-        }
-    };
-
-    return (
-        <div className="relative group">
-            <button
-                onClick={onClick}
-                className={`w-full text-left rounded-lg p-3 transition-all duration-200 border-2 ${
-                    isSelected ? 'bg-slate-700/60 border-slate-600' : 'bg-transparent border-transparent hover:bg-slate-800/40'
-                }`}
-            >
-                <h3 className="font-semibold text-slate-200 pr-8 truncate">{note.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed line-clamp-2 mt-1">{contentPreview || "Start writing here..."}</p>
-            </button>
-            <button
-                onClick={handleDelete}
-                className="absolute top-3 right-2 p-1 text-slate-500 hover:text-[var(--theme-red)] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                aria-label={`Delete note ${note.title}`}
-            >
-                <TrashIcon />
-            </button>
-        </div>
-    );
-});
-
-
-const EditorToolbar: React.FC<{ onCommand: (cmd: string, val?: any) => void, onImageUpload: () => void }> = React.memo(({ onCommand, onImageUpload }) => (
-    <div className="flex items-center gap-1 p-1 bg-slate-900/50 rounded-lg shadow-sm border border-slate-700/50 my-4 flex-wrap">
-        <button onClick={() => onCommand('bold')} className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><BoldIcon/></button>
-        <button onClick={() => onCommand('italic')} className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><ItalicIcon/></button>
-        <button onClick={() => onCommand('strikeThrough')} className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><StrikethroughIcon/></button>
-        <button onClick={() => onCommand('hiliteColor', 'rgba(52, 211, 153, 0.3)')} className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><HighlighterIcon/></button>
-        <div className="w-px h-5 bg-slate-700 mx-1"></div>
-        <button onClick={() => onCommand('insertUnorderedList')} className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
-        <button onClick={() => onCommand('insertHTML', '<ul data-type="checklist"><li>List item</li></ul>')} className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><ChecklistIcon/></button>
-        <button onClick={onImageUpload} className="p-2 hover:bg-slate-800 rounded text-slate-400 hover:text-white"><ImageIcon className="h-4 w-4" /></button>
-    </div>
-));
-
-const NoteEditor: React.FC<{
-    note: Note;
-    onUpdate: (note: Note) => Promise<void>;
-    onBack: () => void;
-    onDelete: (id: string) => Promise<void>;
-}> = ({ note, onUpdate, onBack, onDelete }) => {
-    const [localNote, setLocalNote] = useState(note);
-    const editorRef = useRef<HTMLDivElement>(null);
-    const inlineImageInputRef = useRef<HTMLInputElement>(null);
-    const heroImageInputRef = useRef<HTMLInputElement>(null);
-    const debouncedNote = useDebounce(localNote, 1000);
-    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-    const moreMenuRef = useRef<HTMLDivElement>(null);
-    const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
-    const draggedItemRef = useRef<HTMLLIElement | null>(null);
-    const dropIndicatorRef = useRef<HTMLLIElement | null>(null);
-
-    useEffect(() => {
-        setLocalNote(note);
-        setSaveStatus('saved');
-        if (editorRef.current && note.content !== editorRef.current.innerHTML) {
-            editorRef.current.innerHTML = note.content;
-        }
-    }, [note]);
-
-    useEffect(() => {
-        if (saveStatus === 'unsaved' && JSON.stringify(debouncedNote) !== JSON.stringify(note)) {
-            setSaveStatus('saving');
-            onUpdate(debouncedNote).then(() => {
-                // The parent's `note` prop will update, triggering the effect above to set status to 'saved'
-            });
-        }
-    }, [debouncedNote, note, onUpdate, saveStatus]);
-    
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) setIsMoreMenuOpen(false);
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const handleLocalChange = useCallback((updater: React.SetStateAction<Note>) => {
-        setLocalNote(prev => {
-            const newState = typeof updater === 'function' ? updater(prev) : updater;
-            return { ...newState, date: new Date().toISOString() };
-        });
-        setSaveStatus('unsaved');
-    }, []);
-
-    const handleDelete = async () => {
-        setIsMoreMenuOpen(false);
-        if (window.confirm(`Are you sure you want to delete "${note.title}"?`)) {
-            await onDelete(note.id);
-        }
-    };
-    
-    const handleExecCommand = (command: string, value: any = null) => {
-        document.execCommand(command, false, value);
-        editorRef.current?.focus();
-        handleLocalChange(prev => ({ ...prev, content: editorRef.current?.innerHTML || ''}));
-    };
-
-    const handleImageUpload = async (file: File | null, type: 'hero' | 'inline') => {
-        if (!file) return;
-        try {
-            const resizedDataUrl = await resizeImage(file, type === 'hero' ? 1200 : 600);
-            if (type === 'hero') {
-                handleLocalChange(p => ({...p, heroImage: resizedDataUrl}));
-            } else {
-                const imgHtml = `<p><img src="${resizedDataUrl}" class="max-w-full my-2 rounded-lg" alt="User uploaded content" /></p>`;
-                handleExecCommand('insertHTML', imgHtml);
-            }
-        } catch (error) { console.error('Image processing failed:', error); alert('Failed to process image.'); }
-    };
-    
-    const handleEditorClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        const target = e.target as HTMLElement;
-        const li = target.closest('li');
-        if (li && li.parentElement?.getAttribute('data-type') === 'checklist') {
-            const rect = li.getBoundingClientRect();
-            if (e.clientX < rect.left + 30) { 
-                e.preventDefault();
-                const isChecked = li.getAttribute('data-checked') === 'true';
-                li.setAttribute('data-checked', String(!isChecked));
-                handleLocalChange(p => ({...p, content: editorRef.current?.innerHTML || ''}));
-            }
-        }
-    }, [handleLocalChange]);
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-        const selection = window.getSelection();
-        if (!selection || !selection.rangeCount) return;
-
-        const range = selection.getRangeAt(0);
-        const node = range.commonAncestorContainer;
-        // FIX: Cast the selection node to 'Element' to access the 'closest' method, as the base 'Node' type does not have it.
-        const li = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node as Element)?.closest('ul[data-type="checklist"] > li');
-
-        if (e.key === 'Enter' && li) {
-            e.preventDefault();
-            const newLi = document.createElement('li');
-            newLi.setAttribute('data-checked', 'false');
-            newLi.innerHTML = '&#8203;'; // Zero-width space to make it editable
-
-            li.parentNode?.insertBefore(newLi, li.nextSibling);
-
-            const newRange = document.createRange();
-            newRange.setStart(newLi, 1); // Place cursor after the ZWS
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-
-            handleLocalChange(p => ({ ...p, content: editorRef.current?.innerHTML || '' }));
-        } else if (e.key === 'Backspace' && li) {
-            const isEffectivelyEmpty = li.textContent === '' || li.textContent === '\u200B';
-            if (isEffectivelyEmpty && range.startOffset <= 1) {
-                const prevLi = li.previousElementSibling as HTMLLIElement;
-                if (prevLi) {
-                    e.preventDefault();
-                    const newRange = document.createRange();
-                    newRange.selectNodeContents(prevLi);
-                    newRange.collapse(false); // Move to end of previous item
-                    selection.removeAllRanges();
-                    selection.addRange(newRange);
-                    li.remove();
-                    handleLocalChange(p => ({ ...p, content: editorRef.current?.innerHTML || '' }));
-                }
-            }
-        }
-    };
-
-    const getSaveStatusText = () => {
-        switch (saveStatus) {
-            case 'unsaved': return 'Unsaved changes';
-            case 'saving': return 'Saving...';
-            case 'saved': return 'All changes saved';
-            default: return '';
-        }
-    };
-    
-    // --- Checklist Drag and Drop Logic ---
-
-    const getLiFromEventTarget = (target: EventTarget | null): HTMLLIElement | null => {
-        let element = target as HTMLElement | null;
-        while (element && element !== editorRef.current) {
-            if (element.tagName === 'LI' && element.parentElement?.dataset.type === 'checklist') {
-                return element as HTMLLIElement;
-            }
-            element = element.parentElement;
-        }
-        return null;
-    };
-
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-        const li = getLiFromEventTarget(e.target);
-        if (!li) {
-            e.preventDefault();
-            return;
-        }
-        draggedItemRef.current = li;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', li.innerText);
-
-        setTimeout(() => {
-            li.classList.add('dragging');
-        }, 0);
-    };
-
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const li = getLiFromEventTarget(e.target);
-        const draggedItem = draggedItemRef.current;
-        if (!li || !draggedItem || li === draggedItem || li.contains(draggedItem)) return;
-
-        const rect = li.getBoundingClientRect();
-        const isAfter = e.clientY > rect.top + rect.height / 2;
-
-        if (!dropIndicatorRef.current) {
-            const indicator = document.createElement('li');
-            indicator.className = 'drop-indicator-li';
-            const innerDiv = document.createElement('div');
-            innerDiv.className = 'drop-indicator';
-            indicator.appendChild(innerDiv);
-            dropIndicatorRef.current = indicator;
-        }
-
-        if (isAfter) {
-            li.parentNode?.insertBefore(dropIndicatorRef.current, li.nextSibling);
-        } else {
-            li.parentNode?.insertBefore(dropIndicatorRef.current, li);
-        }
-    };
-    
-    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-         if (!e.relatedTarget || !(e.currentTarget as Node).contains(e.relatedTarget as Node)) {
-            dropIndicatorRef.current?.remove();
-            dropIndicatorRef.current = null;
-        }
-    };
-
-    const cleanupDrag = () => {
-        draggedItemRef.current?.classList.remove('dragging');
-        dropIndicatorRef.current?.remove();
-        draggedItemRef.current = null;
-        dropIndicatorRef.current = null;
-    };
-
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        const draggedItem = draggedItemRef.current;
-        if (draggedItem && dropIndicatorRef.current) {
-            dropIndicatorRef.current.parentNode?.insertBefore(draggedItem, dropIndicatorRef.current);
-            handleLocalChange(p => ({...p, content: editorRef.current?.innerHTML || ''}));
-        }
-        cleanupDrag();
-    };
-
-    const handleDragEnd = () => {
-        cleanupDrag();
-    };
-
-
-    return (
-        <div className={`note-editor-container flex flex-col flex-1 h-full font-sans bg-transparent ${localNote.fontStyle}`}>
-            <header className="flex-shrink-0 p-2 md:p-4 flex items-center justify-between border-b border-slate-700/50">
-                <button onClick={onBack} className="p-2 -ml-2 text-slate-400 hover:text-white md:hidden"><ChevronLeftIcon /></button>
-                <div className="text-sm text-slate-400 transition-opacity duration-300">{getSaveStatusText()}</div>
-                <div className="flex items-center gap-2">
-                    <button className="p-2 text-slate-400 hover:text-white"><ShareIcon /></button>
-                    <div className="relative" ref={moreMenuRef}>
-                        <button onClick={() => setIsMoreMenuOpen(prev => !prev)} className="p-2 text-slate-400 hover:text-white"><MoreVerticalIcon /></button>
-                        {isMoreMenuOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-56 bg-slate-800 rounded-md shadow-lg border border-slate-700 z-10 animate-fade-in-down">
-                                <div className="py-1">
-                                    <button onClick={handleDelete} className="w-full text-left px-3 py-2 text-sm text-[var(--theme-red)] hover:bg-[var(--theme-red)]/10 flex items-center gap-2"> <TrashIcon /> Delete Note </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </header>
-            
-            <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-6 no-scrollbar">
-                <div className="max-w-3xl mx-auto">
-                    <input type="file" ref={heroImageInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files?.[0] || null, 'hero')} />
-                    <input type="file" ref={inlineImageInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e.target.files?.[0] || null, 'inline')} />
-                    {localNote.heroImage ? (
-                        <div className="mb-6 group relative"><img src={localNote.heroImage} alt="Hero" className="w-full h-48 object-cover rounded-lg" /><button onClick={() => heroImageInputRef.current?.click()} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Change Image</button></div>
-                    ) : (
-                        <button onClick={() => heroImageInputRef.current?.click()} className="w-full border-2 border-dashed border-slate-700/80 rounded-lg py-4 text-center text-slate-400 hover:bg-slate-800/40 mb-6">Add Header Image</button>
-                    )}
-                    <input type="text" placeholder="New Note" value={localNote.title} onChange={(e) => handleLocalChange(p => ({...p, title: e.target.value}))} className="note-editor-title w-full text-4xl font-bold bg-transparent border-none focus:ring-0 p-0 mb-2 text-slate-100 placeholder:text-slate-500" />
-                    <div className="flex items-center gap-2 text-slate-400 mb-2"> <CalendarIcon /> <input type="text" placeholder="mm/dd/yyyy" value={localNote.dueDate || ''} onChange={(e) => handleLocalChange(p => ({ ...p, dueDate: e.target.value }))} className="text-sm bg-transparent border-none p-0 focus:ring-0 text-slate-400" /> </div>
-                    <EditorToolbar onCommand={handleExecCommand} onImageUpload={() => inlineImageInputRef.current?.click()} />
-                    <div 
-                        ref={editorRef} 
-                        className="note-editor-content w-full prose prose-lg max-w-none prose-invert prose-p:text-slate-300 prose-headings:text-slate-100" 
-                        contentEditable 
-                        suppressContentEditableWarning 
-                        onInput={() => handleLocalChange(p => ({...p, content: editorRef.current?.innerHTML || ''}))} 
-                        onClick={handleEditorClick}
-                        onKeyDown={handleKeyDown}
-                        onDragStart={handleDragStart}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onDragEnd={handleDragEnd}
-                    ></div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
+// Props definition
 interface NotepadProps {
     notes: Note[];
     onSave: (note: Note) => Promise<void>;
     onUpdate: (note: Note) => Promise<void>;
     onDelete: (id: string) => Promise<void>;
     newNoteTrigger: number;
+    noteRecordings: NoteRecording[];
+    onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
+    onDeleteNoteRecording: (id: string) => Promise<void>;
+    photos: Photo[];
+    onSavePhoto: (photo: Photo) => Promise<void>;
 }
 
-export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDelete, newNoteTrigger }) => {
-    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [lastTriggerCount, setLastTriggerCount] = useState(newNoteTrigger);
+// Mapping note colors to Tailwind classes
+const colorMap: Record<string, { bg: string; text: string; ring: string }> = {
+    sky: { bg: 'bg-sky-500', text: 'text-sky-500', ring: 'ring-sky-500' },
+    purple: { bg: 'bg-purple-500', text: 'text-purple-500', ring: 'ring-purple-500' },
+    emerald: { bg: 'bg-emerald-500', text: 'text-emerald-500', ring: 'ring-emerald-500' },
+    amber: { bg: 'bg-amber-500', text: 'text-amber-500', ring: 'ring-amber-500' },
+    pink: { bg: 'bg-pink-500', text: 'text-pink-500', ring: 'ring-pink-500' },
+    cyan: { bg: 'bg-cyan-500', text: 'text-cyan-500', ring: 'ring-cyan-500' },
+};
+const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
+
+const paperStyles: Record<string, string> = {
+    'paper-dark': 'bg-gray-800 text-gray-200',
+    'paper-white': 'bg-white text-gray-800',
+    'paper-yellow-lined': 'bg-yellow-100 text-gray-800 bg-repeat-y bg-[length:100%_2rem] bg-gradient-to-b from-transparent to-transparent 50%, from-blue-200 to-blue-200 50.5%',
+    'paper-grid': 'bg-white text-gray-800 bg-cover bg-[linear-gradient(to_right,rgba(128,128,128,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.1)_1px,transparent_1px)] bg-[size:1rem_1rem]',
+};
+
+const fontStyles: Record<string, string> = {
+    'font-sans': 'font-sans',
+    'font-serif': 'font-lora',
+    'font-mono': 'font-mono',
+};
+
+
+const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || "";
+};
+
+const NoteCard: React.FC<{ note: Note; onSelect: (note: Note) => void; isSelected: boolean }> = ({ note, onSelect, isSelected }) => {
+    return (
+        <button
+            onClick={() => onSelect(note)}
+            className={`w-full text-left p-3 rounded-lg border-2 transition-all duration-200 ${
+                isSelected
+                    ? `bg-[var(--theme-card-bg)] border-[var(--theme-green)]`
+                    : `bg-[var(--theme-bg)]/50 border-transparent hover:bg-[var(--theme-card-bg)]/80 hover:border-[var(--theme-border)]`
+            }`}
+        >
+            <h3 className="font-bold truncate text-[var(--theme-text-primary)]">{note.title}</h3>
+            <p className="text-sm text-[var(--theme-text-secondary)] line-clamp-2 mt-1">{stripHtml(note.content)}</p>
+            <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-[var(--theme-text-secondary)]">{new Date(note.date).toLocaleDateString()}</span>
+                <div className={`w-3 h-3 rounded-full ${colorMap[note.color]?.bg || 'bg-gray-500'}`}></div>
+            </div>
+        </button>
+    );
+};
+
+const NoteEditor: React.FC<{
+    note: Note,
+    onNoteChange: React.Dispatch<React.SetStateAction<Note | null>>,
+    onDelete: (id: string) => void,
+    onClose: () => void,
+    noteRecordings: NoteRecording[],
+    onSaveNoteRecording: (rec: NoteRecording) => Promise<void>,
+    onDeleteNoteRecording: (id: string) => Promise<void>,
+    photos: Photo[],
+    onOpenScanner: () => void,
+}> = ({ note, onNoteChange, onDelete, onClose, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onOpenScanner }) => {
+    const contentRef = useRef<HTMLDivElement>(null);
+    const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode } = useRecorder();
     
-    const filteredNotes = useMemo(() => {
-        const sorted = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        if (!searchTerm) return sorted;
-        return sorted.filter(n => n.title.toLowerCase().includes(searchTerm.toLowerCase()) || stripHtml(n.content).toLowerCase().includes(searchTerm.toLowerCase()) );
-    }, [notes, searchTerm]);
+    const linkedPhotos = useMemo(() => {
+        return (note.photoIds || []).map(id => photos.find(p => p.id === id)).filter(Boolean) as Photo[];
+    }, [note.photoIds, photos]);
+
+    useEffect(() => {
+        if (contentRef.current && contentRef.current.innerHTML !== note.content) {
+            contentRef.current.innerHTML = note.content;
+        }
+    }, [note.id, note.content]); // Depend on note.id to reset content when note changes
+
+    const handleContentChange = () => {
+        if (contentRef.current) {
+            onNoteChange(prev => prev ? { ...prev, content: contentRef.current!.innerHTML, date: new Date().toISOString() } : null);
+        }
+    };
+    
+    const handleCommand = (command: string, value: string | null = null) => {
+        document.execCommand(command, false, value);
+        handleContentChange();
+        contentRef.current?.focus();
+    };
+
+    const handleChecklist = () => {
+        document.execCommand('insertUnorderedList');
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            let list = selection.focusNode?.parentElement;
+            while(list && list.nodeName !== 'UL') {
+                list = list.parentElement;
+            }
+            if (list && list.nodeName === 'UL') {
+                list.setAttribute('data-type', 'checklist');
+                 // Ensure all new li elements have data-checked="false"
+                list.querySelectorAll('li:not([data-checked])').forEach(li => {
+                    li.setAttribute('data-checked', 'false');
+                    li.addEventListener('click', toggleChecklistItem, { once: true });
+                });
+            }
+        }
+        handleContentChange();
+    }
+    
+    const toggleChecklistItem = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.nodeName === 'LI') {
+            const isChecked = target.getAttribute('data-checked') === 'true';
+            target.setAttribute('data-checked', isChecked ? 'false' : 'true');
+            handleContentChange();
+        }
+    }
+    
+    const handleSaveRecording = useCallback(async () => {
+        if (!audioBlob) return;
+        const newRec: NoteRecording = {
+            id: crypto.randomUUID(),
+            noteId: note.id,
+            name: `Audio Note ${new Date().toLocaleString()}`,
+            date: new Date().toISOString(),
+            audioBlob,
+        };
+        await onSaveNoteRecording(newRec);
+    }, [audioBlob, note.id, onSaveNoteRecording]);
+
+
+    return (
+        <div className="h-full flex flex-col bg-[var(--theme-card-bg)]">
+            <header className="p-2 border-b border-[var(--theme-border)] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <button onClick={onClose} className="md:hidden p-2 text-[var(--theme-text-secondary)]"><ChevronLeftIcon /></button>
+                     <div className="flex items-center gap-2">
+                        {Object.keys(colorMap).map(color => (
+                            <button key={color} onClick={() => onNoteChange(p => p ? {...p, color} : null)} className={`w-5 h-5 rounded-full ${colorMap[color].bg} ${note.color === color ? `ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ${colorMap[color].ring}` : ''}`}></button>
+                        ))}
+                    </div>
+                </div>
+                <button onClick={() => onDelete(note.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]"><TrashIcon /></button>
+            </header>
+            
+            <div className="flex-grow overflow-y-auto">
+                <div className="p-4">
+                    <input
+                        type="text"
+                        value={note.title}
+                        onChange={e => onNoteChange(p => p ? { ...p, title: e.target.value, date: new Date().toISOString() } : null)}
+                        placeholder="Note Title..."
+                        className="text-2xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-green)] focus:outline-none w-full"
+                    />
+                </div>
+                 <div className="px-4 pb-2 flex flex-wrap gap-2 text-sm text-[var(--theme-text-secondary)]">
+                    <input 
+                        type="text"
+                        value={note.tags.join(', ')}
+                        onChange={e => onNoteChange(p => p ? {...p, tags: e.target.value.split(',').map(t => t.trim()), date: new Date().toISOString() } : null)}
+                        placeholder="Tags..."
+                        className="bg-transparent text-xs"
+                    />
+                </div>
+                 <div 
+                    ref={contentRef}
+                    onInput={handleContentChange}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className={`note-editor-content p-4 outline-none ${paperStyles[note.paperStyle] || paperStyles['paper-dark']} ${fontStyles[note.fontStyle] || fontStyles['font-sans']}`}
+                />
+            </div>
+            
+             <div className="p-2 border-t border-[var(--theme-border)] space-y-2">
+                <h4 className="text-xs font-bold uppercase text-[var(--theme-text-secondary)]">Attachments</h4>
+                <div className="max-h-32 overflow-y-auto space-y-1">
+                    {noteRecordings.filter(r => r.noteId === note.id).map(rec => (
+                        <div key={rec.id} className="bg-[var(--theme-bg)]/50 p-1 rounded flex items-center">
+                            <WaveformPlayer audioBlob={rec.audioBlob} />
+                            <button onClick={() => onDeleteNoteRecording(rec.id)} className="p-1 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]"><XIcon /></button>
+                        </div>
+                    ))}
+                </div>
+                 {linkedPhotos.length > 0 && (
+                     <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 pt-2">
+                        {linkedPhotos.map(photo => (
+                            <div key={photo.id} className="relative group aspect-square">
+                                <PhotoThumbnail photo={photo} onSelect={() => {}} onDelete={() => {}} />
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="flex items-center gap-2 bg-[var(--theme-bg)]/50 p-1 rounded">
+                    <div className="flex-1 h-10 rounded-md overflow-hidden bg-black/20">
+                        {isRecording && <LiveWaveform analyserNode={analyserNode} />}
+                    </div>
+                    <button onClick={isRecording ? stopRecording : startRecording} className="p-2 bg-[var(--theme-green)] text-black rounded-full">
+                        <MicIcon className="text-black" />
+                    </button>
+                    <span>{formatTime(recordingTime)}</span>
+                    <button onClick={handleSaveRecording} disabled={!audioBlob} className="text-sm bg-[var(--theme-green)] text-black font-semibold px-3 py-1 rounded disabled:opacity-50">Save</button>
+                </div>
+            </div>
+
+            <footer className="p-2 border-t border-[var(--theme-border)] flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-1">
+                    <button onClick={() => handleCommand('bold')} className="p-2 hover:bg-[var(--theme-bg)] rounded"><BoldIcon /></button>
+                    <button onClick={() => handleCommand('italic')} className="p-2 hover:bg-[var(--theme-bg)] rounded"><ItalicIcon /></button>
+                    <button onClick={() => handleCommand('underline')} className="p-2 hover:bg-[var(--theme-bg)] rounded"><UnderlineIcon /></button>
+                    <button onClick={() => handleChecklist()} className="p-2 hover:bg-[var(--theme-bg)] rounded"><ListIcon /></button>
+                    <button onClick={onOpenScanner} className="p-2 hover:bg-[var(--theme-bg)] rounded"><ScanIcon /></button>
+                </div>
+            </footer>
+        </div>
+    );
+};
+
+export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDelete, newNoteTrigger, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onSavePhoto }) => {
+    const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
+    const [isScanning, setIsScanning] = useState(false);
 
     const handleAddNewNote = useCallback(() => {
         const newNote: Note = {
-            id: crypto.randomUUID(), title: 'New Note', content: '<p>Start writing here...</p>', category: 'General', tags: [], date: new Date().toISOString(), color: 'sky', heroImage: null, paperStyle: 'paper-dark', fontStyle: 'font-sans', dueDate: null,
+            id: crypto.randomUUID(),
+            title: 'New Note',
+            content: '<p></p>',
+            category: 'General',
+            tags: [],
+            date: new Date().toISOString(),
+            color: defaultColors[Math.floor(Math.random() * defaultColors.length)],
+            paperStyle: 'paper-dark',
+            fontStyle: 'font-sans',
+            heroImage: null,
+            dueDate: null,
+            recordingIds: [],
+            photoIds: [],
         };
         onSave(newNote);
-        setSelectedNoteId(newNote.id);
+        setSelectedNote(newNote);
     }, [onSave]);
+    
+    const handleSaveScan = async (dataUrl: string) => {
+        if (!selectedNote) return;
+        const imageBlob = dataURLtoBlob(dataUrl);
+        const newPhoto: Photo = {
+            id: crypto.randomUUID(),
+            name: `Scan for ${selectedNote.title}`,
+            notes: `Attached to note: ${selectedNote.id}`,
+            date: new Date().toISOString(),
+            folder: `notes/scans/${selectedNote.id}`,
+            imageBlob,
+            imageMimeType: 'image/jpeg',
+            tags: ['scan', selectedNote.title]
+        };
+        await onSavePhoto(newPhoto);
+
+        const updatedNote: Note = {
+            ...selectedNote,
+            photoIds: [...(selectedNote.photoIds || []), newPhoto.id]
+        };
+        await onUpdate(updatedNote);
+        setSelectedNote(updatedNote); // Update local state immediately
+    };
+
 
     useEffect(() => {
-        if (newNoteTrigger > lastTriggerCount) {
+        if (newNoteTrigger > 0) {
             handleAddNewNote();
-            setLastTriggerCount(newNoteTrigger);
         }
-    }, [newNoteTrigger, lastTriggerCount, handleAddNewNote]);
+    }, [newNoteTrigger, handleAddNewNote]);
     
+     const debouncedSelectedNote = useDebounce(selectedNote, 1000);
+     useEffect(() => {
+        if (debouncedSelectedNote) {
+            const originalNote = notes.find(n => n.id === debouncedSelectedNote.id);
+            if (originalNote && originalNote.date < debouncedSelectedNote.date) {
+                onUpdate(debouncedSelectedNote);
+            }
+        }
+    }, [debouncedSelectedNote, onUpdate, notes]);
+    
+     useEffect(() => {
+        if (selectedNote) {
+            // This ensures that if the note list updates from props (e.g., after a sync),
+            // the local `selectedNote` state also gets the latest version.
+            const updatedNoteFromList = notes.find(n => n.id === selectedNote.id);
+            if (updatedNoteFromList) {
+                // Only update if the content is different to avoid cursor jumps
+                if (JSON.stringify(updatedNoteFromList) !== JSON.stringify(selectedNote)) {
+                    setSelectedNote(updatedNoteFromList);
+                }
+            } else {
+                // If the note was deleted, deselect it.
+                setSelectedNote(null);
+            }
+        }
+    }, [notes]); // Only depend on the notes prop
 
-    // Auto-select the first note on desktop if none is selected
-    useEffect(() => {
-        if (window.innerWidth >= 768 && !selectedNoteId && filteredNotes.length > 0) {
-            setSelectedNoteId(filteredNotes[0].id);
-        }
-    }, [filteredNotes, selectedNoteId]);
+
+    const filteredNotes = useMemo(() => {
+        const sorted = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (!debouncedSearchTerm) return sorted;
+        return sorted.filter(note =>
+            note.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            stripHtml(note.content).toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            note.tags.some(tag => tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+        );
+    }, [notes, debouncedSearchTerm]);
     
-    // When a note is deleted, select the next available one
-    useEffect(() => {
-        if (selectedNoteId && !notes.find(n => n.id === selectedNoteId)) {
-            // The current note was deleted.
-            // Select the first note in the filtered list, which is the most recent.
-            setSelectedNoteId(filteredNotes[0]?.id || null);
+     const handleDelete = async (id: string) => {
+        if (window.confirm("Are you sure you want to delete this note?")) {
+            await onDelete(id);
+            setSelectedNote(null);
         }
-    }, [notes, selectedNoteId, filteredNotes]);
-    
-    const selectedNote = useMemo(() => notes.find(n => n.id === selectedNoteId), [notes, selectedNoteId]);
+    };
 
     return (
-        <div className="flex flex-1 h-full">
-            {/* --- Sidebar (Note List) --- */}
-            <aside className={`
-                w-full md:w-80 lg:w-96 flex-shrink-0 
-                bg-transparent
-                flex flex-col
-                ${selectedNoteId ? 'hidden md:flex' : 'flex'}
-            `}>
-                <div className="p-4 flex-shrink-0">
-                     <div className="flex justify-between items-center mb-4">
-                        <h1 className="text-2xl font-bold text-slate-100">Notepad</h1>
-                        <button onClick={handleAddNewNote} className="hidden md:flex items-center gap-2 bg-[var(--theme-green)] text-black font-bold py-2 px-3 rounded-md hover:opacity-90 transition-opacity text-sm">
-                            <PlusIcon /> New Note
-                        </button>
-                    </div>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><SearchIcon /></div>
-                        <input type="text" placeholder="Search notes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-slate-900/50 border-slate-700/50 rounded-md pl-10 pr-4 py-2 text-white focus:ring-2 focus:ring-[var(--theme-green)]" />
-                    </div>
-                </div>
-                <div className="flex-grow overflow-y-auto p-4 pt-0 no-scrollbar">
-                    <div className="space-y-1">
-                        {filteredNotes.map(note => ( <NoteCard key={note.id} note={note} onClick={() => setSelectedNoteId(note.id)} isSelected={selectedNoteId === note.id} onDelete={onDelete} /> ))}
-                    </div>
-                </div>
-            </aside>
-            
-            {/* --- Main Content (Editor) --- */}
-            <main className={`flex-1 flex-col ${selectedNoteId ? 'flex' : 'hidden md:flex'}`}>
-                {selectedNote ? (
-                    <NoteEditor
-                        note={selectedNote}
-                        onUpdate={onUpdate}
-                        onBack={() => setSelectedNoteId(null)}
-                        onDelete={onDelete}
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                        <div className="text-center text-slate-500">
-                            <NotepadIcon className="mx-auto h-12 w-12 text-slate-600" />
-                            <h2 className="mt-4 text-lg font-medium text-slate-300">Select a note</h2>
-                            <p className="text-sm">Choose a note from the left to view or edit it.</p>
+        <div className="flex-1 flex flex-col bg-transparent backdrop-blur-2xl">
+            {isScanning && (
+                <CameraCapture 
+                    mode="document"
+                    onClose={() => setIsScanning(false)}
+                    onCapture={handleSaveScan}
+                />
+            )}
+            <div className="flex-grow flex overflow-hidden">
+                <aside className={`w-full md:w-1/3 md:max-w-sm flex flex-col border-r border-transparent md:border-[var(--theme-border)] ${selectedNote ? 'hidden md:flex' : 'flex'}`}>
+                    <header className="p-4 flex-shrink-0 border-b border-[var(--theme-border)] flex items-center justify-between">
+                         <div className="relative flex-grow">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><SearchIcon /></div>
+                            <input
+                                type="text"
+                                placeholder="Search notes..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-4 py-2"
+                            />
                         </div>
+                        <button onClick={handleAddNewNote} className="ml-2 p-2 bg-[var(--theme-green)] text-black rounded-full flex-shrink-0"><PlusIcon /></button>
+                    </header>
+                     <div className="flex-grow overflow-y-auto no-scrollbar p-2 space-y-2">
+                        {filteredNotes.length > 0 ? (
+                            filteredNotes.map(note => (
+                                <NoteCard key={note.id} note={note} onSelect={setSelectedNote} isSelected={selectedNote?.id === note.id} />
+                            ))
+                        ) : (
+                            <div className="text-center p-8 text-[var(--theme-text-secondary)]">
+                                <NotepadIcon className="mx-auto h-12 w-12" />
+                                <h3 className="mt-2 font-semibold">No notes found</h3>
+                                <p className="text-sm">Create a new note to get started.</p>
+                            </div>
+                        )}
                     </div>
-                )}
-            </main>
+                </aside>
+
+                <main className={`flex-1 flex-col ${selectedNote ? 'flex' : 'hidden md:flex'}`}>
+                     {selectedNote ? (
+                        <NoteEditor
+                            note={selectedNote}
+                            onNoteChange={setSelectedNote}
+                            onDelete={handleDelete}
+                            onClose={() => setSelectedNote(null)}
+                            noteRecordings={noteRecordings}
+                            onSaveNoteRecording={onSaveNoteRecording}
+                            onDeleteNoteRecording={onDeleteNoteRecording}
+                            photos={photos}
+                            onOpenScanner={() => setIsScanning(true)}
+                        />
+                    ) : (
+                        <div className="hidden md:flex w-full h-full items-center justify-center text-center text-[var(--theme-text-secondary)] p-8">
+                            <div>
+                                <NotepadIcon className="mx-auto h-16 w-16" />
+                                <h2 className="mt-4 text-xl font-semibold text-[var(--theme-text-primary)]">Your Digital Notepad</h2>
+                                <p className="mt-1 max-w-sm">Select a note from the list to view or edit it, or create a new one to capture your thoughts.</p>
+                            </div>
+                        </div>
+                    )}
+                </main>
+            </div>
         </div>
     );
 };

@@ -4,14 +4,16 @@ import { BuildingIcon } from './icons/BuildingIcon';
 import { UserIcon } from './icons/UserIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { UserRole } from '../App';
 
 interface SiteSettingsEditorProps {
     settings: SiteSettings;
     onSave: (newSettings: SiteSettings) => Promise<void>;
+    userRole: UserRole;
 }
 
-const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
-    <div className="bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50">
+const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; disabled?: boolean }> = ({ title, icon, children, disabled }) => (
+    <div className={`bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50 transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="flex items-center gap-3">
             <div className="text-[var(--theme-green)]">{icon}</div>
             <h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">{title}</h3>
@@ -19,6 +21,7 @@ const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: Re
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {children}
         </div>
+         {disabled && <div className="absolute inset-0 bg-transparent" title="Only the creator can edit these details."></div>}
     </div>
 );
 
@@ -71,10 +74,12 @@ const ImageUploader: React.FC<{ label: string; id: string; src: string | null; o
 };
 
 
-export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings, onSave }) => {
+export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings, onSave, userRole }) => {
     const [formData, setFormData] = useState<SiteSettings>(settings);
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+
+    const isCreator = userRole === 'creator';
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -124,7 +129,7 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
                     <InputField id="website" label="Website URL" value={formData.website} onChange={handleFormChange} fullWidth />
                 </SectionCard>
 
-                <SectionCard title="Creator Info" icon={<UserIcon />}>
+                <SectionCard title="Creator Info" icon={<UserIcon />} disabled={!isCreator}>
                     <InputField id="creator-name" label="Creator Name" value={formData.creator.name} onChange={handleCreatorFormChange} fullWidth />
                     <InputField id="creator-slogan" label="Creator Slogan" value={formData.creator.slogan} onChange={handleCreatorFormChange} fullWidth />
                     <ImageUploader id="creator-logoSrc" label="Creator Logo" src={formData.creator.logoSrc} onImageChange={handleCreatorImageChange('logoSrc')} description="Recommended: Square (e.g., 256x256px)." />

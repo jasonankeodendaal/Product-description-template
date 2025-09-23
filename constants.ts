@@ -2,6 +2,8 @@
 
 
 
+
+
 export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
 Periscope telephoto zoom – ultra-long zoom without losing quality.
 High-resolution sensors (200MP+) – super detailed photos.
@@ -35,7 +37,11 @@ export interface SiteSettings {
   customApiEndpoint?: string | null;
   customApiAuthKey?: string | null;
   syncMode?: 'local' | 'folder' | 'api';
+  userPin?: string;
+  pinIsSet?: boolean;
 }
+
+export const CREATOR_PIN = '1723';
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',
@@ -57,6 +63,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   customApiEndpoint: null,
   customApiAuthKey: null,
   syncMode: 'local',
+  userPin: '',
+  pinIsSet: false,
 };
 
 export const DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE = `
@@ -154,4 +162,4 @@ Based on the official warranty card for model DMF451, this product is covered by
 ---
 
 ⚠️ IMPORTANT: When product information is provided, always use the above layout exactly as shown. Do not change any wording from the original content supplied — only restructure and reformat it to fit this template. Do not add or invent information. For the "What's in the Box", "Material Used", "Product Dimensions & Weight", and "Terms & Conditions" sections, you MUST use web search to find any missing information. If information cannot be found online after searching, write: “No info.” Never omit any section. Always follow this template format strictly.
-`;
+`

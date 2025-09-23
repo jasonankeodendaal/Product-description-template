@@ -1,4 +1,4 @@
-import { Template, Recording, Photo, Note, BackupData } from '../App';
+import { Template, Recording, Photo, Note, BackupData, NoteRecording, LogEntry, CalendarEvent } from '../App';
 import { SiteSettings } from '../constants';
 
 // Declare JSZip to inform TypeScript about the global variable from the CDN.
@@ -19,7 +19,7 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
   });
 };
 
-const base64ToBlob = (base64: string, mimeType: string): Blob => {
+export const base64ToBlob = (base64: string, mimeType: string): Blob => {
   const byteCharacters = atob(base64);
   const byteNumbers = new Array(byteCharacters.length);
   for (let i = 0; i < byteCharacters.length; i++) {
@@ -48,7 +48,10 @@ export const createBackup = async (
     templates: Template[],
     recordings: Recording[],
     photos: Photo[],
-    notes: Note[]
+    notes: Note[],
+    noteRecordings: NoteRecording[],
+    logEntries: LogEntry[],
+    calendarEvents: CalendarEvent[],
 ): Promise<void> => {
     if (typeof JSZip === 'undefined') {
         alert("Error: JSZip library is not loaded. Cannot create backup file.");
@@ -56,10 +59,12 @@ export const createBackup = async (
     }
     const zip = new JSZip();
 
-    const metadata = {
+    const metadata: Omit<BackupData, 'recordings' | 'photos' | 'noteRecordings'> = {
         siteSettings,
         templates,
         notes,
+        logEntries,
+        calendarEvents,
     };
     zip.file('metadata.json', JSON.stringify(metadata, null, 2));
 
@@ -69,6 +74,15 @@ export const createBackup = async (
             const { audioBlob, isTranscribing, ...recMetadata } = rec;
             recordingsFolder.file(`${rec.id}.json`, JSON.stringify(recMetadata, null, 2));
             recordingsFolder.file(`${rec.id}.webm`, audioBlob);
+        }
+    }
+    
+    const noteRecordingsFolder = zip.folder('assets/note_recordings');
+    if (noteRecordingsFolder) {
+        for (const rec of noteRecordings) {
+            const { audioBlob, ...recMetadata } = rec;
+            noteRecordingsFolder.file(`${rec.id}.json`, JSON.stringify(recMetadata, null, 2));
+            noteRecordingsFolder.file(`${rec.id}.webm`, audioBlob);
         }
     }
 
@@ -115,9 +129,10 @@ const handleApiResponse = async (response: Response) => {
     return response.json();
 };
 
-type ApiBackupData = Omit<BackupData, 'recordings' | 'photos'> & {
+type ApiBackupData = Omit<BackupData, 'recordings' | 'photos' | 'noteRecordings'> & {
     recordings: (Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string })[];
     photos: (Omit<Photo, 'imageBlob'> & { imageBase64: string, imageMimeType: string })[];
+    noteRecordings: (Omit<NoteRecording, 'audioBlob'> & { audioBase64: string, audioMimeType: string })[];
 }
 
 export const apiSyncService = {

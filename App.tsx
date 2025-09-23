@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
-import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE } from './constants';
+import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription } from './services/geminiService';
 import { GenerationResult } from './components/OutputPanel';
@@ -21,11 +21,12 @@ import { CreatorInfo } from './components/CreatorInfo';
 import { ManualInstallModal } from './components/ManualInstallModal';
 import { UpdateToast } from './components/UpdateToast';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
-// FIX: Import the MobileHeader component to resolve the 'Cannot find name' error.
 import { MobileHeader } from './components/MobileHeader';
 import { projectFiles } from './utils/sourceCode';
+import { Home } from './components/Home';
+import { PinSetupModal } from './components/PinSetupModal';
+import { CalendarView } from './components/CalendarView';
 
-// FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
 declare var JSZip: any;
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
@@ -40,7 +41,8 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 // --- Type Definitions ---
-export type View = 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool';
+export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool';
+export type UserRole = 'user' | 'creator';
 
 export interface Template {
   id: string;
@@ -78,6 +80,14 @@ export interface Photo {
     tags: string[];
 }
 
+export interface NoteRecording {
+  id: string;
+  noteId: string;
+  name: string;
+  date: string;
+  audioBlob: Blob;
+}
+
 // Updated data model for Notepad to match new design
 export interface Note {
     id: string;
@@ -93,7 +103,29 @@ export interface Note {
     paperStyle: string; // 'paper-white', 'paper-dark', 'paper-yellow-lined', 'paper-grid'
     fontStyle: string; // 'font-sans', 'font-serif', 'font-mono'
     dueDate?: string | null;
+    recordingIds?: string[];
+    photoIds?: string[]; // For scanned documents and other images
 }
+
+export interface LogEntry {
+    id: string;
+    type: 'Clock In' | 'Clock Out' | 'Note Created' | 'Photo Added' | 'Recording Added';
+    timestamp: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  startDateTime: string; // Full ISO string
+  endDateTime: string;   // Full ISO string
+  title: string;
+  notes: string;
+  photoId?: string;
+  color: string; // e.g., 'sky', 'purple', 'emerald'
+  reminderOffset: number; // in minutes before the event. -1 for no reminder.
+  reminderFired: boolean;
+  createdAt: string;
+}
+
 
 export interface BackupData {
     siteSettings: SiteSettings;
@@ -101,6 +133,9 @@ export interface BackupData {
     recordings: Recording[];
     photos: Photo[];
     notes: Note[];
+    noteRecordings: NoteRecording[];
+    logEntries: LogEntry[];
+    calendarEvents: CalendarEvent[];
 }
 
 // Function to migrate old notes to the new format
@@ -120,6 +155,8 @@ const migrateNote = (note: any): Note => {
         paperStyle: note.paperStyle || 'paper-dark',
         fontStyle: note.fontStyle || 'font-sans',
         dueDate: note.dueDate || null,
+        recordingIds: note.recordingIds || [],
+        photoIds: note.photoIds || [], // Initialize photoIds
     };
 
     // Old canvas format (content is an object with 'elements')
@@ -144,6 +181,9 @@ const App: React.FC = () => {
     const [recordings, setRecordings] = useState<Recording[]>([]);
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
+    const [noteRecordings, setNoteRecordings] = useState<NoteRecording[]>([]);
+    const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+    const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
     
     const [isInitialized, setIsInitialized] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -161,12 +201,15 @@ const App: React.FC = () => {
     const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
     const [isCreatorInfoOpen, setIsCreatorInfoOpen] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
+    const [userRole, setUserRole] = useState<UserRole>('user');
+    const [isPinSetupModalOpen, setIsPinSetupModalOpen] = useState(false);
 
     const [isApiConnecting, setIsApiConnecting] = useState(false);
     const [isApiConnected, setIsApiConnected] = useState(false);
 
-    const [currentView, setCurrentView] = useState<View>('photos');
+    const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     
     // PWA Install Prompt State
     const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -290,7 +333,7 @@ const App: React.FC = () => {
         // Handle URL-based view navigation from PWA shortcuts
         const urlParams = new URLSearchParams(window.location.search);
         const requestedView = urlParams.get('view') as View;
-        const validViews: View[] = ['generator', 'recordings', 'photos', 'notepad', 'image-tool'];
+        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool'];
         if (requestedView && validViews.includes(requestedView)) {
             setCurrentView(requestedView);
         }
@@ -298,7 +341,11 @@ const App: React.FC = () => {
         const initializeApp = async () => {
             try {
                 const storedSettings = localStorage.getItem('siteSettings');
-                let settings = storedSettings ? JSON.parse(storedSettings) : DEFAULT_SITE_SETTINGS;
+                let settings: SiteSettings = storedSettings ? JSON.parse(storedSettings) : DEFAULT_SITE_SETTINGS;
+
+                if (!settings.pinIsSet) {
+                    setIsPinSetupModalOpen(true);
+                }
 
                 const storedTemplates = localStorage.getItem('templates');
                 let initialTemplates = storedTemplates ? JSON.parse(storedTemplates) : [];
@@ -310,7 +357,6 @@ const App: React.FC = () => {
 
                 const handle = await db.getDirectoryHandle();
                 if (handle) {
-                    // FIX: The standard FileSystemDirectoryHandle type may not include 'queryPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
                     if (await (handle as any).queryPermission({ mode: 'readwrite' }) === 'granted') {
                         setDirectoryHandle(handle);
                         settings = { ...settings, syncMode: 'folder' };
@@ -321,14 +367,20 @@ const App: React.FC = () => {
                 } else if (settings.syncMode === 'api' && settings.customApiEndpoint && settings.customApiAuthKey) {
                     await handleApiConnect(settings.customApiEndpoint, settings.customApiAuthKey, true);
                 } else {
-                    const [dbRecordings, dbPhotos, dbNotes] = await Promise.all([
+                    const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
                         db.getAllRecordings(),
                         db.getAllPhotos(),
                         db.getAllNotes(),
+                        db.getAllNoteRecordings(),
+                        db.getAllLogEntries(),
+                        db.getAllCalendarEvents(),
                     ]);
                     setRecordings(dbRecordings);
                     setPhotos(dbPhotos);
                     setNotes(dbNotes.map(migrateNote));
+                    setNoteRecordings(dbNoteRecordings);
+                    setLogEntries(dbLogEntries);
+                    setCalendarEvents(dbCalendarEvents);
                 }
                 setSiteSettings(settings);
 
@@ -342,20 +394,72 @@ const App: React.FC = () => {
         initializeApp();
     }, []);
     
-    // FIX: Handle auth modal logic in an effect to avoid side-effects in render.
     useEffect(() => {
         if (isDashboardOpen && !isUnlocked) {
             setIsAuthModalOpen(true);
         }
     }, [isDashboardOpen, isUnlocked]);
+    
+    // --- Reminder Service ---
+    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent = false) => {
+        setCalendarEvents(prev => {
+            const existing = prev.find(e => e.id === event.id);
+            return existing ? prev.map(e => e.id === event.id ? event : e) : [event, ...prev];
+        });
+        await db.saveCalendarEvent(event);
+        if (directoryHandle) await fileSystemService.saveCalendarEventToDirectory(directoryHandle, event);
+    }, [directoryHandle]);
+
+    useEffect(() => {
+        const checkReminders = async () => {
+            if (Notification.permission !== 'granted') return;
+            const now = new Date();
+            const upcomingEvents = calendarEvents.filter(e => e.reminderOffset >= 0 && !e.reminderFired);
+
+            for (const event of upcomingEvents) {
+                const eventTime = new Date(event.startDateTime);
+                const reminderTime = new Date(eventTime.getTime() - event.reminderOffset * 60000);
+
+                if (now >= reminderTime) {
+                    new Notification(event.title, {
+                        body: stripHtml(event.notes).substring(0, 100) + '...',
+                        icon: '/logo192.png', // Using a default icon path
+                        tag: event.id, // Prevent duplicate notifications
+                    });
+                    const updatedEvent = { ...event, reminderFired: true };
+                    await handleSaveCalendarEvent(updatedEvent, true); 
+                }
+            }
+        };
+        const intervalId = setInterval(checkReminders, 60000); // Check every minute
+        return () => clearInterval(intervalId);
+    }, [calendarEvents, handleSaveCalendarEvent]);
 
 
     // --- Generic Data Handlers (Centralized) ---
+    const handleSetUserPin = async (pin: string) => {
+        const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true };
+        await handleUpdateSettings(newSettings);
+        setIsPinSetupModalOpen(false);
+    };
+
+    const handleSaveLogEntry = useCallback(async (type: LogEntry['type']) => {
+        const newEntry: LogEntry = {
+            id: crypto.randomUUID(),
+            type,
+            timestamp: new Date().toISOString()
+        };
+        setLogEntries(prev => [newEntry, ...prev].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+        await db.saveLogEntry(newEntry);
+        if (directoryHandle) await fileSystemService.saveLogEntryToDirectory(directoryHandle, newEntry);
+    }, [directoryHandle]);
+
     const handleSaveRecording = useCallback(async (recording: Recording) => {
         setRecordings(prev => [recording, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         await db.saveRecording(recording);
         if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, recording);
-    }, [directoryHandle]);
+        await handleSaveLogEntry('Recording Added');
+    }, [directoryHandle, handleSaveLogEntry]);
 
     const handleUpdateRecording = useCallback(async (recording: Recording) => {
         setRecordings(prev => prev.map(r => r.id === recording.id ? recording : r));
@@ -373,10 +477,10 @@ const App: React.FC = () => {
         setPhotos(prev => [photo, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         await db.savePhoto(photo);
         if (directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
-    }, [directoryHandle]);
+        await handleSaveLogEntry('Photo Added');
+    }, [directoryHandle, handleSaveLogEntry]);
 
     const handleUpdatePhoto = useCallback(async (photo: Photo) => {
-        // FIX: Corrected a typo in the map function. The variable should be 'p', not 'r'.
         setPhotos(prev => prev.map(p => p.id === photo.id ? photo : p));
         await db.savePhoto(photo);
         if (directoryHandle) await fileSystemService.savePhotoToDirectory(directoryHandle, photo);
@@ -394,6 +498,7 @@ const App: React.FC = () => {
             let newNotes;
             if (!existing) {
                 newNotes = [note, ...prevNotes];
+                handleSaveLogEntry('Note Created'); // Only log on creation
             } else {
                 newNotes = prevNotes.map(n => (n.id === note.id ? note : n));
             }
@@ -401,7 +506,7 @@ const App: React.FC = () => {
         });
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
-    }, [directoryHandle]);
+    }, [directoryHandle, handleSaveLogEntry]);
     
 
     const handleUpdateNote = useCallback(async (note: Note) => {
@@ -414,6 +519,24 @@ const App: React.FC = () => {
         setNotes(prev => prev.filter(n => n.id !== id));
         await db.deleteNote(id);
         if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
+    }, [directoryHandle]);
+
+    const handleSaveNoteRecording = useCallback(async (rec: NoteRecording) => {
+        setNoteRecordings(prev => [rec, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        await db.saveNoteRecording(rec);
+        if (directoryHandle) await fileSystemService.saveNoteRecordingToDirectory(directoryHandle, rec);
+    }, [directoryHandle]);
+    
+    const handleDeleteNoteRecording = useCallback(async (id: string) => {
+        setNoteRecordings(prev => prev.filter(r => r.id !== id));
+        await db.deleteNoteRecording(id);
+        if (directoryHandle) await fileSystemService.deleteNoteRecordingFromDirectory(directoryHandle, id);
+    }, [directoryHandle]);
+
+    const handleDeleteCalendarEvent = useCallback(async (id: string) => {
+        setCalendarEvents(prev => prev.filter(e => e.id !== id));
+        await db.deleteCalendarEvent(id);
+        if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
     }, [directoryHandle]);
 
     // --- Other Handlers ---
@@ -489,12 +612,15 @@ const App: React.FC = () => {
         setLoadingMessage('Syncing from folder...');
         setIsLoading(true);
         try {
-            const [dirSettings, dirTemplates, {recordings: dirRecordings}, dirPhotos, dirNotes] = await Promise.all([
+            const [dirSettings, dirTemplates, {recordings: dirRecordings}, dirPhotos, dirNotes, dirNoteRecordings, dirLogEntries, dirCalendarEvents] = await Promise.all([
                 fileSystemService.loadSettings(handle),
                 fileSystemService.loadTemplates(handle),
                 fileSystemService.loadRecordingsFromDirectory(handle),
                 fileSystemService.loadPhotosFromDirectory(handle),
                 fileSystemService.loadNotesFromDirectory(handle),
+                fileSystemService.loadNoteRecordingsFromDirectory(handle),
+                fileSystemService.loadLogEntriesFromDirectory(handle),
+                fileSystemService.loadCalendarEventsFromDirectory(handle),
             ]);
             
             if (dirSettings) setSiteSettings(prev => ({...prev, ...dirSettings, syncMode: 'folder' }));
@@ -502,6 +628,9 @@ const App: React.FC = () => {
             setRecordings(dirRecordings);
             setPhotos(dirPhotos);
             setNotes(dirNotes.map(migrateNote));
+            setNoteRecordings(dirNoteRecordings);
+            setLogEntries(dirLogEntries);
+            setCalendarEvents(dirCalendarEvents);
             
             if (showSuccess) alert('Sync from folder complete!');
 
@@ -525,7 +654,7 @@ const App: React.FC = () => {
                 await Promise.all([
                     fileSystemService.saveSettings(handle, siteSettings),
                     fileSystemService.saveTemplates(handle, templates),
-                    fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, notes }),
+                    fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, notes, noteRecordings, logEntries, calendarEvents }),
                 ]);
                 alert("Connected to new folder and saved current data.");
             }
@@ -537,30 +666,39 @@ const App: React.FC = () => {
             if (err instanceof DOMException && err.name === 'AbortError') return;
             alert(`Could not connect to directory: ${err instanceof Error ? err.message : String(err)}`);
         }
-    }, [siteSettings, templates, recordings, photos, notes]);
+    }, [siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents]);
 
     const handleDisconnectDirectory = useCallback(async () => {
         if(window.confirm("Are you sure you want to disconnect? The app will switch back to using local browser storage.")) {
             await db.clearDirectoryHandle();
             setDirectoryHandle(null);
             setSiteSettings(s => ({ ...s, syncMode: 'local' }));
-            const [dbRecordings, dbPhotos, dbNotes] = await Promise.all([
+            const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
                 db.getAllRecordings(),
                 db.getAllPhotos(),
                 db.getAllNotes(),
+                db.getAllNoteRecordings(),
+                db.getAllLogEntries(),
+                db.getAllCalendarEvents(),
             ]);
             setRecordings(dbRecordings);
             setPhotos(dbPhotos);
             setNotes(dbNotes.map(migrateNote));
+            setNoteRecordings(dbNoteRecordings);
+            setLogEntries(dbLogEntries);
+            setCalendarEvents(dbCalendarEvents);
         }
     }, []);
 
     const handleClearLocalData = useCallback(async () => {
-        if (window.confirm("WARNING: This will permanently delete all recordings, photos, and notes from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
+        if (window.confirm("WARNING: This will permanently delete all recordings, photos, notes, logs, and calendar events from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
             await db.clearAllData();
             setRecordings([]);
             setPhotos([]);
             setNotes([]);
+            setNoteRecordings([]);
+            setLogEntries([]);
+            setCalendarEvents([]);
             alert("Local data has been cleared.");
         }
     }, []);
@@ -573,12 +711,16 @@ const App: React.FC = () => {
                 const data = await apiSyncService.fetchAllData(apiUrl, apiKey);
                 const newRecordings = await Promise.all(data.recordings.map(async r => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
                 const newPhotos = await Promise.all(data.photos.map(async p => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
+                const newNoteRecordings = await Promise.all(data.noteRecordings.map(async r => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
 
                 setSiteSettings({ ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' });
                 setTemplates(data.templates);
                 setRecordings(newRecordings);
                 setPhotos(newPhotos);
                 setNotes(data.notes.map(migrateNote));
+                setNoteRecordings(newNoteRecordings);
+                setLogEntries(data.logEntries);
+                setCalendarEvents(data.calendarEvents || []);
                 setIsApiConnected(true);
                 if (!silent) alert("Successfully connected to API server and synced data.");
             } else {
@@ -612,7 +754,7 @@ const App: React.FC = () => {
             const metadataFile = zip.file('metadata.json');
             if (!metadataFile) throw new Error('Invalid backup: metadata.json not found.');
             
-            const metadata = JSON.parse(await metadataFile.async('string'));
+            const metadata: BackupData = JSON.parse(await metadataFile.async('string'));
             
             const restoredRecordings: Recording[] = [];
             const recordingsFolder = zip.folder('assets/recordings');
@@ -624,6 +766,21 @@ const App: React.FC = () => {
                         if (audioFile) {
                             const audioBlob = await audioFile.async('blob');
                             restoredRecordings.push({ ...recMetadata, audioBlob });
+                        }
+                    }
+                }
+            }
+
+            const restoredNoteRecordings: NoteRecording[] = [];
+            const noteRecordingsFolder = zip.folder('assets/note_recordings');
+            if (noteRecordingsFolder) {
+                for (const fileName in noteRecordingsFolder.files) {
+                    if (fileName.endsWith('.json')) {
+                        const recMetadata = JSON.parse(await noteRecordingsFolder.files[fileName].async('string'));
+                        const audioFile = zip.file(`assets/note_recordings/${recMetadata.id}.webm`);
+                        if (audioFile) {
+                            const audioBlob = await audioFile.async('blob');
+                            restoredNoteRecordings.push({ ...recMetadata, audioBlob });
                         }
                     }
                 }
@@ -659,6 +816,9 @@ const App: React.FC = () => {
                 ...restoredRecordings.map(r => db.saveRecording(r)),
                 ...restoredPhotos.map(p => db.savePhoto(p)),
                 ...metadata.notes.map((n: Note) => db.saveNote(n)),
+                ...restoredNoteRecordings.map(r => db.saveNoteRecording(r)),
+                ...(metadata.logEntries || []).map((l: LogEntry) => db.saveLogEntry(l)),
+                ...(metadata.calendarEvents || []).map((e: CalendarEvent) => db.saveCalendarEvent(e)),
             ]);
 
             setSiteSettings(metadata.siteSettings);
@@ -666,6 +826,9 @@ const App: React.FC = () => {
             setRecordings(restoredRecordings);
             setPhotos(restoredPhotos);
             setNotes(metadata.notes.map(migrateNote));
+            setNoteRecordings(restoredNoteRecordings);
+            setLogEntries(metadata.logEntries || []);
+            setCalendarEvents(metadata.calendarEvents || []);
 
             alert("Backup restored successfully!");
 
@@ -677,12 +840,31 @@ const App: React.FC = () => {
         }
     }, [directoryHandle, handleDisconnectDirectory]);
 
+    const stripHtml = (html: string) => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return doc.body.textContent || "";
+    };
+
     if (!isInitialized) {
         return <FullScreenLoader message="Initializing App..." />;
     }
 
     const renderView = () => {
         switch (currentView) {
+            case 'home':
+                return (
+                    <Home
+                        onNavigate={setCurrentView}
+                        notes={notes}
+                        photos={photos}
+                        recordings={recordings}
+                        logEntries={logEntries}
+                        onSaveLogEntry={(type) => handleSaveLogEntry(type)}
+                        siteSettings={siteSettings}
+                        onOpenCalendar={() => setIsCalendarOpen(true)}
+                        calendarEvents={calendarEvents}
+                    />
+                );
             case 'generator':
                 return (
                     <>
@@ -737,6 +919,11 @@ const App: React.FC = () => {
                     onUpdate={handleUpdateNote}
                     onDelete={handleDeleteNote}
                     newNoteTrigger={newNoteCount}
+                    noteRecordings={noteRecordings}
+                    onSaveNoteRecording={handleSaveNoteRecording}
+                    onDeleteNoteRecording={handleDeleteNoteRecording}
+                    photos={photos}
+                    onSavePhoto={handleSavePhoto}
                 />;
             case 'image-tool':
                 return <ImageTool initialImage={imageToEdit} onClearInitialImage={() => setImageToEdit(null)} />;
@@ -787,15 +974,19 @@ const App: React.FC = () => {
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
             
+            {isPinSetupModalOpen && <PinSetupModal onSetPin={handleSetUserPin} />}
+            
             {isAuthModalOpen && <AuthModal 
                 onClose={() => {
                     setIsAuthModalOpen(false);
                     setIsDashboardOpen(false);
                 }}
-                onUnlock={() => {
+                onUnlock={(role) => {
+                    setUserRole(role);
                     setIsUnlocked(true);
                     setIsAuthModalOpen(false);
                 }}
+                userPin={siteSettings.userPin}
             />}
             {isDashboardOpen && isUnlocked && (
                 <Dashboard 
@@ -808,6 +999,9 @@ const App: React.FC = () => {
                     recordings={recordings}
                     photos={photos}
                     notes={notes}
+                    noteRecordings={noteRecordings}
+                    logEntries={logEntries}
+                    calendarEvents={calendarEvents}
                     siteSettings={siteSettings}
                     onUpdateSettings={handleUpdateSettings}
                     onRestore={onRestore}
@@ -820,6 +1014,7 @@ const App: React.FC = () => {
                     isApiConnecting={isApiConnecting}
                     isApiConnected={isApiConnected}
                     onDownloadSource={handleDownloadSourceZip}
+                    userRole={userRole}
                 />
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
@@ -831,6 +1026,16 @@ const App: React.FC = () => {
                     onPwaInstall={handlePwaInstall}
                     onDownloadSource={handleDownloadSourceZip}
                     siteSettings={siteSettings}
+                />
+            )}
+            {isCalendarOpen && (
+                <CalendarView
+                    onClose={() => setIsCalendarOpen(false)}
+                    events={calendarEvents}
+                    onSaveEvent={handleSaveCalendarEvent}
+                    onDeleteEvent={handleDeleteCalendarEvent}
+                    photos={photos}
+                    onSavePhoto={handleSavePhoto}
                 />
             )}
             {showUpdateToast && <UpdateToast onUpdate={() => window.location.reload()} />}

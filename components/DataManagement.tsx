@@ -1,6 +1,7 @@
 
+
 import React, { useState } from 'react';
-import { Template, Recording, Photo, Note } from '../App';
+import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RestoreIcon } from './icons/RestoreIcon';
 import { FolderSyncIcon } from './icons/FolderSyncIcon';
@@ -15,12 +16,17 @@ import { NotepadIcon } from './icons/NotepadIcon';
 import { SiteSettings } from '../constants';
 import { CloudIcon } from './icons/CloudIcon';
 import { Spinner } from './icons/Spinner';
+import { ClockIcon } from './icons/ClockIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
 
 interface DataManagementProps {
     templates: Template[];
     recordings: Recording[];
     photos: Photo[];
     notes: Note[];
+    noteRecordings: NoteRecording[];
+    logEntries: LogEntry[];
+    calendarEvents: CalendarEvent[];
     onBackup: () => void;
     onRestore: (data: File) => void;
     directoryHandle: FileSystemDirectoryHandle | null;
@@ -66,6 +72,9 @@ export const DataManagement: React.FC<DataManagementProps> = ({
     recordings,
     photos,
     notes,
+    noteRecordings,
+    logEntries,
+    calendarEvents,
     onBackup,
     onRestore,
     directoryHandle,
@@ -184,6 +193,8 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                         <div className="flex items-center gap-3"><RecordingIcon /><p>{recordings.length} Recording{recordings.length !== 1 && 's'}</p></div>
                         <div className="flex items-center gap-3"><PhotoIcon /><p>{photos.length} Photo{photos.length !== 1 && 's'}</p></div>
                         <div className="flex items-center gap-3"><NotepadIcon /><p>{notes.length} Note{notes.length !== 1 && 's'}</p></div>
+                        <div className="flex items-center gap-3"><ClockIcon /><p>{logEntries.length} Log{logEntries.length !== 1 && 's'}</p></div>
+                        <div className="flex items-center gap-3"><CalendarIcon /><p>{calendarEvents.length} Event{calendarEvents.length !== 1 && 's'}</p></div>
                     </div>
                 </InfoCard>
             </div>

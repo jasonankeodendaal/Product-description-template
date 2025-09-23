@@ -12,6 +12,7 @@ import { DatabaseIcon } from './icons/DatabaseIcon';
 import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
 import { UserIcon } from './icons/UserIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { HomeIcon } from './icons/HomeIcon';
 
 interface HeaderProps {
   siteSettings: SiteSettings;
@@ -97,6 +98,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
         </div>
 
         <nav className="flex items-center gap-2">
+            <HeaderNavItem label="Home" icon={<HomeIcon />} isActive={currentView === 'home'} onClick={() => onNavigate('home')} />
             <HeaderNavItem label="Generator" icon={<SparklesIcon />} isActive={currentView === 'generator'} onClick={() => onNavigate('generator')} />
             <HeaderNavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} />
             <HeaderNavItem label="Photos" icon={<PhotoIcon />} isActive={currentView === 'photos'} onClick={() => onNavigate('photos')} />

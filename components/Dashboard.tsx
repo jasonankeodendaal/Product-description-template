@@ -1,5 +1,7 @@
+
+
 import React, { useState } from 'react';
-import { Template, Recording, Photo, Note } from '../App';
+import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent } from '../App';
 import { XIcon } from './icons/XIcon';
 import { DataManagement } from './DataManagement';
 import { SiteSettingsEditor } from './SiteSettingsEditor';
@@ -22,6 +24,9 @@ interface DashboardProps {
   recordings: Recording[];
   photos: Photo[];
   notes: Note[];
+  noteRecordings: NoteRecording[];
+  logEntries: LogEntry[];
+  calendarEvents: CalendarEvent[];
   siteSettings: SiteSettings;
   onUpdateSettings: (newSettings: SiteSettings) => Promise<void>;
   onRestore: (data: File) => void;
@@ -34,6 +39,7 @@ interface DashboardProps {
   isApiConnecting: boolean;
   isApiConnected: boolean;
   onDownloadSource: () => void;
+  userRole: UserRole;
 }
 
 type Section = 'data' | 'settings' | 'setup' | 'about' | 'publishing';
@@ -45,6 +51,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   recordings,
   photos,
   notes,
+  noteRecordings,
+  logEntries,
+  calendarEvents,
   siteSettings,
   onUpdateSettings,
   onRestore,
@@ -57,12 +66,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
   isApiConnecting,
   isApiConnected,
   onDownloadSource,
+  userRole
 }) => {
   const [activeSection, setActiveSection] = useState<Section>('about');
 
   const handleBackup = async () => {
     try {
-        await createBackup(siteSettings, templates, recordings, photos, notes);
+        await createBackup(siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents);
     } catch (err) {
         alert(`Error creating backup: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -100,6 +110,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         recordings={recordings}
                         photos={photos}
                         notes={notes}
+                        noteRecordings={noteRecordings}
+                        logEntries={logEntries}
+                        calendarEvents={calendarEvents}
                         onBackup={handleBackup}
                         onRestore={onRestore}
                         directoryHandle={directoryHandle}
@@ -118,6 +131,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <SiteSettingsEditor 
                         settings={siteSettings}
                         onSave={onUpdateSettings}
+                        userRole={userRole}
                     />
                 )}
                 {activeSection === 'setup' && <SetupGuide />}

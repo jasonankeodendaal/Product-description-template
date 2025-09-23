@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { XIcon } from './icons/XIcon';
+import { UserRole } from '../App';
+import { CREATOR_PIN } from '../constants';
 
 interface AuthModalProps {
   onClose: () => void;
-  onUnlock: () => void;
+  onUnlock: (role: UserRole) => void;
+  userPin?: string;
 }
 
-const UNLOCK_CODE = '1723';
-
-export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onUnlock }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onUnlock, userPin }) => {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (code === UNLOCK_CODE) {
-      onUnlock();
+    if (code === userPin) {
+      onUnlock('user');
+    } else if (code === CREATOR_PIN) {
+      onUnlock('creator');
     } else {
       setError('Incorrect code. Please try again.');
       setCode('');

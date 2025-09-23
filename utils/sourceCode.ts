@@ -338,6 +338,63 @@ root.render(
         box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.05) inset;
     }
 
+    /* Home screen tile styles */
+    .home-group-header {
+      grid-column: 1 / -1;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--theme-green);
+      margin-bottom: -0.5rem;
+      padding-left: 0.5rem;
+      border-bottom: 2px solid var(--theme-border);
+      padding-bottom: 0.5rem;
+    }
+
+    @keyframes tile-in {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-tile-in {
+      animation: tile-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      opacity: 0;
+    }
+    
+    @keyframes tile-shimmer {
+      0% { transform: translateX(-100%) skewX(-30deg); }
+      100% { transform: translateX(200%) skewX(-30deg); }
+    }
+    
+    .clock-time {
+      font-size: clamp(2.5rem, 8vw, 4rem);
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: clamp(0.8rem, 2vw, 1rem);
+    }
+    
+    /* Notepad placeholder */
+    .note-editor-content:empty::before {
+      content: 'Start writing...';
+      color: var(--theme-text-secondary);
+      pointer-events: none;
+      font-style: italic;
+    }
+    .note-editor-content {
+      min-height: 5em; /* Give empty editor some space to be clickable */
+    }
+    
+    /* Notepad subtasks */
+    ul[data-type="checklist"] ul[data-type="checklist"] {
+      padding-left: 2rem;
+      margin: 0;
+    }
+
     /* md breakpoint: 768px */
     @media (min-width: 768px) {
         .creator-modal-animate-in {
@@ -353,11 +410,11 @@ root.render(
 <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
-    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.22"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.24"
   }
 }
 </script>
