@@ -20,6 +20,7 @@ import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { ScanIcon } from './icons/ScanIcon';
+import { BellIcon } from './icons/BellIcon';
 
 // Props definition
 interface NotepadProps {
@@ -83,6 +84,14 @@ const NoteCard: React.FC<{ note: Note; onSelect: (note: Note) => void; isSelecte
         </button>
     );
 };
+
+const reminderOptions: { label: string; offset: number }[] = [
+    { label: 'No reminder', offset: -1 },
+    { label: 'On due date', offset: 0 },
+    { label: '1 hour before', offset: 3600000 },
+    { label: '1 day before', offset: 86400000 },
+    { label: '1 week before', offset: 604800000 },
+];
 
 const NoteEditor: React.FC<{
     note: Note,
@@ -160,6 +169,38 @@ const NoteEditor: React.FC<{
         };
         await onSaveNoteRecording(newRec);
     }, [audioBlob, note.id, onSaveNoteRecording]);
+    
+    const handleReminderChange = (offset: number) => {
+        if (note.dueDate) {
+            if (offset === -1) {
+                onNoteChange(prev => prev ? { ...prev, reminderDate: null, reminderFired: false, date: new Date().toISOString() } : null);
+            } else {
+                const dueDate = new Date(note.dueDate);
+                const reminderDate = new Date(dueDate.getTime() - offset);
+                onNoteChange(prev => prev ? { ...prev, reminderDate: reminderDate.toISOString(), reminderFired: false, date: new Date().toISOString() } : null);
+            }
+        }
+    };
+    
+    const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newDueDate = e.target.value;
+        onNoteChange(p => {
+            if (!p) return null;
+            // When due date is cleared, also clear reminder date
+            if (!newDueDate) {
+                return { ...p, dueDate: null, reminderDate: null, reminderFired: false, date: new Date().toISOString() };
+            }
+            return { ...p, dueDate: newDueDate, date: new Date().toISOString() };
+        });
+    };
+
+
+    const currentReminderOffset = useMemo(() => {
+        if (!note.dueDate || !note.reminderDate) return -1;
+        const due = new Date(note.dueDate).getTime();
+        const reminder = new Date(note.reminderDate).getTime();
+        return due - reminder;
+    }, [note.dueDate, note.reminderDate]);
 
 
     return (
@@ -186,15 +227,36 @@ const NoteEditor: React.FC<{
                         className="text-2xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-green)] focus:outline-none w-full"
                     />
                 </div>
-                 <div className="px-4 pb-2 flex flex-wrap gap-2 text-sm text-[var(--theme-text-secondary)]">
+                 <div className="px-4 pb-2 flex flex-wrap gap-2 text-sm text-[var(--theme-text-secondary)] items-center">
                     <input 
                         type="text"
                         value={note.tags.join(', ')}
                         onChange={e => onNoteChange(p => p ? {...p, tags: e.target.value.split(',').map(t => t.trim()), date: new Date().toISOString() } : null)}
                         placeholder="Tags..."
-                        className="bg-transparent text-xs"
+                        className="bg-transparent text-xs flex-grow"
+                    />
+                     <input
+                        type="datetime-local"
+                        value={note.dueDate ? note.dueDate.slice(0, 16) : ''}
+                        onChange={handleDueDateChange}
+                        className="bg-transparent text-xs p-1 rounded-md border border-transparent hover:border-[var(--theme-border)]"
+                        title="Set due date"
                     />
                 </div>
+
+                {note.dueDate && (
+                    <div className="px-4 pb-4 flex items-center gap-2 text-sm text-white animate-fade-in-down">
+                        <BellIcon className="text-amber-400"/>
+                         <select
+                            value={currentReminderOffset}
+                            onChange={(e) => handleReminderChange(Number(e.target.value))}
+                            className="bg-transparent text-xs p-1 rounded-md border border-transparent hover:border-[var(--theme-border)]"
+                         >
+                            {reminderOptions.map(opt => <option key={opt.offset} value={opt.offset}>{opt.label}</option>)}
+                        </select>
+                    </div>
+                )}
+
                  <div 
                     ref={contentRef}
                     onInput={handleContentChange}
@@ -254,6 +316,12 @@ export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDel
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const [isScanning, setIsScanning] = useState(false);
 
+    useEffect(() => {
+        if(Notification.permission === 'default' && notes.some(n => n.dueDate)) {
+            Notification.requestPermission();
+        }
+    }, [notes]);
+
     const handleAddNewNote = useCallback(() => {
         const newNote: Note = {
             id: crypto.randomUUID(),
@@ -267,6 +335,8 @@ export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDel
             fontStyle: 'font-sans',
             heroImage: null,
             dueDate: null,
+            reminderDate: null,
+            reminderFired: false,
             recordingIds: [],
             photoIds: [],
         };

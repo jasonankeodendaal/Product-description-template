@@ -106,6 +106,8 @@ export interface Note {
     paperStyle: string; // 'paper-white', 'paper-dark', 'paper-yellow-lined', 'paper-grid'
     fontStyle: string; // 'font-sans', 'font-serif', 'font-mono'
     dueDate?: string | null;
+    reminderDate?: string | null;
+    reminderFired?: boolean;
     recordingIds?: string[];
     photoIds?: string[]; // For scanned documents and other images
 }
@@ -163,6 +165,8 @@ const migrateNote = (note: any): Note => {
         paperStyle: note.paperStyle || 'paper-dark',
         fontStyle: note.fontStyle || 'font-sans',
         dueDate: note.dueDate || null,
+        reminderDate: note.reminderDate || null,
+        reminderFired: note.reminderFired || false,
         recordingIds: note.recordingIds || [],
         photoIds: note.photoIds || [], // Initialize photoIds
     };
@@ -441,6 +445,12 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveCalendarEventToDirectory(directoryHandle, event);
     }, [directoryHandle]);
 
+    const handleUpdateNote = useCallback(async (note: Note, silent = false) => {
+        setNotes(prev => prev.map(n => n.id === note.id ? note : n));
+        await db.saveNote(note);
+        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
+    }, [directoryHandle]);
+
     useEffect(() => {
         const checkReminders = async () => {
             if (Notification.permission !== 'granted') return;
@@ -465,6 +475,29 @@ const App: React.FC = () => {
         const intervalId = setInterval(checkReminders, 60000); // Check every minute
         return () => clearInterval(intervalId);
     }, [calendarEvents, handleSaveCalendarEvent]);
+
+    useEffect(() => {
+        const checkNoteReminders = async () => {
+            if (Notification.permission !== 'granted') return;
+            const now = new Date();
+            const upcomingNotes = notes.filter(n => n.reminderDate && !n.reminderFired);
+
+            for (const note of upcomingNotes) {
+                const reminderTime = new Date(note.reminderDate!);
+                if (now >= reminderTime) {
+                    new Notification(`Reminder: ${note.title}`, {
+                        body: stripHtml(note.content).substring(0, 100) + '...',
+                        icon: '/logo192.png',
+                        tag: note.id,
+                    });
+                    const updatedNote = { ...note, reminderFired: true };
+                    await handleUpdateNote(updatedNote, true);
+                }
+            }
+        };
+        const intervalId = setInterval(checkNoteReminders, 60000);
+        return () => clearInterval(intervalId);
+    }, [notes, handleUpdateNote]);
 
 
     // --- Generic Data Handlers (Centralized) ---
@@ -533,12 +566,6 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
     }, [directoryHandle, handleSaveLogEntry]);
     
-
-    const handleUpdateNote = useCallback(async (note: Note) => {
-        setNotes(prev => prev.map(n => n.id === note.id ? note : n));
-        await db.saveNote(note);
-        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
-    }, [directoryHandle]);
 
     const handleDeleteNote = useCallback(async (id: string) => {
         setNotes(prev => prev.filter(n => n.id !== id));
