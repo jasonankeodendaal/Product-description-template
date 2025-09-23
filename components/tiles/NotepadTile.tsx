@@ -9,8 +9,8 @@ interface NotepadTileProps {
 
 export const NotepadTile: React.FC<NotepadTileProps> = ({ onNavigate, count }) => (
     <button onClick={() => onNavigate('notepad')} className="w-full h-full bg-sky-500 text-white p-4 flex flex-col justify-start items-start gap-4 hover:bg-sky-600 transition-colors">
-        <NotepadIcon className="w-7 h-7 text-white" />
-        <div>
+        <NotepadIcon className="w-8 h-8 text-white" />
+        <div className="text-left">
             <span className="font-bold text-3xl">{count}</span>
             <p className="text-sm">Notes</p>
         </div>

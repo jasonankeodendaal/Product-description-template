@@ -5,6 +5,11 @@ import { NotepadIcon } from './icons/NotepadIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { HardDriveIcon } from './icons/HardDriveIcon';
 import { FolderSyncIcon } from './icons/FolderSyncIcon';
+import { TemplateIcon } from './icons/TemplateIcon';
+import { ImageIcon } from './icons/ImageIcon';
+import { DatabaseIcon } from './icons/DatabaseIcon';
+import { CheckIcon } from './icons/CheckIcon';
+import { CloudIcon } from './icons/CloudIcon';
 
 interface OnboardingTourProps {
     onFinish: () => void;
@@ -20,29 +25,47 @@ const tourSteps = [
     },
     {
         icon: <SparklesIcon className="w-16 h-16 text-emerald-400" />,
-        title: "The AI Generator",
-        content: "This is your creative engine. Paste raw product info, choose a template, and watch it generate perfectly structured, professional descriptions in seconds."
+        title: "Meet Your AI Content Engine",
+        content: "The Generator uses powerful AI to turn messy product notes into polished descriptions. It even searches the web to find missing details like dimensions and warranty info, ensuring every description is complete."
+    },
+    {
+        icon: <TemplateIcon />,
+        title: "Your Brand, Your Voice",
+        content: "Control the output with customizable Templates and select a Tone of Voice (e.g., Professional, Casual) to match your brand perfectly. The AI strictly follows your rules for consistent results every time."
+    },
+    {
+        icon: <RecordingIcon className="w-16 h-16 text-pink-400" />,
+        title: "Capture Ideas Instantly",
+        content: "Never lose a thought again. Record voice notes on the fly and get an accurate text transcript with a single click. You can even attach photos and notes to your recordings for full context."
     },
     {
         icon: (
             <div className="flex items-center justify-center gap-4">
-                <RecordingIcon className="w-12 h-12 text-pink-400" />
-                <NotepadIcon className="w-12 h-12 text-sky-400" />
                 <PhotoIcon className="w-12 h-12 text-purple-400" />
+                <ImageIcon className="w-12 h-12 text-amber-400" />
             </div>
         ),
-        title: "All-in-One Tools",
-        content: "Capture ideas with the Recorder, organize visuals in the Photo Library, and draft thoughts in the Notepad. Everything is connected and at your fingertips."
+        title: "Your Central Visual Hub",
+        content: "Manage all your product photos in one place. Organize with folders and tags, capture new images with the built-in camera, and use the Image Tool to batch-process photos into perfect squares."
+    },
+    {
+        icon: <NotepadIcon className="w-16 h-16 text-sky-400" />,
+        title: "More Than Just Notes",
+        content: "Draft ideas with a rich text editor, manage tasks with interactive checklists, and attach audio memos or scanned documents. Set due dates and reminders to stay on top of deadlines."
+    },
+    {
+        icon: <DatabaseIcon className="w-16 h-16 text-gray-400" />,
+        title: "Your Command Center",
+        content: "The Dashboard is where you manage everything. Update your company branding, back up your data, and choose your sync mode (Local, Folder, or API). All app settings are here."
     },
     {
         icon: (
-             <div className="flex items-center justify-center gap-4">
-                <HardDriveIcon />
-                <FolderSyncIcon />
+             <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center border-2 border-emerald-500">
+                <CheckIcon />
             </div>
         ),
-        title: "You Control Your Data",
-        content: "Your work is private and saved offline-first to your browser. For automatic backups and syncing, connect a local folder in the Dashboard. No clouds, no accounts."
+        title: "You're All Set!",
+        content: "That's the tour! You now have a powerful, private, and offline-first workspace. Dive in and start creating."
     }
 ];
 
@@ -90,7 +113,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
                             onClick={handleNext}
                             className="bg-[var(--theme-green)] text-black font-bold py-2 px-6 rounded-full"
                         >
-                            {currentStep === tourSteps.length - 1 ? "Let's Go!" : "Next"}
+                            {currentStep === tourSteps.length - 1 ? "Finish Tour" : "Next"}
                         </button>
                     </div>
                 </div>
