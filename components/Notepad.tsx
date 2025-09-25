@@ -47,10 +47,12 @@ interface NotepadProps {
 // Props definition for the new standalone NoteEditor component
 interface NoteEditorProps {
     note: Note;
-    onUpdate: (note: Note) => Promise<void>;
+    onUpdate: (note: Note, silent: boolean) => Promise<void>;
     onDelete: (id: string) => void;
     onClose: () => void;
+    noteRecordings: NoteRecording[];
     onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
+    photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
     performAiAction: (prompt: string, context: string) => Promise<any>;
 }
@@ -120,7 +122,7 @@ const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo
 );
 
 
-const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onSavePhoto, performAiAction }) => {
+const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClose, noteRecordings, onSaveNoteRecording, photos, onSavePhoto, performAiAction }) => {
     const [localNote, setLocalNote] = useState(note);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
     const contentRef = useRef<HTMLDivElement>(null);
@@ -149,23 +151,25 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
         setSaveState('idle');
     }, [note]);
 
+    const isDirty = useMemo(() => {
+        return JSON.stringify(localNote) !== JSON.stringify(note);
+    }, [localNote, note]);
+
+    // Auto-save on unmount if dirty
     useEffect(() => {
         return () => {
             if (JSON.stringify(localNoteRef.current) !== JSON.stringify(note)) {
-                onUpdate(localNoteRef.current);
+                onUpdate(localNoteRef.current, true);
             }
         };
     }, [note, onUpdate]);
 
-    const isDirty = useMemo(() => {
-        return JSON.stringify(localNote) !== JSON.stringify(note);
-    }, [localNote, note]);
 
     const handleSave = async () => {
         if (!isDirty) return;
         setSaveState('saving');
         try {
-            await onUpdate(localNote);
+            await onUpdate(localNote, false);
             setSaveState('saved');
             setTimeout(() => setSaveState('idle'), 2000);
         } catch (e) {
@@ -279,10 +283,50 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
     useEffect(() => {
         const editor = contentRef.current;
         if (!editor) return;
+
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+
+            const imageSpan = target.closest<HTMLSpanElement>('span[data-photo-id]');
+            if (imageSpan) {
+                e.preventDefault();
+                const photoId = imageSpan.dataset.photoId;
+                const photo = photos.find(p => p.id === photoId);
+                if (photo) {
+                    setViewingPhoto(photo);
+                }
+                return;
+            }
+
+            const recordingSpan = target.closest<HTMLSpanElement>('span[data-recording-id]');
+            if (recordingSpan) {
+                e.preventDefault();
+                const recordingId = recordingSpan.dataset.recordingId;
+                const recording = noteRecordings.find(r => r.id === recordingId);
+                if (recording) {
+                    setPlayingRecording(recording);
+                }
+                return;
+            }
+            
+            const li = target.closest<HTMLLIElement>('li[data-checked]');
+            if (li && e.offsetX < 30) {
+                const isChecked = li.dataset.checked === 'true';
+                li.dataset.checked = String(!isChecked);
+                handleContentChange();
+            }
+        };
+
+        editor.addEventListener('click', handleClick);
+        return () => editor.removeEventListener('click', handleClick);
+    }, [photos, noteRecordings, handleContentChange]);
+
+    useEffect(() => {
+        const editor = contentRef.current;
+        if (!editor) return;
         let draggedItem: HTMLLIElement | null = null;
         let dropIndicator: HTMLLIElement | null = null;
         const createDropIndicator = () => { /* ... */ };
-        // All drag/drop logic for checklists...
         // This logic remains the same, but it calls handleContentChange at the end
     }, [handleContentChange]);
     
