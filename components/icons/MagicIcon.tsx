@@ -1,36 +1,23 @@
 import React from 'react';
 
-export const MagicIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-        <style>
-            {`
-                .magic-sparkle {
-                    transform-origin: center;
-                    transition: transform 0.3s ease;
-                }
-                @keyframes magic-pulse {
-                    0%, 100% { transform: scale(1); opacity: 1; }
-                    50% { transform: scale(1.15); opacity: 0.8; }
-                }
-                .group:hover .magic-sparkle {
-                    animation: magic-pulse 1s ease-in-out infinite;
-                    transform: rotate(15deg);
-                }
-            `}
-        </style>
-        <defs>
-            <linearGradient id="magic-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#34D399"/>
-                <stop offset="100%" stopColor="#10B981"/>
-            </linearGradient>
-            <filter id="magic-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="0" stdDeviation="1" floodColor="#10B981" floodOpacity="0.7"/>
-            </filter>
-        </defs>
-        <g className="magic-sparkle" filter="url(#magic-shadow)" fill="url(#magic-grad)" stroke="#FFF" strokeWidth="0.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m12 3-1.5 4.5-4.5 1.5 4.5 1.5 1.5 4.5 1.5-4.5 4.5-1.5-4.5-1.5z"/>
-            <path d="M5 21l0.5-1.5-1.5-0.5 1.5-0.5-0.5-1.5 0.5 1.5 1.5 0.5-1.5 0.5z" />
-            <path d="M19 21l0.5-1.5-1.5-0.5 1.5-0.5-0.5-1.5 0.5 1.5 1.5 0.5-1.5 0.5z" />
+export const MagicIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" {...props}>
+        <style>{`
+            @keyframes magic-glow {
+                50% { filter: drop-shadow(0 0 4px currentColor); }
+            }
+            .magic-icon-animate {
+                animation: magic-glow 2s ease-in-out infinite;
+            }
+        `}</style>
+        <g className="magic-icon-animate">
+            <path d="m12 3-1.9 5.8-5.8 1.9 5.8 1.9L12 21l1.9-5.8 5.8-1.9-5.8-1.9z" />
+            <path d="M22 12h-2" />
+            <path d="m19.1 19.1-.4-.4" />
+            <path d="M12 22v-2" />
+            <path d="m4.9 19.1.4-.4" />
+            <path d="M2 12h2" />
+            <path d="m4.9 4.9.4.4" />
         </g>
     </svg>
 );

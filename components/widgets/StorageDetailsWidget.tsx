@@ -71,7 +71,6 @@ const categoryIcons: { [key: string]: React.ReactNode } = {
 };
 
 export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSettings: SiteSettings }> = ({ storageUsage, siteSettings }) => {
-    const { lib: Recharts, loading, error } = useRecharts();
     const { total, breakdown } = storageUsage;
     const syncInfo = getSyncInfo(siteSettings.syncMode, true);
     const hasData = total > 0;
@@ -86,43 +85,30 @@ export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSe
             </div>
 
             <div className="flex-grow my-1 flex flex-col md:flex-row items-center justify-around gap-2 overflow-hidden">
-                {loading && <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs"><Spinner /></div>}
-                
-                {error && <div className="w-full h-full flex items-center justify-center text-rose-400 text-xs text-center p-1">Chart library failed to load.</div>}
-
-                {!loading && !error && !hasData && <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No data stored yet.</div>}
-
-                {!loading && !error && hasData && Recharts && (
+                {!hasData ? (
+                     <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No data stored yet.</div>
+                ) : (
                     <>
-                        <div className="w-full md:w-2/5 h-20 md:h-full relative">
-                            <Recharts.ResponsiveContainer width="100%" height="100%">
-                                <Recharts.PieChart>
-                                    <Recharts.Pie data={breakdown} dataKey="bytes" nameKey="name" cx="50%" cy="50%" innerRadius="70%" outerRadius="90%" paddingAngle={5} stroke="none">
-                                        {breakdown.map((entry: any, index: number) => (
-                                            <Recharts.Cell key={`cell-${index}`} fill={entry.fill} />
-                                        ))}
-                                    </Recharts.Pie>
-                                </Recharts.PieChart>
-                            </Recharts.ResponsiveContainer>
-                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="font-bold text-white text-sm animate-pulse-slow"><AnimatedValue value={total} /></span>
-                                <p className="text-gray-400 text-[10px]">Total Used</p>
+                         <div className="w-full h-full flex flex-col justify-center items-center">
+                             <div className="text-center">
+                                <span className="font-bold text-white text-3xl animate-pulse-slow"><AnimatedValue value={total} /></span>
+                                <p className="text-gray-400 text-sm"> Total Used</p>
                             </div>
-                        </div>
-                        <div className="w-full md:w-3/5 space-y-0.5 overflow-y-auto no-scrollbar">
-                            {breakdown.map((item, index) => (
-                                <div 
-                                    key={item.name} 
-                                    className="flex items-center gap-1.5 text-[10px] py-0.5 px-1 bg-white/5 rounded-md animate-list-item-in"
-                                    style={{ animationDelay: `${index * 50}ms` }}
-                                >
-                                    <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
-                                    <span className="flex-grow truncate text-gray-300">{item.name}</span>
-                                    <span className="font-mono text-gray-400 text-[9px]">{formatBytes(item.bytes)}</span>
-                                    <div className="w-8 text-right font-semibold" style={{ color: item.fill }}>{total > 0 ? `${Math.round((item.bytes / total) * 100)}%` : '0%'}</div>
-                                </div>
-                            ))}
-                        </div>
+                            <div className="w-full space-y-0.5 overflow-y-auto no-scrollbar mt-2 px-1">
+                                {breakdown.map((item, index) => (
+                                    <div 
+                                        key={item.name} 
+                                        className="flex items-center gap-1.5 text-[10px] py-0.5 px-1 bg-white/5 rounded-md animate-list-item-in"
+                                        style={{ animationDelay: `${index * 50}ms` }}
+                                    >
+                                        <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
+                                        <span className="flex-grow truncate text-gray-300">{item.name}</span>
+                                        <span className="font-mono text-gray-400 text-[9px]">{formatBytes(item.bytes)}</span>
+                                        <div className="w-8 text-right font-semibold" style={{ color: item.fill }}>{total > 0 ? `${Math.round((item.bytes / total) * 100)}%` : '0%'}</div>
+                                    </div>
+                                ))}
+                            </div>
+                         </div>
                     </>
                 )}
             </div>

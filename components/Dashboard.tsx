@@ -1,6 +1,3 @@
-
-
-
 import React, { useState } from 'react';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent } from '../App';
 import { XIcon } from './icons/XIcon';
@@ -98,8 +95,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <NavButton active={activeSection === 'about'} onClick={() => setActiveSection('about')} icon={<InfoIcon />}>About This App</NavButton>
                     <NavButton active={activeSection === 'data'} onClick={() => setActiveSection('data')} icon={<DatabaseIcon />}>Data Management</NavButton>
                     <NavButton active={activeSection === 'settings'} onClick={() => setActiveSection('settings')} icon={<SettingsIcon />}>Site & Creator Settings</NavButton>
-                    <NavButton active={activeSection === 'setup'} onClick={() => setActiveSection('setup')} icon={<CodeIcon />}>Setup Guide</NavButton>
-                    <NavButton active={activeSection === 'publishing'} onClick={() => setActiveSection('publishing')} icon={<AndroidIcon />}>App Publishing (APK)</NavButton>
+                    {userRole === 'creator' && (
+                      <>
+                        <NavButton active={activeSection === 'setup'} onClick={() => setActiveSection('setup')} icon={<CodeIcon />}>Setup Guide</NavButton>
+                        <NavButton active={activeSection === 'publishing'} onClick={() => setActiveSection('publishing')} icon={<AndroidIcon />}>App Publishing (APK)</NavButton>
+                      </>
+                    )}
                 </nav>
             </aside>
 
@@ -135,9 +136,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         onInitiatePinReset={onInitiatePinReset}
                     />
                 )}
-                {activeSection === 'setup' && <SetupGuide />}
+                {activeSection === 'setup' && userRole === 'creator' && <SetupGuide />}
                 {activeSection === 'about' && <AboutThisApp onNavigateToSetup={() => setActiveSection('setup')} />}
-                {activeSection === 'publishing' && <AppPublishingGuide onDownloadSource={onDownloadSource} />}
+                {activeSection === 'publishing' && userRole === 'creator' && <AppPublishingGuide onDownloadSource={onDownloadSource} />}
             </main>
         </div>
       </div>

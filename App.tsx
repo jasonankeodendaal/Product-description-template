@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -412,6 +410,8 @@ const App: React.FC = () => {
 
                 if (!settings.pinIsSet) {
                     setIsPinSetupModalOpen(true);
+                } else if (!settings.onboardingCompleted) {
+                    setIsOnboardingOpen(true);
                 }
 
                 const storedTemplates = localStorage.getItem('templates');
@@ -427,14 +427,10 @@ const App: React.FC = () => {
 
                 if (handle) {
                     let hasPermission = false;
-                    // Check silently first.
-                    // FIX: The standard FileSystemDirectoryHandle type may not include 'queryPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
                     if ((await (handle as any).queryPermission({ mode: 'readwrite' })) === 'granted') {
                         hasPermission = true;
                     } else {
-                        // If not granted, try to re-request it. This may show a browser prompt.
                         try {
-                            // FIX: The standard FileSystemDirectoryHandle type may not include 'requestPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
                             if ((await (handle as any).requestPermission({ mode: 'readwrite' })) === 'granted') {
                                 hasPermission = true;
                             }
@@ -449,7 +445,6 @@ const App: React.FC = () => {
                         await syncFromDirectory(handle);
                         folderSyncSuccess = true;
                     } else {
-                        // Permission was not granted, so disconnect.
                         await db.clearDirectoryHandle();
                         settings.syncMode = 'local'; // Fallback to local storage.
                     }
@@ -1025,11 +1020,11 @@ const App: React.FC = () => {
     }
     
     if (isPinResetting) {
-        return <PinSetupModal onSetPin={handleSetNewPinAfterReset} mode="reset" />;
+        return <PinSetupModal onSetPin={handleSetNewPinAfterReset} mode="reset" siteSettings={siteSettings}/>;
     }
 
-    if (!siteSettings.pinIsSet) {
-        return <PinSetupModal onSetPin={handleSetUserPin} mode="setup" />;
+    if (isPinSetupModalOpen) {
+        return <PinSetupModal onSetPin={handleSetUserPin} mode="setup" siteSettings={siteSettings}/>;
     }
     
     if (isOnboardingOpen) {
@@ -1037,7 +1032,7 @@ const App: React.FC = () => {
     }
 
     if (!isAuthenticated) {
-        return <AuthModal onUnlock={handleLogin} userPin={siteSettings.userPin} />;
+        return <AuthModal onUnlock={handleLogin} userPin={siteSettings.userPin} siteSettings={siteSettings} />;
     }
 
 

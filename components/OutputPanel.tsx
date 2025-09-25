@@ -171,7 +171,7 @@ const ImageSquarerModal: React.FC<{
                                         key={size}
                                         onClick={() => handleSquareClick(size)}
                                         disabled={isSquaring}
-                                        className="py-3 px-2 rounded-md font-semibold text-center transition-all border-2 bg-transparent border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-green)]/50 hover:text-white disabled:opacity-50"
+                                        className="py-3 px-2 rounded-md font-semibold text-center transition-all border-2 bg-transparent border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-orange)]/50 hover:text-white disabled:opacity-50"
                                     >
                                         {size}x{size}
                                     </button>
@@ -181,7 +181,7 @@ const ImageSquarerModal: React.FC<{
                     </div>
                     {isSquaring && (
                         <div className="absolute inset-0 bg-[var(--theme-card-bg)]/80 rounded-xl flex flex-col items-center justify-center gap-2">
-                           <Spinner className="h-6 w-6 text-[var(--theme-green)]" />
+                           <Spinner className="h-6 w-6 text-[var(--theme-orange)]" />
                            <p className="text-[var(--theme-text-primary)]">Processing...</p>
                         </div>
                     )}
@@ -318,7 +318,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
   return (
     <div className="bg-[var(--theme-card-bg)] backdrop-blur-xl p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)] relative flex flex-col">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-[var(--theme-green)]">Generated Description</h2>
+        <h2 className="text-xl font-semibold text-[var(--theme-orange)]">Generated Description</h2>
         {hasOutput && !isLoading && (
             <div className="flex items-center gap-2">
                 <button
@@ -333,7 +333,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                     onClick={handleSave}
                     disabled={!isFolderMode || saveState !== 'idle'}
                     title={!isFolderMode ? "Connect a local folder to enable saving" : ""}
-                    style={{ backgroundColor: 'var(--theme-green)'}}
+                    style={{ backgroundColor: 'var(--theme-orange)'}}
                     className="flex items-center gap-2 hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:text-[var(--theme-text-secondary)]/50 disabled:cursor-not-allowed text-black font-semibold py-2 px-3 rounded-md transition-colors duration-200 text-sm min-w-[140px] justify-center"
                     aria-label="Add to Folder"
                 >
@@ -361,7 +361,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
 
       {structuredData && (
         <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
-            <h3 className="text-lg font-semibold text-[var(--theme-green)] mb-3">Linked Images</h3>
+            <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Images</h3>
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
                 {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} onOpenSquarer={setSquaringPhoto} />)}
                 <input

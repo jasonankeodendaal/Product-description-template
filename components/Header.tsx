@@ -38,7 +38,7 @@ const HeaderNavItem: React.FC<{
         onClick={onClick}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors duration-200 ${
             isActive
-                ? 'bg-[var(--theme-green)] text-black'
+                ? 'bg-[var(--theme-orange)] text-black'
                 : 'text-[var(--theme-text-secondary)] hover:bg-[var(--theme-card-bg)]/50 hover:text-[var(--theme-text-primary)]'
         }`}
     >
@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
         <div className="relative" ref={dropdownRef}>
             <button 
                 onClick={() => setIsDropdownOpen(prev => !prev)}
-                className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[var(--theme-green)] rounded-md p-1"
+                className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[var(--theme-orange)] rounded-md p-1"
                 aria-haspopup="true"
                 aria-expanded={isDropdownOpen}
             >
@@ -114,7 +114,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
              {showInstallButton && (
                 <button
                     onClick={onInstallClick}
-                    className="flex items-center gap-2 bg-[var(--theme-green)] text-black font-bold py-2 px-4 rounded-full text-sm animate-fade-in-down shadow-lg hover:opacity-90 transition-opacity"
+                    className="flex items-center gap-2 bg-[var(--theme-orange)] text-black font-bold py-2 px-4 rounded-full text-sm animate-fade-in-down shadow-lg hover:opacity-90 transition-opacity"
                     aria-label="Install App"
                 >
                     <DownloadIcon />

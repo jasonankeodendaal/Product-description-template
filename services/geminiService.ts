@@ -144,6 +144,30 @@ export async function describeImage(
     }
 }
 
+export async function performAiAction(
+    prompt: string,
+    context: string,
+    customApiUrl?: string | null,
+    customApiAuthKey?: string | null
+): Promise<string> {
+     try {
+        const baseUrl = customApiUrl || '';
+        const response = await fetch(`${baseUrl}/api/ai-action`, {
+            method: 'POST',
+            headers: getHeaders(customApiAuthKey),
+            body: JSON.stringify({ prompt, context }),
+        });
+        const data = await handleFetchErrors(response);
+        if (typeof data.text === 'undefined') {
+            throw new Error("Received an invalid response from the backend.");
+        }
+        return data.text;
+    } catch (error) {
+        console.error("Error calling /api/ai-action:", error);
+        throw error;
+    }
+}
+
 export async function getWeatherInfo(
     location: { city?: string; lat?: number; lon?: number },
     customApiUrl?: string | null,

@@ -10,8 +10,8 @@ export const ImageIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
             }
             .scan-line {
                 animation: scan-light 3s ease-in-out infinite;
-                stroke: var(--theme-green);
-                filter: drop-shadow(0 0 2px var(--theme-green));
+                stroke: var(--theme-orange);
+                filter: drop-shadow(0 0 2px var(--theme-orange));
             }
              @keyframes subtle-zoom-still {
                 0%, 100% { transform: scale(1) translate(0,0); }

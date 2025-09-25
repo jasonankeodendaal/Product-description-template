@@ -28,30 +28,29 @@
 
   <style>
     :root {
-      /* New Ember Theme: Orange, Dark Black, Grey, White */
-      --theme-bg: rgba(17, 24, 39, 0.8); /* Dark Slate Blue-Grey w/ transparency */
-      --theme-card-bg: rgba(31, 41, 55, 0.85); /* Lighter Slate w/ transparency */
-      --theme-dark-bg: #000000; /* Pure Black */
-      --theme-border: #4B5563; /* Medium Grey */
-      --theme-green: #F97316; /* Bright Orange */
-      --theme-red: #F87171; /* Softer Red */
-      --theme-bright-green: #22c55e; /* Green 500 for START button */
-      --theme-text-primary: #F9FAFB; /* Off-white */
-      --theme-text-secondary: #9CA3AF; /* Light Grey */
+      /* Reverted to Dark & Orange Theme */
+      --theme-bg: rgba(17, 24, 39, 0.8);
+      --theme-card-bg: rgba(31, 41, 55, 0.85);
+      --theme-dark-bg: #000000;
+      --theme-border: #4B5563;
+      --theme-orange: #F97316; /* Main accent color */
+      --theme-red: #F87171;
+      --theme-bright-orange: #FB923C; /* Brighter orange for buttons */
+      --theme-text-primary: #F9FAFB;
+      --theme-text-secondary: #9CA3AF;
       
-      /* Recorder Light Theme (Updated with Orange Accent) */
+      /* Light Theme (with Orange Accent) */
       --theme-bg-light: #F9FAFB;
       --theme-card-bg-light: #FFFFFF;
       --theme-text-primary-light: #1F2937;
       --theme-text-secondary-light: #6B7280;
       --theme-border-light: #E5E7EB;
-      --theme-green-light: #EA580C; /* Darker Orange for contrast on light BG */
+      --theme-orange-light: #EA580C; /* Darker Orange for contrast */
       --theme-red-light: #EF4444;
       --theme-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 
-      /* Deprecated */
-      --theme-blue: #3A6187;
-      --theme-yellow: #D49E3C;
+      /* Maintained for specific UI elements if needed */
+      --theme-green: #34D399;
     }
     body {
       background-color: var(--theme-dark-bg);
@@ -74,7 +73,6 @@
         z-index: -2;
     }
 
-    /* Layer 1: The main image with a slow zoom (Ken Burns effect) */
     body::before {
         background-image: url('https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg');
         background-size: cover;
@@ -82,12 +80,11 @@
         animation: ken-burns 45s ease-in-out infinite;
     }
 
-    /* Layer 2: A subtle, moving grid overlay and vignette */
     body::after {
         background-image: 
-            linear-gradient(to right, rgba(249, 115, 22, 0.08) 1px, transparent 1px), /* Vertical lines */
-            linear-gradient(to bottom, rgba(249, 115, 22, 0.08) 1px, transparent 1px), /* Horizontal lines */
-            radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 1) 100%); /* Vignette */
+            linear-gradient(to right, rgba(249, 115, 22, 0.08) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(249, 115, 22, 0.08) 1px, transparent 1px),
+            radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 1) 100%);
         background-size: 40px 40px, 40px 40px, 100% 100%;
         animation: move-grid 25s linear infinite;
     }
@@ -102,265 +99,74 @@
       font-family: 'Patrick Hand', cursive;
     }
 
-    /* Custom scrollbar for webkit browsers */
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-    .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     /* Notepad checklist styles */
-    .note-editor-content ul[data-type="checklist"],
-    ul[data-type="checklist"] {
-      list-style-type: none;
-      padding-left: 0;
-      margin: 1rem 0;
+    .note-editor-content ul[data-type="checklist"] { list-style-type: none; padding-left: 0; margin: 1rem 0; }
+    .note-editor-content ul[data-type="checklist"] > li { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0; cursor: grab; }
+    .note-editor-content ul[data-type="checklist"] > li::before {
+      content: ''; display: inline-block; width: 1.25em; height: 1.25em;
+      border: 2px solid var(--theme-border); border-radius: 50%; cursor: pointer; flex-shrink: 0;
+      background-color: transparent; transition: background-color 0.2s ease, border-color 0.2s ease;
     }
-    .note-editor-content ul[data-type="checklist"] > li,
-    ul[data-type="checklist"] > li {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.25rem 0;
-      cursor: grab;
-    }
-    .note-editor-content ul[data-type="checklist"] > li::before,
-    ul[data-type="checklist"] > li::before {
-      content: '';
-      display: inline-block;
-      width: 1.25em;
-      height: 1.25em;
-      border: 2px solid var(--theme-border);
-      border-radius: 50%;
-      cursor: pointer;
-      flex-shrink: 0;
-      background-color: transparent;
-      transition: background-color 0.2s ease, border-color 0.2s ease;
-    }
-    .note-editor-content ul[data-type="checklist"] > li[data-checked="true"]::before,
-    ul[data-type="checklist"] > li[data-checked="true"]::before {
-      background-color: var(--theme-green);
-      border-color: var(--theme-green);
+    .note-editor-content ul[data-type="checklist"] > li[data-checked="true"]::before {
+      background-color: var(--theme-orange); border-color: var(--theme-orange);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
-      background-size: 80%;
-      background-position: center;
-      background-repeat: no-repeat;
+      background-size: 80%; background-position: center; background-repeat: no-repeat;
     }
-     .note-editor-content ul[data-type="checklist"] > li[data-checked="true"],
-     ul[data-type="checklist"] li[data-checked="true"] {
-      text-decoration: line-through;
-      color: var(--theme-text-secondary);
-    }
+     .note-editor-content ul[data-type="checklist"] > li[data-checked="true"] { text-decoration: line-through; color: var(--theme-text-secondary); }
     
     .note-editor-content > *:first-child { margin-top: 0; }
     .note-editor-content > *:last-child { margin-bottom: 0; }
     .note-editor-content:focus { outline: none; }
 
-    /* Drag & Drop for Notepad Checklist */
-    .note-editor-content ul[data-type="checklist"] > li.dragging {
-      opacity: 0.4;
-      background-color: var(--theme-bg);
-      border-radius: 4px;
-    }
-    .drop-indicator {
-      height: 2px;
-      background-color: var(--theme-green);
-      margin: 4px 0;
-      animation: hologram-pulse 1.5s infinite;
-    }
-    li.drop-indicator-li {
-      list-style-type: none !important;
-      padding: 0 !important;
-      cursor: default !important;
-      /* Override the default li styles */
-      display: block !important;
-      gap: 0 !important;
-    }
-    li.drop-indicator-li::before {
-      display: none !important;
-    }
-
-    /* Logo Glow Effect */
-    .logo-glow-effect {
-      /* A subtle white "fog" and a stronger orange "glow" */
-      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1)) 
-              drop-shadow(0 0 8px var(--theme-green));
-      transition: filter 0.3s ease-in-out;
-    }
-    .logo-glow-effect:hover {
-        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2)) 
-                drop-shadow(0 0 12px var(--theme-green));
-    }
-
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    @keyframes typing-arm {
-      0%, 20%, 100% { transform: rotate(-5deg) translateY(2px); }
-      10% { transform: rotate(0deg) translateY(0); }
-    }
-    @keyframes typing-finger {
-      0%, 20%, 100% { transform: translateY(0); }
-      10% { transform: translateY(2px); }
-    }
-    @keyframes hologram-pulse {
-        0%, 100% { opacity: 0.6; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.02); }
-    }
-    @keyframes text-appear {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    .animate-modal-scale-in {
-        animation: modal-scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-    @keyframes modal-scale-in {
-        from { transform: scale(0.9); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-    }
-    .animate-flex-modal-scale-in {
-        animation: flex-modal-scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-    @keyframes flex-modal-scale-in {
-        from { transform: scale(0.9); opacity: 0; }
-        to { transform: scale(1); opacity: 1; }
-    }
-    .animate-fade-in-down {
-        animation: fade-in-down 0.2s ease-out forwards;
-    }
-    @keyframes fade-in-down {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes slow-zoom {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    @keyframes ken-burns {
-        0%, 100% {
-            transform: scale(1) translate(0, 0);
-            filter: brightness(0.8);
-        }
-        50% {
-            transform: scale(1.1) translate(-2%, 2%);
-            filter: brightness(1.0);
-        }
-    }
-    @keyframes move-grid {
-        from {
-            background-position: 0 0, 0 0, center;
-        }
-        to {
-            background-position: -40px -40px, 0 0, center;
-        }
-    }
+    /* Drag & Drop Styles */
+    .note-editor-content ul[data-type="checklist"] > li.dragging { opacity: 0.4; background-color: var(--theme-bg); border-radius: 4px; }
+    .drop-indicator { height: 2px; background-color: var(--theme-orange); margin: 4px 0; animation: hologram-pulse 1.5s infinite; }
+    li.drop-indicator-li { list-style-type: none !important; padding: 0 !important; cursor: default !important; display: block !important; gap: 0 !important; }
+    li.drop-indicator-li::before { display: none !important; }
     
-    /* New animations for responsive creator modal */
-    @keyframes slide-in-up {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+    .embedded-recording {
+        display: inline-flex; align-items: center; gap: 0.5rem; background-color: var(--theme-bg); border: 1px solid var(--theme-border);
+        border-radius: 9999px; padding: 0.25rem 0.75rem; font-size: 0.875rem; cursor: default; user-select: none; margin: 0 0.25rem;
     }
-    @keyframes slide-out-down {
-      from { transform: translateY(0); }
-      to { transform: translateY(100%); }
-    }
-    @keyframes flex-modal-scale-out {
-        from { transform: scale(1); opacity: 1; }
-        to { transform: scale(0.9); opacity: 0; }
-    }
-    @keyframes tile-enter {
-        from {
-            opacity: 0;
-            transform: translateY(30px) scale(0.98);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
+     .embedded-recording svg { width: 1rem; height: 1rem; color: var(--theme-orange); }
 
-    .creator-modal-animate-in {
-        animation: slide-in-up 0.3s ease-out forwards;
-    }
-    .creator-modal-animate-out {
-        animation: slide-out-down 0.3s ease-in forwards;
-    }
+    .logo-glow-effect { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1)) drop-shadow(0 0 8px var(--theme-orange)); transition: filter 0.3s ease-in-out; }
+    .logo-glow-effect:hover { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2)) drop-shadow(0 0 12px var(--theme-orange)); }
+
+    @keyframes hologram-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    @keyframes modal-scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .animate-modal-scale-in { animation: modal-scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    .animate-flex-modal-scale-in { animation: modal-scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in-down { animation: fade-in-down 0.2s ease-out forwards; }
+    @keyframes ken-burns { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1) translate(-2%, 2%); } }
+    @keyframes move-grid { from { background-position: 0 0, 0 0, center; } to { background-position: -40px -40px, 0 0, center; } }
+    @keyframes slide-in-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes slide-out-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
+    @keyframes flex-modal-scale-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.9); opacity: 0; } }
+    .creator-modal-animate-in { animation: slide-in-up 0.3s ease-out forwards; }
+    .creator-modal-animate-out { animation: slide-out-down 0.3s ease-in forwards; }
     
-    .fab-shadow {
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05), 0 0 0 1px rgba(255,255,255,0.05) inset;
-    }
-    
-    /* Home screen tile styles */
     .home-group-header {
-      grid-column: 1 / -1;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--theme-green);
-      margin-bottom: -0.5rem;
-      padding-left: 0.5rem;
-      border-bottom: 2px solid var(--theme-border);
-      padding-bottom: 0.5rem;
+      grid-column: 1 / -1; font-size: 1.5rem; font-weight: 700; color: var(--theme-orange);
+      margin-bottom: -0.5rem; padding-left: 0.5rem; border-bottom: 2px solid var(--theme-border); padding-bottom: 0.5rem;
     }
+    @keyframes tile-in { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .animate-tile-in { animation: tile-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; opacity: 0; }
+    
+    .clock-time { font-size: clamp(2.5rem, 8vw, 4rem); line-height: 1; }
+    .clock-date { font-size: clamp(0.8rem, 2vw, 1rem); }
+    
+    .note-editor-content:empty::before { content: 'Start writing...'; color: var(--theme-text-secondary); pointer-events: none; font-style: italic; }
+    .note-editor-content { min-height: 5em; }
+    ul[data-type="checklist"] ul[data-type="checklist"] { padding-left: 2rem; margin: 0; }
 
-    @keyframes tile-in {
-      from {
-        opacity: 0;
-        transform: translateY(20px) scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-    .animate-tile-in {
-      animation: tile-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-      opacity: 0;
-    }
-    
-    @keyframes tile-shimmer {
-      0% { transform: translateX(-100%) skewX(-30deg); }
-      100% { transform: translateX(200%) skewX(-30deg); }
-    }
-    
-    .clock-time {
-      font-size: clamp(2.5rem, 8vw, 4rem);
-      line-height: 1;
-    }
-    .clock-date {
-      font-size: clamp(0.8rem, 2vw, 1rem);
-    }
-    
-    /* Notepad placeholder */
-    .note-editor-content:empty::before {
-      content: 'Start writing...';
-      color: var(--theme-text-secondary);
-      pointer-events: none;
-      font-style: italic;
-    }
-    .note-editor-content {
-      min-height: 5em; /* Give empty editor some space to be clickable */
-    }
-    
-    /* Notepad subtasks */
-    ul[data-type="checklist"] ul[data-type="checklist"] {
-      padding-left: 2rem;
-      margin: 0;
-    }
+    .camera-filter-none { filter: none; } .camera-filter-grayscale { filter: grayscale(100%); } .camera-filter-sepia { filter: sepia(100%); }
+    .camera-filter-contrast { filter: contrast(1.5); } .camera-filter-saturate { filter: saturate(2); } .camera-filter-invert { filter: invert(100%); }
 
-    /* Camera filters */
-    .camera-filter-none { filter: none; }
-    .camera-filter-grayscale { filter: grayscale(100%); }
-    .camera-filter-sepia { filter: sepia(100%); }
-    .camera-filter-contrast { filter: contrast(1.5); }
-    .camera-filter-saturate { filter: saturate(2); }
-    .camera-filter-invert { filter: invert(100%); }
-
-    /* Helper for Message of the day */
     .bg-grid-orange-500\/10 {
         background-image: 
             linear-gradient(to right, rgba(249, 115, 22, 0.05) 1px, transparent 1px),
@@ -368,88 +174,33 @@
         background-size: 1.5rem 1.5rem;
     }
     
-    /* Camera Grid Overlay */
-    .camera-grid-overlay {
-        pointer-events: none;
-        position: absolute;
-        inset: 0;
-        z-index: 5;
+    .camera-grid-overlay { pointer-events: none; position: absolute; inset: 0; z-index: 5; }
+    .camera-grid-overlay::before, .camera-grid-overlay::after { content: ''; position: absolute; }
+    .camera-grid-overlay::before { left: 33.33%; right: 33.33%; top: 0; bottom: 0; border-left: 1px solid rgba(255, 255, 255, 0.2); border-right: 1px solid rgba(255, 255, 255, 0.2); }
+    .camera-grid-overlay::after { top: 33.33%; bottom: 33.33%; left: 0; right: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+    
+    @keyframes pulse-slow { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+    .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+
+    @keyframes list-item-in { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    .animate-list-item-in { animation: list-item-in 0.3s ease-out forwards; opacity: 0; }
+    
+    /* Onboarding Tour styles */
+    .tour-option-card {
+        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
     }
-    .camera-grid-overlay::before,
-    .camera-grid-overlay::after {
-        content: '';
-        position: absolute;
+    .tour-option-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2), 0 0 15px rgba(249, 115, 22, 0.3);
     }
-    .camera-grid-overlay::before { /* Vertical lines */
-        left: 33.33%;
-        right: 33.33%;
-        top: 0;
-        bottom: 0;
-        border-left: 1px solid rgba(255, 255, 255, 0.2);
-        border-right: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .camera-grid-overlay::after { /* Horizontal lines */
-        top: 33.33%;
-        bottom: 33.33%;
-        left: 0;
-        right: 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    .tour-option-card.selected {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 0 0 3px var(--theme-orange), 0 0 20px var(--theme-orange);
     }
 
-    /* Vertical Zoom Slider */
-    .zoom-slider {
-        -webkit-appearance: none;
-        appearance: none;
-        background: transparent;
-        cursor: pointer;
-        /* The width becomes the height after rotation */
-        width: 150px; 
-    }
-    .zoom-slider::-webkit-slider-runnable-track {
-        height: 3px;
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 2px;
-    }
-    .zoom-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        margin-top: -8.5px; /* (thumb height - track height) / 2 */
-        height: 20px;
-        width: 20px;
-        background-color: white;
-        border-radius: 50%;
-        border: 2px solid white;
-    }
-
-    @keyframes pulse-slow {
-        0%, 100% { opacity: 0.7; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.05); }
-    }
-    .animate-pulse-slow {
-        animation: pulse-slow 3s ease-in-out infinite;
-    }
-
-    /* For Storage Widget List */
-    @keyframes list-item-in {
-        from { opacity: 0; transform: translateX(-10px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-    .animate-list-item-in {
-      animation: list-item-in 0.3s ease-out forwards;
-      opacity: 0;
-    }
-
-    /* md breakpoint: 768px */
     @media (min-width: 768px) {
-        .creator-modal-animate-in {
-            animation-name: flex-modal-scale-in;
-            animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .creator-modal-animate-out {
-            animation-name: flex-modal-scale-out;
-            animation-timing-function: ease-in;
-        }
+        .creator-modal-animate-in { animation-name: flex-modal-scale-in; animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .creator-modal-animate-out { animation-name: flex-modal-scale-out; animation-timing-function: ease-in; }
     }
   </style>
 <script type="importmap">

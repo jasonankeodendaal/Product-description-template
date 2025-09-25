@@ -60,7 +60,7 @@ const InputField: React.FC<{ label: string; id: string; value: string; onChange:
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-green)] transition-shadow duration-200 h-[42px]"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-orange)] transition-shadow duration-200 h-[42px]"
         />
     </div>
 );
@@ -189,7 +189,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                         <div className="flex items-start gap-4">
                             <FolderSyncIcon />
                             <div>
-                                <p className="font-semibold text-[var(--theme-green)] flex items-center gap-2">
+                                <p className="font-semibold text-[var(--theme-orange)] flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 bg-current rounded-full"></span>
                                     Synced with Local Folder
                                 </p>
@@ -203,7 +203,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                          <div className="flex items-start gap-4">
                             <HardDriveIcon />
                             <div>
-                                <p className="font-semibold text-[var(--theme-green)] flex items-center gap-2">
+                                <p className="font-semibold text-[var(--theme-orange)] flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 bg-current rounded-full"></span>
                                     Local Browser Mode
                                 </p>
@@ -239,7 +239,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                 ) : isDriveConnected ? (
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="font-semibold text-[var(--theme-green)]">Connected to Google Drive</p>
+                            <p className="font-semibold text-[var(--theme-orange)]">Connected to Google Drive</p>
                             <p className="text-sm text-[var(--theme-text-secondary)]">as {driveUser}</p>
                         </div>
                         <button onClick={handleDriveDisconnect} className="text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] font-semibold">Disconnect</button>
@@ -277,7 +277,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                     <div className="p-4 bg-[var(--theme-bg)]/50 rounded-md border border-[var(--theme-border)]/30">
                         <h4 className="font-semibold text-[var(--theme-text-primary)]">Step 2: Connect to Sync Server (Optional)</h4>
                         <p className="text-sm text-[var(--theme-text-secondary)]/80 mt-1 mb-3">
-                            For multi-device or team sync, enter your custom API server URL below. If you are just using the app on Vercel, <strong className="text-[var(--theme-green)]">leave this field blank.</strong>
+                            For multi-device or team sync, enter your custom API server URL below. If you are just using the app on Vercel, <strong className="text-[var(--theme-orange)]">leave this field blank.</strong>
                         </p>
                         <div className="flex items-end gap-4">
                             <div className="flex-grow">
@@ -292,7 +292,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                             <button 
                                 onClick={handleConnectClick} 
                                 disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
-                                className="bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center justify-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0 min-w-[160px]"
+                                className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center justify-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0 min-w-[160px]"
                             >
                                {isApiConnecting ? (
                                     <>
@@ -303,14 +303,14 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                             </button>
                         </div>
                          {siteSettings.syncMode === 'api' && isApiConnected && (
-                            <p className="text-xs text-[var(--theme-green)] mt-2">Successfully connected and syncing with the server.</p>
+                            <p className="text-xs text-[var(--theme-orange)] mt-2">Successfully connected and syncing with the server.</p>
                         )}
                     </div>
 
                     <div className="flex justify-end pt-2">
                          <button 
                             onClick={handleApiSettingsSave} 
-                            className="bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-6 rounded-md text-sm"
+                            className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-6 rounded-md text-sm"
                         >
                             Save All Settings
                         </button>
@@ -329,7 +329,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                     </div>
                     <div className="pt-5 border-t border-[var(--theme-border)]/50 md:pt-0 md:border-t-0 md:pl-6 md:border-l md:border-[var(--theme-border)]/50">
                         <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Restore data from a backup file. This will <span className="font-semibold text-[var(--theme-red)]">overwrite all</span> existing data.</p>
-                         <label htmlFor="restore-upload" className="cursor-pointer bg-[var(--theme-green)] hover:opacity-90 text-black font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
+                         <label htmlFor="restore-upload" className="cursor-pointer bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
                             <RestoreIcon /> Choose Backup File (.zip)...
                         </label>
                         <input id="restore-upload" type="file" className="sr-only" onChange={handleRestoreFileSelect} accept=".zip" />

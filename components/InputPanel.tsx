@@ -28,7 +28,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
 
   return (
     <div className="bg-[var(--theme-card-bg)] backdrop-blur-xl p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)] flex flex-col flex-1">
-      <h2 className="text-xl font-semibold mb-4 text-[var(--theme-green)]">1. Select Template & Add Info</h2>
+      <h2 className="text-xl font-semibold mb-4 text-[var(--theme-orange)]">1. Select Template & Add Info</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
@@ -40,7 +40,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             value={selectedTemplateId}
             onChange={onTemplateChange}
             disabled={isLoading}
-            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] focus:ring-2 focus:ring-[var(--theme-green)] focus:border-[var(--theme-green)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] focus:ring-2 focus:ring-[var(--theme-orange)] focus:border-[var(--theme-orange)] transition-shadow duration-200"
             >
             {templates.map(template => (
                 <option key={template.id} value={template.id}>
@@ -58,7 +58,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
             value={tone}
             onChange={onToneChange}
             disabled={isLoading}
-            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] focus:ring-2 focus:ring-[var(--theme-green)] focus:border-[var(--theme-green)] transition-shadow duration-200"
+            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] focus:ring-2 focus:ring-[var(--theme-orange)] focus:border-[var(--theme-orange)] transition-shadow duration-200"
             >
                 <option>Professional</option>
                 <option>Casual</option>
@@ -76,14 +76,14 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         value={value}
         onChange={onChange}
         placeholder="e.g., Brand: Defy, Model: HB 7721 X, Power: 600W, a hand blender with whisk..."
-        className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-green)] focus:border-[var(--theme-green)] transition-shadow duration-200 min-h-[200px] resize-y flex-grow"
+        className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-3 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-orange)] focus:border-[var(--theme-orange)] transition-shadow duration-200 min-h-[200px] resize-y flex-grow"
         rows={10}
         disabled={isLoading}
       />
       <button
         onClick={onGenerate}
         disabled={isLoading || !selectedTemplateId}
-        style={{ backgroundColor: 'var(--theme-green)' }}
+        style={{ backgroundColor: 'var(--theme-orange)' }}
         className="mt-6 w-full flex items-center justify-center gap-2 text-black font-bold py-3 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:text-[var(--theme-text-secondary)]/50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 disabled:scale-100"
       >
         {isLoading ? (
