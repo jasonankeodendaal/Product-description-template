@@ -26,9 +26,9 @@ export const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioBlob }) => 
 
         const ws = WaveSurfer.create({
             container: containerRef.current,
-            waveColor: 'rgb(200, 200, 200)', // A light grey for the wave
-            progressColor: 'var(--theme-green-light, #10B981)',
-            cursorColor: 'var(--theme-text-primary-light, #2C3E50)',
+            waveColor: 'var(--theme-text-secondary, #9CA3AF)',
+            progressColor: 'var(--theme-orange, #F97316)',
+            cursorColor: 'var(--theme-text-primary, #F9FAFB)',
             barWidth: 3,
             barRadius: 3,
             barGap: 2,
@@ -65,12 +65,12 @@ export const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioBlob }) => 
             <div className="flex items-center justify-between mt-2">
                 <button 
                     onClick={togglePlayPause} 
-                    className="p-2 bg-[var(--theme-green-light)] rounded-full text-white hover:opacity-90 flex-shrink-0 disabled:bg-[var(--theme-border-light)]"
+                    className="p-2 bg-[var(--theme-orange)] rounded-full text-black hover:opacity-90 flex-shrink-0 disabled:bg-[var(--theme-border)]"
                     disabled={!audioBlob}
                 >
                     {isPlaying ? <PauseIcon /> : <PlayIcon />}
                 </button>
-                <div className="text-sm font-mono text-[var(--theme-text-secondary-light)]">
+                <div className="text-sm font-mono text-[var(--theme-text-secondary)]">
                     {formatTime(currentTime)} / {formatTime(duration)}
                 </div>
             </div>

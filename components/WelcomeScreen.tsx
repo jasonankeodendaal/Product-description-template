@@ -4,16 +4,17 @@ import { UserRole } from '../App';
 interface WelcomeScreenProps {
     userRole: UserRole;
     creatorName: string;
+    userName: string;
     onDismiss: () => void;
 }
 
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userRole, creatorName, onDismiss }) => {
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userRole, creatorName, userName, onDismiss }) => {
     useEffect(() => {
         const timer = setTimeout(onDismiss, 3000); // 3 seconds total
         return () => clearTimeout(timer);
     }, [onDismiss]);
 
-    const welcomeName = userRole === 'creator' ? creatorName : 'User';
+    const welcomeName = userRole === 'creator' ? creatorName : userName;
 
     return (
         <div 

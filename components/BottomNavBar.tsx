@@ -1,11 +1,10 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { View } from '../App';
-import { SparklesIcon } from './icons/SparklesIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
 import { HomeIcon } from './icons/HomeIcon';
-import { CalendarIcon } from './icons/CalendarIcon';
+import { ImageIcon } from './icons/ImageIcon';
 
 interface BottomNavBarProps {
   currentView: View;
@@ -22,7 +21,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
         { view: 'recordings', label: 'Recordings', icon: RecordingIcon },
         { view: 'notepad', label: 'Notepad', icon: NotepadIcon },
         { view: 'photos', label: 'Photos', icon: PhotoIcon },
-        { view: 'calendar', label: 'Calendar', icon: CalendarIcon }
+        { view: 'image-tool', label: 'Image Tool', icon: ImageIcon }
     ], []);
 
     const activeIndex = useMemo(() => navItems.findIndex(item => item.view === currentView), [currentView, navItems]);
@@ -53,6 +52,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
             const topMargin = 16;
             const navHeight = 64;
 
+            // FIX: Define startX and endX for the SVG path calculation.
             const startX = center - scoopWidth / 2;
             const endX = center + scoopWidth / 2;
 
@@ -100,8 +100,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
                                 className="relative flex-1 h-full flex items-center justify-center z-10"
                                 aria-label={item.label}
                             >
-                                <div className={`transition-transform duration-300 ease-out ${isActive ? '-translate-y-4' : 'translate-y-0'}`}>
-                                    <Icon className={`h-6 w-6 transition-colors duration-200 ${isActive ? 'text-[var(--theme-green)]' : 'text-gray-400'}`} />
+                                <div className={`transition-all duration-300 ease-out ${isActive ? '-translate-y-4' : 'translate-y-0'}`}>
+                                    <Icon className={`h-7 w-7 transition-all duration-300 ${isActive ? 'text-[var(--theme-orange)] drop-shadow-[0_0_8px_var(--theme-orange)]' : 'text-gray-400'}`} />
                                 </div>
                             </button>
                         );

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SiteSettings } from '../constants';
 import { BuildingIcon } from './icons/BuildingIcon';
@@ -9,8 +8,8 @@ import { UserRole } from '../App';
 import { ShieldIcon } from './icons/ShieldIcon';
 
 interface SiteSettingsEditorProps {
-    settings: SiteSettings;
-    onSave: (newSettings: SiteSettings) => Promise<void>;
+    siteSettings: SiteSettings;
+    onUpdateSettings: (newSettings: SiteSettings) => Promise<void>;
     userRole: UserRole;
     onInitiatePinReset: () => void;
 }
@@ -77,8 +76,8 @@ const ImageUploader: React.FC<{ label: string; id: string; src: string | null; o
 };
 
 
-export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings, onSave, userRole, onInitiatePinReset }) => {
-    const [formData, setFormData] = useState<SiteSettings>(settings);
+export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSettings, onUpdateSettings, userRole, onInitiatePinReset }) => {
+    const [formData, setFormData] = useState<SiteSettings>(siteSettings);
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -108,7 +107,7 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
         setIsSaving(true);
         setSaveSuccess(false);
         try {
-            await onSave(formData);
+            await onUpdateSettings(formData);
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (err) {
@@ -122,6 +121,16 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
     return (
        <form onSubmit={handleSubmit} className="h-full flex flex-col animate-fade-in-down">
             <div className="flex-grow space-y-6 pb-24">
+                <SectionCard title="User Profile" icon={<UserIcon />}>
+                    <InputField 
+                        id="userName" 
+                        label="Your Name" 
+                        value={formData.userName || ''} 
+                        onChange={handleFormChange} 
+                        fullWidth 
+                        placeholder="How the app should greet you"
+                    />
+                </SectionCard>
                 <SectionCard title="Company Details" icon={<BuildingIcon />}>
                     <InputField id="companyName" label="Company Name" value={formData.companyName} onChange={handleFormChange} fullWidth />
                     <InputField id="slogan" label="Slogan" value={formData.slogan} onChange={handleFormChange} fullWidth />
@@ -158,7 +167,7 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
             </div>
             
             <footer className="sticky bottom-0 -mx-6 -mb-6 mt-6 bg-[var(--theme-dark-bg)]/80 backdrop-blur-sm p-4 border-t border-[var(--theme-border)]/50">
-                <div className="flex justify-end items-center gap-4 max-w-6xl mx-auto md:pr-60">
+                <div className="flex justify-end items-center gap-4">
                     {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Settings saved!</p>}
                     <button type="submit" disabled={isSaving} className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed">
                         {isSaving ? (

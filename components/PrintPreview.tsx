@@ -151,7 +151,7 @@ export const PrintPreview: React.FC<PrintPreviewProps> = ({ logEntries, onClose,
                 <main className="mt-8">
                     <section>
                         <h1 className="text-4xl font-bold">Activity Report</h1>
-                        <p className="text-gray-600 text-lg mt-1">User: {siteSettings.creator.name}</p>
+                        <p className="text-gray-600 text-lg mt-1">User: {siteSettings.userName || 'User'}</p>
                     </section>
 
                     <section className="mt-8">

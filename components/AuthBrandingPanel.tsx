@@ -22,7 +22,7 @@ const ContactButton: React.FC<{ href: string; icon: React.ReactNode; text: strin
 
 export const AuthBrandingPanel: React.FC<AuthBrandingPanelProps> = ({ creator }) => {
     return (
-        <div className="auth-branding-panel hidden md:flex w-full md:w-1/2 bg-gray-900/50 p-6 md:p-12 flex-col justify-center md:justify-between relative overflow-hidden text-center md:text-left min-h-[220px] md:min-h-0">
+        <div className="auth-branding-panel flex w-full md:w-1/2 bg-gray-900/50 p-6 md:p-12 flex-col justify-center md:justify-between relative overflow-hidden text-center md:text-left min-h-[220px] md:min-h-0">
             <div className="absolute inset-0 -z-10 bg-grid-orange-500/10 [mask-image:radial-gradient(ellipse_at_center,white_10%,transparent_70%)]"></div>
             
             <div className="z-10">

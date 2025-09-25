@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
-import { Hero } from './components/Hero';
+import { Hero } from './Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
@@ -8,13 +8,13 @@ import { GenerationResult } from './components/OutputPanel';
 import { FullScreenLoader } from './components/FullScreenLoader';
 import { db } from './services/db';
 import { fileSystemService } from './services/fileSystemService';
-import { apiSyncService } from './utils/dataUtils';
+import { apiSyncService, cloudAuthService } from './utils/dataUtils';
 import { AuthModal } from './components/AuthModal';
 import { Dashboard } from './components/Dashboard';
 import { RecordingManager } from './components/RecordingManager';
 import { PhotoManager } from './components/PhotoManager';
 import { Notepad } from './components/Notepad';
-import { ImageTool } from './components/ImageTool';
+import { ImageTool } from './ImageTool';
 import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
@@ -26,9 +26,11 @@ import { projectFiles } from './utils/sourceCode';
 import { Home } from './components/Home';
 import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
-import { TimesheetManager } from './components/TimesheetManager';
+// FIX: Corrected import path for TimesheetManager from components/ to root, to match provided file structure.
+import { TimesheetManager } from './TimesheetManager';
 import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
-import { OnboardingTour } from './components/OnboardingTour';
+// FIX: Corrected import path for OnboardingTour from components/ to root, to match provided file structure.
+import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 
 declare var JSZip: any;
@@ -221,11 +223,13 @@ const App: React.FC = () => {
 
     const [isApiConnecting, setIsApiConnecting] = useState(false);
     const [isApiConnected, setIsApiConnected] = useState(false);
+    
+    const [googleDriveStatus, setGoogleDriveStatus] = useState({ connected: false, email: '' });
 
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
     const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
-    const [isLandscapeLocked, setIsLandscapeLocked] = useState(false);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     
     // Timer State
     const [activeTimer, setActiveTimer] = useState<{ startTime: number; task: string } | null>(null);
@@ -241,39 +245,6 @@ const App: React.FC = () => {
     
     // App Update State
     const [showUpdateToast, setShowUpdateToast] = useState(false);
-
-    // --- Screen Orientation Control ---
-    const toggleOrientationLock = useCallback(async () => {
-        try {
-            if (!document.fullscreenElement) {
-                await document.documentElement.requestFullscreen({ navigationUI: "hide" });
-            }
-
-            if (isLandscapeLocked) {
-                await (screen.orientation as any).lock('portrait-primary');
-            } else {
-                await (screen.orientation as any).lock('landscape-primary');
-            }
-            setIsLandscapeLocked(!isLandscapeLocked);
-        } catch (err) {
-            console.error("Orientation lock failed:", err);
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-            }
-            alert("Could not change orientation. This feature may not be supported by your browser or requires fullscreen mode.");
-        }
-    }, [isLandscapeLocked]);
-
-    useEffect(() => {
-        const handleFullscreenChange = () => {
-            if (!document.fullscreenElement && isLandscapeLocked) {
-                screen.orientation.unlock();
-                setIsLandscapeLocked(false);
-            }
-        };
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    }, [isLandscapeLocked]);
 
     // Effect to recalculate storage whenever data changes
     useEffect(() => {
@@ -418,7 +389,7 @@ const App: React.FC = () => {
         // Handle URL-based view navigation from PWA shortcuts
         const urlParams = new URLSearchParams(window.location.search);
         const requestedView = urlParams.get('view') as View;
-        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet', 'calendar'];
+        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet'];
         if (requestedView && validViews.includes(requestedView)) {
             setCurrentView(requestedView);
         }
@@ -438,6 +409,11 @@ const App: React.FC = () => {
                     localStorage.removeItem('loginData');
                   }
                 }
+
+                // Check Google Drive connection status
+                const gDriveStatus = await cloudAuthService.checkStatus();
+                setGoogleDriveStatus(gDriveStatus);
+
 
                 const storedSettings = localStorage.getItem('siteSettings');
                 let settings: SiteSettings = storedSettings ? JSON.parse(storedSettings) : DEFAULT_SITE_SETTINGS;
@@ -461,10 +437,14 @@ const App: React.FC = () => {
 
                 if (handle) {
                     let hasPermission = false;
+                    // Check silently first.
+                    // FIX: The standard FileSystemDirectoryHandle type may not include 'queryPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
                     if ((await (handle as any).queryPermission({ mode: 'readwrite' })) === 'granted') {
                         hasPermission = true;
                     } else {
+                        // If not granted, try to re-request it. This may show a browser prompt.
                         try {
+                            // FIX: The standard FileSystemDirectoryHandle type may not include 'requestPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
                             if ((await (handle as any).requestPermission({ mode: 'readwrite' })) === 'granted') {
                                 hasPermission = true;
                             }
@@ -479,6 +459,7 @@ const App: React.FC = () => {
                         await syncFromDirectory(handle);
                         folderSyncSuccess = true;
                     } else {
+                        // Permission was not granted, so disconnect.
                         await db.clearDirectoryHandle();
                         settings.syncMode = 'local'; // Fallback to local storage.
                     }
@@ -584,8 +565,8 @@ const App: React.FC = () => {
 
 
     // --- Generic Data Handlers (Centralized) ---
-    const handleSetUserPin = async (pin: string) => {
-        const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true };
+    const handleSetUserPin = async (pin: string, name: string) => {
+        const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true, userName: name };
         await handleUpdateSettings(newSettings);
         setIsPinSetupModalOpen(false);
         // After setting pin for the first time, show onboarding.
@@ -833,11 +814,13 @@ const App: React.FC = () => {
     const handleSyncDirectory = useCallback(async () => {
         try {
             const handle = await fileSystemService.getDirectoryHandle();
+            const newSettings = { ...siteSettings, syncMode: 'folder' as const };
+
             if (await fileSystemService.directoryHasData(handle)) {
                 await syncFromDirectory(handle, true);
             } else {
                 await Promise.all([
-                    fileSystemService.saveSettings(handle, siteSettings),
+                    fileSystemService.saveSettings(handle, newSettings),
                     fileSystemService.saveTemplates(handle, templates),
                     fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, notes, noteRecordings, logEntries, calendarEvents }),
                 ]);
@@ -845,7 +828,8 @@ const App: React.FC = () => {
             }
             await db.setDirectoryHandle(handle);
             setDirectoryHandle(handle);
-            setSiteSettings(s => ({ ...s, syncMode: 'folder' }));
+            setSiteSettings(newSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
 
         } catch (err) {
             if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -857,7 +841,11 @@ const App: React.FC = () => {
         if(window.confirm("Are you sure you want to disconnect? The app will switch back to using local browser storage.")) {
             await db.clearDirectoryHandle();
             setDirectoryHandle(null);
-            setSiteSettings(s => ({ ...s, syncMode: 'local' }));
+            
+            const newSettings = { ...siteSettings, syncMode: 'local' as const };
+            setSiteSettings(newSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+
             const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
                 db.getAllRecordings(),
                 db.getAllPhotos(),
@@ -873,7 +861,7 @@ const App: React.FC = () => {
             setLogEntries(dbLogEntries);
             setCalendarEvents(dbCalendarEvents);
         }
-    }, []);
+    }, [siteSettings]);
 
     const handleClearLocalData = useCallback(async () => {
         if (window.confirm("WARNING: This will permanently delete all recordings, photos, notes, logs, and calendar events from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
@@ -898,7 +886,10 @@ const App: React.FC = () => {
                 const newPhotos = await Promise.all(data.photos.map(async p => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
                 const newNoteRecordings = await Promise.all(data.noteRecordings.map(async r => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
 
-                setSiteSettings({ ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' });
+                const newSettings = { ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' as const };
+                setSiteSettings(newSettings);
+                localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+                
                 setTemplates(data.templates);
                 setRecordings(newRecordings);
                 setPhotos(newPhotos);
@@ -923,9 +914,25 @@ const App: React.FC = () => {
     const handleApiDisconnect = useCallback(() => {
         if(window.confirm("Disconnect from the API server? The app will revert to local browser storage.")) {
             setIsApiConnected(false);
-            setSiteSettings(s => ({ ...s, customApiEndpoint: null, customApiAuthKey: null, syncMode: 'local' }));
+            const newSettings = { ...siteSettings, customApiEndpoint: null, customApiAuthKey: null, syncMode: 'local' as const };
+            setSiteSettings(newSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
         }
-    }, []);
+    }, [siteSettings]);
+
+    const handleGoogleDriveConnect = useCallback(() => {
+        const newSettings = { ...siteSettings, syncMode: 'api' as const };
+        handleUpdateSettings(newSettings);
+        cloudAuthService.connect();
+    }, [siteSettings, handleUpdateSettings]);
+    
+    const handleGoogleDriveDisconnect = useCallback(async () => {
+        await cloudAuthService.disconnect();
+        setGoogleDriveStatus({ connected: false, email: '' });
+        const newSettings = { ...siteSettings, syncMode: 'local' as const };
+        handleUpdateSettings(newSettings);
+        alert("Disconnected from Google Drive.");
+    }, [siteSettings, handleUpdateSettings]);
 
     const onRestore = useCallback(async (file: File) => {
         if (typeof JSZip === 'undefined') {
@@ -1054,7 +1061,7 @@ const App: React.FC = () => {
     }
     
     if (isPinResetting) {
-        return <PinSetupModal onSetPin={handleSetNewPinAfterReset} mode="reset" siteSettings={siteSettings}/>;
+        return <PinSetupModal onSetPin={(pin, _) => handleSetNewPinAfterReset(pin)} mode="reset" siteSettings={siteSettings}/>;
     }
 
     if (isPinSetupModalOpen) {
@@ -1089,37 +1096,37 @@ const App: React.FC = () => {
                         onLogout={handleLogout}
                         userRole={userRole}
                         onOpenOnboarding={handleOpenOnboarding}
+                        onOpenCalendar={() => setIsCalendarOpen(true)}
                     />
                 );
             case 'generator':
                 return (
-                    <>
-                        <Hero heroImageSrc={siteSettings.heroImageSrc} />
-                        <GeneratorView 
-                            userInput={userInput}
-                            onUserInputChange={setUserInput}
-                            generatedOutput={generatedOutput}
-                            isLoading={isLoading}
-                            error={error}
-                            templates={templates}
-                            onAddTemplate={handleAddTemplate}
-                            onEditTemplate={onEditTemplate}
-                            selectedTemplateId={selectedTemplateId}
-                            onTemplateChange={setSelectedTemplateId}
-                            tone={tone}
-                            onToneChange={setTone}
-                            onGenerate={handleGenerate}
-                            onSaveToFolder={handleSaveToFolder}
-                            siteSettings={siteSettings}
-                            photos={photos}
-                            onSavePhoto={handleSavePhoto}
-                            onDeletePhoto={handleDeletePhoto}
-                            recordings={recordings}
-                            notes={notes}
-                            onEditImage={handleEditImage}
-                            onUpdatePhoto={handleUpdatePhoto}
-                        />
-                    </>
+                    <GeneratorView 
+                        userInput={userInput}
+                        onUserInputChange={setUserInput}
+                        generatedOutput={generatedOutput}
+                        isLoading={isLoading}
+                        error={error}
+                        templates={templates}
+                        onAddTemplate={handleAddTemplate}
+                        onEditTemplate={onEditTemplate}
+                        selectedTemplateId={selectedTemplateId}
+                        onTemplateChange={setSelectedTemplateId}
+                        tone={tone}
+                        onToneChange={setTone}
+                        onGenerate={handleGenerate}
+                        onSaveToFolder={handleSaveToFolder}
+                        siteSettings={siteSettings}
+                        photos={photos}
+                        onSavePhoto={handleSavePhoto}
+                        onDeletePhoto={handleDeletePhoto}
+                        recordings={recordings}
+                        notes={notes}
+                        onEditImage={handleEditImage}
+                        onUpdatePhoto={handleUpdatePhoto}
+                        heroImageSrc={siteSettings.heroImageSrc}
+                        onNavigate={setCurrentView}
+                    />
                 );
              case 'recordings':
                 return <RecordingManager 
@@ -1152,7 +1159,11 @@ const App: React.FC = () => {
                     performAiAction={(prompt, context) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
                 />;
             case 'image-tool':
-                return <ImageTool initialImage={imageToEdit} onClearInitialImage={() => setImageToEdit(null)} />;
+                return <ImageTool 
+                    initialImage={imageToEdit} 
+                    onClearInitialImage={() => setImageToEdit(null)}
+                    onNavigate={setCurrentView}
+                />;
             case 'timesheet':
                 return <TimesheetManager 
                     logEntries={logEntries}
@@ -1161,17 +1172,7 @@ const App: React.FC = () => {
                     onStartTimer={handleStartTimer}
                     onStopTimer={handleStopTimer}
                     onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
-                />;
-            case 'calendar':
-                return <CalendarView
-                    onClose={() => setCurrentView('home')}
-                    events={calendarEvents}
-                    onSaveEvent={handleSaveCalendarEvent}
-                    onDeleteEvent={handleDeleteCalendarEvent}
-                    photos={photos}
-                    onSavePhoto={handleSavePhoto}
-                    recordings={recordings}
-                    onSaveRecording={handleSaveRecording}
+                    onNavigate={setCurrentView}
                 />;
             default:
                 return null;
@@ -1188,18 +1189,17 @@ const App: React.FC = () => {
                     onNavigate={setCurrentView}
                     onOpenDashboard={() => setIsDashboardOpen(true)}
                     onOpenInfo={() => setIsInfoModalOpen(true)}
-                    // FIX: Pass the required 'onOpenCreatorInfo' prop to satisfy the component's prop types.
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                     showInstallButton={!isAppInstalled}
                     onInstallClick={() => setIsInstallOptionsModalOpen(true)}
-                    onToggleOrientation={toggleOrientationLock}
-                    isLandscapeLocked={isLandscapeLocked}
-                    // FIX: Pass userRole to enable creator-specific functionality in the header.
+                    onToggleOrientation={() => {}}
+                    isLandscapeLocked={false}
                     userRole={userRole}
+                    isApiConnected={isApiConnected}
                 />
             </div>
             
-            <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-8">
+            <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
                  <div className="bg-slate-950/70 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
                     {/* --- Desktop Header (Now inside the main panel) --- */}
                     <Header 
@@ -1209,10 +1209,11 @@ const App: React.FC = () => {
                         onNavigate={setCurrentView}
                         onOpenDashboard={() => setIsDashboardOpen(true)}
                         onOpenInfo={() => setIsInfoModalOpen(true)}
+                        onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                         showInstallButton={!isAppInstalled}
                         onInstallClick={() => setIsInstallOptionsModalOpen(true)}
-                        onToggleOrientation={toggleOrientationLock}
-                        isLandscapeLocked={isLandscapeLocked}
+                        onToggleOrientation={() => {}}
+                        isLandscapeLocked={false}
                     />
                     {renderView()}
                 </div>
@@ -1250,7 +1251,26 @@ const App: React.FC = () => {
                     userRole={userRole}
                     onInitiatePinReset={handleInitiatePinReset}
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+                    googleDriveStatus={googleDriveStatus}
+                    onGoogleDriveConnect={handleGoogleDriveConnect}
+                    onGoogleDriveDisconnect={handleGoogleDriveDisconnect}
                 />
+            )}
+            {isCalendarOpen && (
+                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
+                    <div className="bg-[var(--theme-dark-bg)] w-full h-full md:max-w-6xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in relative">
+                        <CalendarView
+                            onClose={() => setIsCalendarOpen(false)}
+                            events={calendarEvents}
+                            onSaveEvent={handleSaveCalendarEvent}
+                            onDeleteEvent={handleDeleteCalendarEvent}
+                            photos={photos}
+                            onSavePhoto={handleSavePhoto}
+                            recordings={recordings}
+                            onSaveRecording={handleSaveRecording}
+                        />
+                    </div>
+                </div>
             )}
             {isPrintPreviewOpen && (
                 <PrintPreview 

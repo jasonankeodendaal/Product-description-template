@@ -3,18 +3,26 @@ import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, Ca
 import { XIcon } from './icons/XIcon';
 import { DataManagement } from './DataManagement';
 import { SiteSettingsEditor } from './SiteSettingsEditor';
-import { createBackup } from '../utils/dataUtils';
 import { SiteSettings } from '../constants';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { InfoIcon } from './icons/InfoIcon';
 import { CodeIcon } from './icons/CodeIcon';
-import { NavButton } from './NavButton';
 import { AboutThisApp } from './AboutThisApp';
 import { SetupGuide } from './SetupGuide';
 import { AndroidIcon } from './icons/AndroidIcon';
 import { AppPublishingGuide } from './AppPublishingGuide';
 import { UserIcon } from './icons/UserIcon';
+import { HomeTile } from './HomeTile';
+import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
+
+// Re-using home screen tile icons for consistency
+import { DataManagementToolIcon } from './icons/DataManagementToolIcon';
+import { SettingsToolIcon } from './icons/SettingsToolIcon';
+import { SetupToolIcon } from './icons/SetupToolIcon';
+import { PublishToolIcon } from './icons/PublishToolIcon';
+import { AboutToolIcon } from './icons/AboutToolIcon';
+import { CreatorToolIcon } from './icons/CreatorToolIcon';
 
 interface DashboardProps {
   onClose: () => void;
@@ -40,42 +48,70 @@ interface DashboardProps {
   userRole: UserRole;
   onInitiatePinReset: () => void;
   onOpenCreatorInfo: () => void;
+  googleDriveStatus: { connected: boolean, email?: string };
+  onGoogleDriveConnect: () => void;
+  onGoogleDriveDisconnect: () => void;
 }
 
-type Section = 'data' | 'settings' | 'setup' | 'about' | 'publishing';
+type DashboardView = 'main' | 'data' | 'settings' | 'setup' | 'about' | 'publishing';
 
-export const Dashboard: React.FC<DashboardProps> = ({ 
-  onClose, 
-  templates,
-  recordings,
-  photos,
-  notes,
-  noteRecordings,
-  logEntries,
-  calendarEvents,
-  siteSettings,
-  onUpdateSettings,
-  onRestore,
-  directoryHandle,
-  onSyncDirectory,
-  onDisconnectDirectory,
-  onClearLocalData,
-  onApiConnect,
-  onApiDisconnect,
-  isApiConnecting,
-  isApiConnected,
-  onDownloadSource,
-  userRole,
-  onInitiatePinReset,
-  onOpenCreatorInfo,
-}) => {
-  const [activeSection, setActiveSection] = useState<Section>('about');
+const viewTitles: Record<DashboardView, string> = {
+    main: 'Dashboard',
+    data: 'Data Management',
+    settings: 'Site & Creator Settings',
+    setup: 'Setup Guide',
+    about: 'About This App',
+    publishing: 'App Publishing (APK)',
+};
 
-  const handleBackup = async () => {
-    try {
-        await createBackup(siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents);
-    } catch (err) {
-        alert(`Error creating backup: ${err instanceof Error ? err.message : String(err)}`);
+const DashboardTile: React.FC<{ title: string; icon: React.ReactNode; onClick: () => void; colorClass: string, delay: number }> = 
+    ({ title, icon, onClick, colorClass, delay }) => (
+    <HomeTile className="aspect-square" style={{ animationDelay: `${delay}ms`}}>
+        <button onClick={onClick} className={`w-full h-full ${colorClass} text-white p-3 flex flex-col justify-between items-start gap-2 hover:opacity-90 transition-opacity`}>
+            <div className="w-10 h-10 holographic-icon">{icon}</div>
+            <span className="font-bold text-sm sm:text-base text-left holographic-text">{title}</span>
+        </button>
+    </HomeTile>
+);
+
+export const Dashboard: React.FC<DashboardProps> = (props) => {
+  const [dashboardView, setDashboardView] = useState<DashboardView>('main');
+  const { onClose, userRole, onOpenCreatorInfo } = props;
+
+  const handleBack = () => setDashboardView('main');
+
+  const renderContent = () => {
+    switch (dashboardView) {
+        case 'data':
+            return <DataManagement {...props} />;
+        case 'settings':
+            return <SiteSettingsEditor {...props} />;
+        case 'setup':
+            return <SetupGuide />;
+        case 'about':
+            return <AboutThisApp onNavigateToSetup={() => setDashboardView('setup')} />;
+        case 'publishing':
+            return <AppPublishingGuide onDownloadSource={props.onDownloadSource} />;
+        default:
+            return (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <DashboardTile title="Data Management" icon={<DataManagementToolIcon />} onClick={() => setDashboardView('data')} colorClass="bg-sky-500" delay={50} />
+                        <DashboardTile title="Site Settings" icon={<SettingsToolIcon />} onClick={() => setDashboardView('settings')} colorClass="bg-emerald-500" delay={100} />
+                        <DashboardTile title="About This App" icon={<AboutToolIcon />} onClick={() => setDashboardView('about')} colorClass="bg-amber-500" delay={150} />
+                    </div>
+                    {userRole === 'creator' && (
+                        <div>
+                            <h3 className="text-xl font-bold text-[var(--theme-orange)] mb-3 pl-2">Creator Zone</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <DashboardTile title="Creator Info" icon={<CreatorToolIcon />} onClick={onOpenCreatorInfo} colorClass="bg-pink-500" delay={200} />
+                                <DashboardTile title="Setup Guide" icon={<SetupToolIcon />} onClick={() => setDashboardView('setup')} colorClass="bg-purple-500" delay={250} />
+                                <DashboardTile title="App Publishing" icon={<PublishToolIcon />} onClick={() => setDashboardView('publishing')} colorClass="bg-cyan-500" delay={300} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
     }
   };
   
@@ -85,73 +121,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="absolute inset-0 -z-10 bg-grid-orange-500/10 [mask-image:radial-gradient(ellipse_at_center,white_10%,transparent_70%)]"></div>
 
         <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <DatabaseIcon className="w-8 h-8 text-[var(--theme-orange)]" />
-            <div>
-                <h2 className="text-xl font-bold text-[var(--theme-text-primary)]">Dashboard</h2>
-                <p className="text-[var(--theme-text-secondary)] mt-1 text-sm">Manage your application's data, settings, and local folder connection.</p>
+          <div className="flex items-center gap-3 min-w-0">
+            {dashboardView !== 'main' && (
+                <button onClick={handleBack} className="p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white flex-shrink-0 mr-2">
+                    <ChevronLeftIcon />
+                </button>
+            )}
+            <DatabaseIcon className="w-8 h-8 text-[var(--theme-orange)] hidden sm:block" />
+            <div className="truncate">
+                <h2 className="text-xl font-bold text-[var(--theme-text-primary)] truncate">{viewTitles[dashboardView]}</h2>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={onClose} className="p-2 -mr-2 text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
+            <button onClick={onClose} className="p-2 text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
           </div>
         </header>
         
-        <div className="flex-grow flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
-            <aside className="w-full md:w-64 p-4 border-b md:border-b-0 md:border-r border-[var(--theme-border)] flex-shrink-0 bg-black/20">
-                <nav className="space-y-2">
-                    <NavButton active={activeSection === 'about'} onClick={() => setActiveSection('about')} icon={<InfoIcon />}>About This App</NavButton>
-                    <NavButton active={activeSection === 'data'} onClick={() => setActiveSection('data')} icon={<DatabaseIcon />}>Data Management</NavButton>
-                    <NavButton active={activeSection === 'settings'} onClick={() => setActiveSection('settings')} icon={<SettingsIcon />}>Site & Creator Settings</NavButton>
-                    {userRole === 'creator' && (
-                      <>
-                        <NavButton active={activeSection === 'setup'} onClick={() => setActiveSection('setup')} icon={<CodeIcon />}>Setup Guide</NavButton>
-                        <NavButton active={activeSection === 'publishing'} onClick={() => setActiveSection('publishing')} icon={<AndroidIcon />}>App Publishing (APK)</NavButton>
-                        <div className="pt-2 mt-2 border-t border-white/10">
-                          <NavButton active={false} onClick={onOpenCreatorInfo} icon={<UserIcon />}>Creator Info</NavButton>
-                        </div>
-                      </>
-                    )}
-                </nav>
-            </aside>
-
-            <main className="flex-grow md:overflow-y-auto p-6 bg-black/20">
-                {activeSection === 'data' && (
-                    <DataManagement 
-                        templates={templates}
-                        recordings={recordings}
-                        photos={photos}
-                        notes={notes}
-                        noteRecordings={noteRecordings}
-                        logEntries={logEntries}
-                        calendarEvents={calendarEvents}
-                        onBackup={handleBackup}
-                        onRestore={onRestore}
-                        directoryHandle={directoryHandle}
-                        onSyncDirectory={onSyncDirectory}
-                        onDisconnectDirectory={onDisconnectDirectory}
-                        onClearLocalData={onClearLocalData}
-                        siteSettings={siteSettings}
-                        onUpdateSettings={onUpdateSettings}
-                        onApiConnect={onApiConnect}
-                        onApiDisconnect={onApiDisconnect}
-                        isApiConnecting={isApiConnecting}
-                        isApiConnected={isApiConnected}
-                    />
-                )}
-                {activeSection === 'settings' && (
-                    <SiteSettingsEditor 
-                        settings={siteSettings}
-                        onSave={onUpdateSettings}
-                        userRole={userRole}
-                        onInitiatePinReset={onInitiatePinReset}
-                    />
-                )}
-                {activeSection === 'setup' && userRole === 'creator' && <SetupGuide />}
-                {activeSection === 'about' && <AboutThisApp onNavigateToSetup={() => setActiveSection('setup')} />}
-                {activeSection === 'publishing' && userRole === 'creator' && <AppPublishingGuide onDownloadSource={onDownloadSource} />}
-            </main>
-        </div>
+        <main className="flex-grow overflow-y-auto">
+            <div className={dashboardView !== 'main' ? 'p-6' : 'p-4'}>
+                {renderContent()}
+            </div>
+        </main>
       </div>
     </div>
   );

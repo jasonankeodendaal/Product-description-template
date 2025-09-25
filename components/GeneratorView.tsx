@@ -1,9 +1,11 @@
 import React from 'react';
 import { GenerationResult, OutputPanel } from './OutputPanel';
 import { TemplateManager } from './TemplateManager';
-import { Template, ParsedProductData, Photo, Recording, Note } from '../App';
+import { Template, ParsedProductData, Photo, Recording, Note, View } from '../App';
 import { SiteSettings } from '../constants';
 import { ComposerPanel } from './ComposerPanel';
+import { Hero } from '../Hero';
+import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 
 interface GeneratorViewProps {
     userInput: string;
@@ -28,6 +30,8 @@ interface GeneratorViewProps {
     notes: Note[];
     onEditImage: (photo: Photo) => void;
     onUpdatePhoto: (photo: Photo) => Promise<void>;
+    heroImageSrc: string | null;
+    onNavigate: (view: View) => void;
 }
 
 export const GeneratorView: React.FC<GeneratorViewProps> = ({
@@ -53,10 +57,23 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
     notes,
     onEditImage,
     onUpdatePhoto,
+    heroImageSrc,
+    onNavigate,
 }) => {
     return (
         <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
             <div className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex flex-col flex-1">
+                 <div className="flex-shrink-0 mb-4">
+                    <button 
+                        onClick={() => onNavigate('home')}
+                        className="flex items-center gap-2 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] font-semibold transition-colors"
+                    >
+                        <ChevronLeftIcon />
+                        Back to Home
+                    </button>
+                </div>
+                
+                <Hero heroImageSrc={heroImageSrc} />
                 <div className="flex-shrink-0 mb-8">
                      <TemplateManager 
                         templates={templates} 

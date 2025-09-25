@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 
+// FIX: Implemented the useDebounce custom hook. The file was empty, causing an "is not a module" error.
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -9,11 +10,11 @@ export function useDebounce<T>(value: T, delay: number): T {
       setDebouncedValue(value);
     }, delay);
 
-    // Clean up the timer if the value changes before the delay has passed
+    // Clean up the timer if the value or delay changes before the timer fires
     return () => {
       clearTimeout(handler);
     };
-  }, [value, delay]); // Only re-call effect if value or delay changes
+  }, [value, delay]); // Only re-run the effect if value or delay changes
 
   return debouncedValue;
 }

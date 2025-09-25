@@ -1,16 +1,12 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { SiteSettings } from '../constants';
 import { MoreVerticalIcon } from './icons/MoreVerticalIcon';
 import { ImageIcon } from './icons/ImageIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
-// FIX: Import UserRole to use it as a prop type for conditional rendering.
 import { View, UserRole } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RotateIcon } from './icons/RotateIcon';
-// FIX: Import UserIcon for the Creator Info menu item.
 import { UserIcon } from './icons/UserIcon';
 
 interface MobileHeaderProps {
@@ -23,22 +19,47 @@ interface MobileHeaderProps {
   onInstallClick: () => void;
   onToggleOrientation: () => void;
   isLandscapeLocked: boolean;
-  // FIX: Add userRole to determine if creator-specific options should be shown.
   userRole: UserRole;
+  isApiConnected: boolean;
 }
 
 const MoreMenuItem: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void; isActive?: boolean }> = ({ label, icon, onClick, isActive }) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--theme-card-bg)]/50 ${isActive ? 'text-[var(--theme-orange)]' : 'text-[var(--theme-text-primary)]'}`}
+        className={`w-full aspect-square flex flex-col items-center justify-center p-2 rounded-lg text-center transition-colors duration-200 group
+            ${isActive 
+                ? 'bg-orange-500/20 text-orange-400' 
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white'
+            }`}
     >
-        <div className={`w-6 h-6 ${isActive ? 'text-[var(--theme-orange)]' : 'text-[var(--theme-text-secondary)]'}`}>{icon}</div>
-        <span>{label}</span>
+        <div className={`w-7 h-7 mb-1.5 transition-transform group-hover:scale-110 ${isActive ? 'text-orange-400' : 'text-slate-400 group-hover:text-slate-200'}`}>{icon}</div>
+        <span className="text-xs font-semibold leading-tight">{label}</span>
     </button>
 );
 
-// FIX: Destructure onOpenCreatorInfo and userRole to use them in the component.
-export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, onOpenCreatorInfo, userRole, showInstallButton, onInstallClick, onToggleOrientation, isLandscapeLocked }) => {
+const StorageIndicator: React.FC<{ siteSettings: SiteSettings, isApiConnected: boolean }> = ({ siteSettings, isApiConnected }) => {
+    const getStatus = () => {
+        switch (siteSettings.syncMode) {
+            case 'folder':
+                return { color: 'bg-green-500 animate-storage-pulse', title: 'Data is syncing to a local folder.' };
+            case 'api':
+                return isApiConnected 
+                    ? { color: 'bg-green-500 animate-storage-pulse', title: `Connected to API: ${siteSettings.customApiEndpoint}` }
+                    : { color: 'bg-yellow-500', title: `API connection failed: ${siteSettings.customApiEndpoint}` };
+            default:
+                return { color: 'bg-gray-500', title: 'Data is saved in this browser only.' };
+        }
+    };
+    const { color, title } = getStatus();
+
+    return (
+        <div className="relative group" title={title}>
+            <div className={`w-2.5 h-2.5 rounded-full ${color}`}></div>
+        </div>
+    );
+};
+
+export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, onOpenCreatorInfo, userRole, showInstallButton, onInstallClick, onToggleOrientation, isLandscapeLocked, isApiConnected }) => {
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const moreMenuRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +88,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
             </div>
             
             <div className="flex items-center gap-2">
+                 <StorageIndicator siteSettings={siteSettings} isApiConnected={isApiConnected} />
                  {showInstallButton && (
                     <button
                         onClick={onInstallClick}
@@ -86,18 +108,17 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
                     </button>
                     {isMoreMenuOpen && (
                         <div 
-                            className="absolute top-full right-0 mt-2 w-60 bg-[var(--theme-dark-bg)] rounded-xl shadow-2xl border border-[var(--theme-border)]/50 overflow-hidden z-30 animate-fade-in-down"
+                            className="absolute top-full right-0 mt-2 w-64 bg-slate-900/80 backdrop-blur-md rounded-xl shadow-2xl border border-white/10 p-2 z-30 animate-fade-in-down"
                         >
-                            <ul>
-                                {/* FIX: Add Creator Info menu item, visible only to creators. */}
+                            <div className="grid grid-cols-3 gap-2">
                                 {userRole === 'creator' && (
-                                    <li><MoreMenuItem label="Creator Info" icon={<UserIcon />} onClick={() => { onOpenCreatorInfo(); setIsMoreMenuOpen(false); }} /></li>
+                                    <MoreMenuItem label="Creator" icon={<UserIcon />} onClick={() => { onOpenCreatorInfo(); setIsMoreMenuOpen(false); }} />
                                 )}
-                                <li><MoreMenuItem label="Image Squarer" icon={<ImageIcon />} onClick={() => { onNavigate('image-tool'); setIsMoreMenuOpen(false); }} /></li>
-                                <li><MoreMenuItem label="Lock Landscape" icon={<RotateIcon />} onClick={() => { onToggleOrientation(); setIsMoreMenuOpen(false); }} isActive={isLandscapeLocked} /></li>
-                                <li><MoreMenuItem label="Dashboard" icon={<DatabaseIcon />} onClick={() => { onOpenDashboard(); setIsMoreMenuOpen(false); }} /></li>
-                                <li><MoreMenuItem label="About & Setup" icon={<QuestionCircleIcon />} onClick={() => { onOpenInfo(); setIsMoreMenuOpen(false); }} /></li>
-                            </ul>
+                                <MoreMenuItem label="Image Tool" icon={<ImageIcon />} onClick={() => { onNavigate('image-tool'); setIsMoreMenuOpen(false); }} />
+                                <MoreMenuItem label="Dashboard" icon={<DatabaseIcon />} onClick={() => { onOpenDashboard(); setIsMoreMenuOpen(false); }} />
+                                <MoreMenuItem label="Lock" icon={<RotateIcon />} onClick={() => { onToggleOrientation(); setIsMoreMenuOpen(false); }} isActive={isLandscapeLocked} />
+                                <MoreMenuItem label="About" icon={<QuestionCircleIcon />} onClick={() => { onOpenInfo(); setIsMoreMenuOpen(false); }} />
+                            </div>
                         </div>
                     )}
                 </div>

@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useCamera } from '../hooks/useCamera';
 import { XIcon } from './icons/XIcon';
@@ -9,14 +10,19 @@ import { FlashOffIcon } from './icons/FlashOffIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { TimerIcon } from './icons/TimerIcon';
 import { GridIcon } from './icons/GridIcon';
+import { PlusIcon } from './icons/PlusIcon';
+import { MinusIcon } from './icons/MinusIcon';
 
 const FILTERS = [
     { name: 'None', css: 'camera-filter-none' },
+    { name: 'Vivid', css: 'camera-filter-vivid' },
+    { name: 'Vintage', css: 'camera-filter-vintage' },
+    { name: 'Noir', css: 'camera-filter-noir' },
+    { name: 'Dreamy', css: 'camera-filter-dreamy' },
+    { name: 'Cool', css: 'camera-filter-cool' },
+    { name: 'Warm', css: 'camera-filter-warm' },
     { name: 'Mono', css: 'camera-filter-grayscale' },
     { name: 'Sepia', css: 'camera-filter-sepia' },
-    { name: 'Contrast', css: 'camera-filter-contrast' },
-    { name: 'Saturate', css: 'camera-filter-saturate' },
-    { name: 'Invert', css: 'camera-filter-invert' },
 ];
 
 interface CameraCaptureProps {
@@ -44,7 +50,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   useEffect(() => {
     if (stream && videoRef.current) {
         videoRef.current.srcObject = stream;
-        // Reset zoom when stream changes
         setZoom(capabilities.zoom?.min || 1);
     }
   }, [stream, capabilities.zoom]);
@@ -72,19 +77,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     const context = canvas.getContext('2d');
     if (!context) return;
     
-    // Flip image if it's a front-facing camera
     if (activeDevice?.label.toLowerCase().includes('front')) {
         context.translate(canvas.width, 0);
         context.scale(-1, 1);
     }
     
-    const filterToApply = mode === 'document' ? 'grayscale(1) contrast(1.8)' : (activeFilter === 'camera-filter-none' ? 'none' : FILTERS.find(f => f.css === activeFilter)?.css.replace('camera-filter-', ''));
-    context.filter = filterToApply || 'none';
+    context.filter = window.getComputedStyle(video).filter;
+    if(mode === 'document') context.filter = 'grayscale(1) contrast(1.8)';
+    
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
 
     setPreviewDataUrl(dataUrl);
-  }, [activeDevice, mode, activeFilter]);
+  }, [activeDevice, mode]);
 
   const handleCapture = useCallback(() => {
     if (timer > 0) {
@@ -108,7 +113,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const handleSave = () => {
       if(previewDataUrl) {
           onCapture(previewDataUrl);
-          onClose();
       }
   }
 
@@ -136,17 +140,15 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                 </>
             )}
 
-            {countdown !== null && (
+            {countdown !== null && countdown > 0 && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                     <span className="text-9xl font-bold text-white drop-shadow-lg animate-ping">{countdown}</span>
                 </div>
             )}
         </div>
         
-        {/* Top UI */}
         <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/50 to-transparent z-10 flex justify-between items-center">
             <UIIconButton onClick={onClose} label="Close camera"><XIcon /></UIIconButton>
-            
             {!previewDataUrl && (
                 <div className="flex items-center gap-4">
                     {capabilities.torch && <UIIconButton onClick={toggleFlash} active={flashMode === 'on'} label="Toggle flash">{flashMode === 'on' ? <FlashOnIcon /> : <FlashOffIcon />}</UIIconButton>}
@@ -155,13 +157,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
         </div>
 
-        {/* Settings Panel */}
         {isSettingsOpen && !previewDataUrl && (
             <div className="absolute top-16 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-4 border border-white/10 z-20 animate-fade-in-down space-y-4">
                 <div>
                     <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2"><TimerIcon /> Timer</h4>
                     <div className="flex gap-2">
-                        {[0, 3, 5].map(t => <button key={t} onClick={() => setTimer(t as 0|3|5)} className={`px-4 py-1 rounded-full text-sm font-bold ${timer === t ? 'bg-orange-500 text-white' : 'bg-white/20 text-white'}`}>{t}s</button>)}
+                        {[0, 3, 5].map(t => <button key={t} onClick={() => { setTimer(t as 0|3|5); setIsSettingsOpen(false); }} className={`px-4 py-1 rounded-full text-sm font-bold ${timer === t ? 'bg-orange-500 text-white' : 'bg-white/20 text-white'}`}>{t}s</button>)}
                     </div>
                 </div>
                  <div>
@@ -171,22 +172,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             </div>
         )}
 
-        {/* Zoom Slider */}
         {capabilities.zoom && !previewDataUrl && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2/5 flex flex-col items-center z-10">
-                <input
-                    type="range"
-                    min={capabilities.zoom.min}
-                    max={Math.min(capabilities.zoom.max, 10)}
-                    step={capabilities.zoom.step}
-                    value={zoom}
-                    onChange={(e) => handleZoomChange(Number(e.target.value))}
-                    className="zoom-slider h-full"
-                />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 h-2/5 flex flex-col items-center z-10 gap-2">
+                <UIIconButton onClick={() => handleZoomChange(zoom + capabilities.zoom!.step * 5)} label="Zoom in"><PlusIcon /></UIIconButton>
+                <input type="range" min={capabilities.zoom.min} max={Math.min(capabilities.zoom.max, 10)} step={capabilities.zoom.step} value={zoom} onChange={(e) => handleZoomChange(Number(e.target.value))} className="zoom-slider h-full" />
+                <UIIconButton onClick={() => handleZoomChange(zoom - capabilities.zoom!.step * 5)} label="Zoom out"><MinusIcon /></UIIconButton>
             </div>
         )}
 
-        {/* Bottom UI */}
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent z-10">
             {!previewDataUrl ? (
                 <>
@@ -194,7 +187,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                          <div className="flex justify-center items-center gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
                             {FILTERS.map(filter => (
                                 <button key={filter.name} onClick={() => setActiveFilter(filter.css)} className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                                    <div className={`w-12 h-12 rounded-lg border-2 bg-cover bg-center transition-all ${activeFilter === filter.css ? 'border-orange-500' : 'border-transparent'}`} style={{backgroundImage: `url(https://picsum.photos/id/1018/100/100)`}}>
+                                    <div className={`w-12 h-12 rounded-lg border-2 bg-cover bg-center transition-all ${activeFilter === filter.css ? 'border-orange-500' : 'border-transparent'}`} style={{backgroundImage: `url(https://i.postimg.cc/pXG25b2d/filter-preview.jpg)`}}>
                                         <div className={`w-full h-full ${filter.css}`}></div>
                                     </div>
                                     <span className={`text-xs font-semibold transition-colors ${activeFilter === filter.css ? 'text-orange-500' : 'text-white'}`}>{filter.name}</span>
@@ -204,12 +197,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                     )}
                     <div className="flex w-full items-center justify-between">
                         <div className="w-28 flex justify-start"></div>
-                        <button
-                            onClick={handleCapture}
-                            disabled={!stream || !!error}
-                            className="bg-white hover:bg-gray-200 rounded-full w-20 h-20 shadow-lg ring-4 ring-white/30 disabled:bg-gray-400 transform transition-transform active:scale-90"
-                            aria-label="Take Picture"
-                        />
+                        <button onClick={handleCapture} disabled={!stream || !!error} className="bg-white hover:bg-gray-200 rounded-full w-20 h-20 shadow-lg ring-4 ring-white/30 disabled:bg-gray-400 transform transition-transform active:scale-90" aria-label="Take Picture" />
                         <div className="w-28 flex justify-end">
                             {devices.length > 1 && <UIIconButton onClick={switchCamera} label="Switch camera"><SwitchCameraIcon /></UIIconButton>}
                         </div>

@@ -1,20 +1,19 @@
-
 import React from 'react';
 
 export const RecordingsToolIcon: React.FC = () => (
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
         <defs>
-            <linearGradient id="grad-rec-1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFF" />
-                <stop offset="100%" stopColor="#E0E0E0" />
+            <linearGradient id="rec-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#EC4899" />
+                <stop offset="100%" stopColor="#D946EF" />
             </linearGradient>
-            <linearGradient id="grad-rec-2" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFF" stopOpacity="0.5"/>
-                <stop offset="100%" stopColor="#FFF" stopOpacity="0" />
-            </linearGradient>
+            <filter id="rec-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.2"/>
+            </filter>
         </defs>
-        <circle cx="32" cy="32" r="26" fill="#FFF" opacity="0.1" />
-        <path d="M12,32 L20,24 L24,36 L32,20 L40,44 L44,28 L52,32" stroke="url(#grad-rec-1)" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12,32 L20,24 L24,36 L32,20 L40,44 L44,28 L52,32" stroke="url(#grad-rec-2)" strokeWidth="8" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'blur(2px)' }} />
+        <g filter="url(#rec-shadow)" className="holographic-effect">
+            <path d="M12,15a4,4,0,0,0,4-4V5A4,4,0,0,0,8,5v6A4,4,0,0,0,12,15Z" fill="url(#rec-grad-1)"/>
+            <path d="M19,11a1,1,0,0,0-1,1,6,6,0,0,1-12,0,1,1,0,0,0-2,0,8,8,0,0,0,7,7.93V22H11a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H15V19.93A8,8,0,0,0,19,11Z" fill="url(#rec-grad-1)"/>
+        </g>
     </svg>
 );

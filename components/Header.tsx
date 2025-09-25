@@ -27,6 +27,7 @@ interface HeaderProps {
   onInstallClick: () => void;
   onToggleOrientation: () => void;
   isLandscapeLocked: boolean;
+  onOpenCreatorInfo: () => void;
 }
 
 const HeaderNavItem: React.FC<{
@@ -54,6 +55,29 @@ const UtilityButton: React.FC<{ label: string; icon: React.ReactNode; onClick: (
     </button>
 );
 
+const StorageIndicator: React.FC<{ siteSettings: SiteSettings, isApiConnected: boolean }> = ({ siteSettings, isApiConnected }) => {
+    const getStatus = () => {
+        switch (siteSettings.syncMode) {
+            case 'folder':
+                return { color: 'bg-green-500 animate-storage-pulse', title: 'Data is syncing to a local folder.' };
+            case 'api':
+                return isApiConnected 
+                    ? { color: 'bg-green-500 animate-storage-pulse', title: `Connected to API: ${siteSettings.customApiEndpoint}` }
+                    : { color: 'bg-yellow-500', title: `API connection failed: ${siteSettings.customApiEndpoint}` };
+            default:
+                return { color: 'bg-gray-500', title: 'Data is saved in this browser only.' };
+        }
+    };
+    const { color, title } = getStatus();
+
+    return (
+        <div className="relative group" title={title}>
+            <div className={`w-2.5 h-2.5 rounded-full ${color}`}></div>
+        </div>
+    );
+};
+
+
 export const Header: React.FC<HeaderProps> = React.memo(({ 
     siteSettings,
     isApiConnected,
@@ -65,6 +89,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     onInstallClick,
     onToggleOrientation,
     isLandscapeLocked,
+    onOpenCreatorInfo,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -107,7 +132,6 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             <HeaderNavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} />
             <HeaderNavItem label="Photos" icon={<PhotoIcon />} isActive={currentView === 'photos'} onClick={() => onNavigate('photos')} />
             <HeaderNavItem label="Notepad" icon={<NotepadIcon />} isActive={currentView === 'notepad'} onClick={() => onNavigate('notepad')} />
-            <HeaderNavItem label="Calendar" icon={<CalendarIcon />} isActive={currentView === 'calendar'} onClick={() => onNavigate('calendar')} />
             <HeaderNavItem label="Timesheet" icon={<ClockIcon />} isActive={currentView === 'timesheet'} onClick={() => onNavigate('timesheet')} />
             <HeaderNavItem label="Image Tool" icon={<ImageIcon />} isActive={currentView === 'image-tool'} onClick={() => onNavigate('image-tool')} />
         </nav>
@@ -123,18 +147,10 @@ export const Header: React.FC<HeaderProps> = React.memo(({
                     <span>Install App</span>
                 </button>
             )}
+            <StorageIndicator siteSettings={siteSettings} isApiConnected={isApiConnected} />
             <UtilityButton label="Lock Landscape" icon={<RotateIcon />} onClick={onToggleOrientation} isActive={isLandscapeLocked} />
             <UtilityButton label="Dashboard" icon={<DatabaseIcon />} onClick={onOpenDashboard} />
             <UtilityButton label="About & Setup" icon={<QuestionCircleIcon />} onClick={onOpenInfo} />
-            
-            {siteSettings.syncMode === 'api' && (
-              <div className="relative group ml-2">
-                <CloudIcon isConnected={isApiConnected} />
-                <div className="absolute top-full right-0 mt-2 w-max bg-black/80 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    {isApiConnected ? 'Connected to API' : 'API Connection Failed'}
-                </div>
-              </div>
-            )}
         </div>
       </div>
     </header>

@@ -156,3 +156,28 @@ export const apiSyncService = {
         return handleApiResponse(response);
     }
 };
+
+// --- Google Drive Auth Service ---
+export const cloudAuthService = {
+  async checkStatus(): Promise<{ connected: boolean; email?: string }> {
+    try {
+      const res = await fetch('/api/auth/status');
+      if (!res.ok) return { connected: false };
+      return await res.json();
+    } catch (e) {
+      console.error("Failed to check auth status", e);
+      return { connected: false };
+    }
+  },
+  connect(): void {
+    // This is a full-page redirect to the Google OAuth consent screen.
+    window.location.href = '/api/auth/google';
+  },
+  async disconnect(): Promise<void> {
+    try {
+      await fetch('/api/auth/disconnect', { method: 'POST' });
+    } catch (e) {
+      console.error("Failed to disconnect", e);
+    }
+  }
+};

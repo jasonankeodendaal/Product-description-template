@@ -1,16 +1,18 @@
-
 import React from 'react';
 
 export const DashboardToolIcon: React.FC = () => (
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
         <defs>
-            <linearGradient id="grad-dash-1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.1" />
+            <linearGradient id="dash-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#64748B" />
+                <stop offset="100%" stopColor="#475569" />
             </linearGradient>
+            <filter id="dash-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.2"/>
+            </filter>
         </defs>
-        <rect x="6" y="10" width="24" height="44" rx="4" fill="url(#grad-dash-1)" />
-        <rect x="34" y="10" width="24" height="20" rx="4" fill="url(#grad-dash-1)" />
-        <rect x="34" y="34" width="24" height="20" rx="4" fill="url(#grad-dash-1)" />
+        <g filter="url(#dash-shadow)" className="holographic-effect">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="url(#dash-grad-1)" />
+        </g>
     </svg>
 );

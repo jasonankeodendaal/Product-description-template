@@ -34,6 +34,7 @@ export interface SiteSettings {
   userPin?: string;
   pinIsSet?: boolean;
   onboardingCompleted?: boolean;
+  userName?: string;
 }
 
 export const CREATOR_PIN = '1723j';
@@ -41,7 +42,7 @@ export const CREATOR_PIN = '1723j';
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',
   slogan: 'Ai your friend!',
-  logoSrc: 'https://i.postimg.cc/R63MDjKr/squared-artificial-intelligence-logo-icon-symbol-ai-deep-learning-blockchain-neural-network-concept.jpg',
+  logoSrc: 'https://i.postimg.cc/689dWfF4/image-removebg-preview-1.png',
   heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
@@ -61,6 +62,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   userPin: '',
   pinIsSet: false,
   onboardingCompleted: false,
+  userName: 'User',
 };
 
 export const DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE = `

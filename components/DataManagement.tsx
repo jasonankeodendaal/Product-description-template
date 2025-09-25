@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { createBackup } from '../utils/dataUtils';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RestoreIcon } from './icons/RestoreIcon';
@@ -6,7 +7,6 @@ import { FolderSyncIcon } from './icons/FolderSyncIcon';
 import { HardDriveIcon } from './icons/HardDriveIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { FolderIcon } from './icons/FolderIcon';
-import { XIcon } from './icons/XIcon';
 import { TemplateIcon } from './icons/TemplateIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
@@ -16,7 +16,9 @@ import { CloudIcon } from './icons/CloudIcon';
 import { Spinner } from './icons/Spinner';
 import { ClockIcon } from './icons/ClockIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
+import { CodeIcon } from './icons/CodeIcon';
 import { GoogleDriveIcon } from './icons/GoogleDriveIcon';
+import { DropboxIcon } from './icons/DropboxIcon';
 
 interface DataManagementProps {
     templates: Template[];
@@ -26,7 +28,6 @@ interface DataManagementProps {
     noteRecordings: NoteRecording[];
     logEntries: LogEntry[];
     calendarEvents: CalendarEvent[];
-    onBackup: () => void;
     onRestore: (data: File) => void;
     directoryHandle: FileSystemDirectoryHandle | null;
     onClearLocalData: () => void;
@@ -38,88 +39,77 @@ interface DataManagementProps {
     onApiDisconnect: () => void;
     isApiConnecting: boolean;
     isApiConnected: boolean;
+    googleDriveStatus: { connected: boolean, email?: string };
+    onGoogleDriveConnect: () => void;
+    onGoogleDriveDisconnect: () => void;
 }
 
-const InfoCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`bg-white/5 backdrop-blur-sm p-6 rounded-lg border border-[var(--theme-border)]/50 dashboard-card-glow-anim ${className}`}>
-        {children}
-    </div>
+type DataManagementTab = 'sync' | 'backup' | 'api' | 'danger';
+
+const TabButton: React.FC<{
+    title: string;
+    isActive: boolean;
+    onClick: () => void;
+}> = ({ title, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`px-4 py-2 text-sm font-semibold rounded-full whitespace-nowrap transition-all duration-200 ${
+            isActive
+                ? 'bg-orange-500 text-black shadow-lg'
+                : 'text-gray-400 hover:bg-white/10 hover:text-white'
+        }`}
+    >
+        {title}
+    </button>
 );
 
-const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-4">{children}</h3>
+const SectionCard: React.FC<{ title: string; description: string; icon: React.ReactNode; children: React.ReactNode; }> = ({ title, description, icon, children }) => (
+    <div className="bg-white/5 p-6 rounded-lg border border-[var(--theme-border)]/50">
+        <div className="flex items-start gap-4">
+            <div className="w-8 h-8 flex-shrink-0 text-orange-400">{icon}</div>
+            <div>
+                <h4 className="text-lg font-bold text-white">{title}</h4>
+                <p className="text-sm text-gray-400">{description}</p>
+            </div>
+        </div>
+        <div className="mt-4 pl-12">
+            {children}
+        </div>
+    </div>
 );
 
 const InputField: React.FC<{ label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; type?: string }> = 
     ({ label, id, value, onChange, placeholder, type="text" }) => (
     <div>
-        <label htmlFor={id} className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">{label}</label>
+        <label htmlFor={id} className="block text-sm font-medium text-gray-400 mb-2">{label}</label>
         <input
             type={type}
             id={id}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
-            className="w-full bg-[var(--theme-text-primary)] border border-[var(--theme-border)] rounded-md p-2 text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-orange)] transition-shadow duration-200 h-[42px]"
+            className="w-full bg-gray-900 border border-gray-600 rounded-md p-2 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-orange-500 transition-shadow duration-200 h-11"
         />
     </div>
 );
 
-
-export const DataManagement: React.FC<DataManagementProps> = ({
-    templates,
-    recordings,
-    photos,
-    notes,
-    noteRecordings,
-    logEntries,
-    calendarEvents,
-    onBackup,
-    onRestore,
-    directoryHandle,
-    onClearLocalData,
-    onSyncDirectory,
-    onDisconnectDirectory,
-    siteSettings,
-    onUpdateSettings,
-    onApiConnect,
-    onApiDisconnect,
-    isApiConnecting,
-    isApiConnected,
-}) => {
+export const DataManagement: React.FC<DataManagementProps> = (props) => {
+    const {
+        templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents,
+        onRestore, directoryHandle, onClearLocalData, onSyncDirectory, onDisconnectDirectory,
+        siteSettings, onUpdateSettings, onApiConnect, onApiDisconnect, isApiConnecting, isApiConnected,
+        googleDriveStatus, onGoogleDriveConnect, onGoogleDriveDisconnect
+    } = props;
+    
+    const [activeTab, setActiveTab] = useState<DataManagementTab>('sync');
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
     const [restoreError, setRestoreError] = useState('');
-    const [isDriveConnected, setIsDriveConnected] = useState(false);
-    const [driveUser, setDriveUser] = useState<string | null>(null);
-    const [isDriveLoading, setIsDriveLoading] = useState(true);
-
-
-    useEffect(() => {
-        // Check drive connection status on component mount
-        const checkStatus = async () => {
-            try {
-                const res = await fetch('/api/auth/status');
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.email) {
-                        setIsDriveConnected(true);
-                        setDriveUser(data.email);
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to check Google Drive status:", error);
-            } finally {
-                setIsDriveLoading(false);
-            }
-        };
-        checkStatus();
-    }, []);
-
+    
     const [apiSettings, setApiSettings] = useState({
         customApiEndpoint: siteSettings.customApiEndpoint || '',
         customApiAuthKey: siteSettings.customApiAuthKey || '',
     });
-    
+
     const handleApiSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setApiSettings(prev => ({ ...prev, [id]: value }));
@@ -131,9 +121,9 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             customApiEndpoint: apiSettings.customApiEndpoint,
             customApiAuthKey: apiSettings.customApiAuthKey
         });
-        alert("Settings saved. You can now try using the AI features again.");
+        alert("Settings saved. You can now try connecting to the API server.");
     };
-    
+
     const handleConnectClick = () => {
         if (apiSettings.customApiEndpoint && apiSettings.customApiAuthKey) {
             onApiConnect(apiSettings.customApiEndpoint, apiSettings.customApiAuthKey);
@@ -141,7 +131,6 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             alert("Please enter both an API URL and an Auth Key to connect.");
         }
     };
-
 
     const handleRestoreFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -160,196 +149,167 @@ export const DataManagement: React.FC<DataManagementProps> = ({
         if (e.target) e.target.value = '';
     };
 
-    const handleDriveDisconnect = async () => {
-        await fetch('/api/auth/disconnect');
-        setIsDriveConnected(false);
-        setDriveUser(null);
-    };
+    const handleCreateBackup = async () => {
+        try {
+            await createBackup(siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents);
+        } catch (error) {
+            alert(`Failed to create backup: ${error instanceof Error ? error.message : "An unknown error occurred"}`);
+        }
+    }
 
-    return (
-        <div className="space-y-6 animate-fade-in-down">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <InfoCard className="md:col-span-2">
-                    <SectionTitle>Connection Status</SectionTitle>
-                    {siteSettings.syncMode === 'api' ? (
-                         <div className="flex items-start gap-4">
-                           <CloudIcon isConnected={isApiConnected} />
-                           <div>
-                               <p className={`font-semibold flex items-center gap-2 ${isApiConnected ? 'text-[var(--theme-green)]' : 'text-[var(--theme-red)]'}`}>
-                                   <span className="w-2.5 h-2.5 bg-current rounded-full"></span>
-                                   {isApiConnected ? "Live Sync Active" : "API Connection Failed"}
-                               </p>
-                               <p className="text-sm text-[var(--theme-text-secondary)] mt-1">Data is synced with: <span className="font-mono bg-[var(--theme-bg)] px-1.5 py-0.5 rounded-md text-[var(--theme-text-primary)] break-all">{siteSettings.customApiEndpoint}</span>.</p>
-                               <button onClick={onApiDisconnect} className="mt-3 text-sm font-semibold text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors flex items-center gap-1">
-                                   <XIcon /> Disconnect
-                               </button>
-                           </div>
-                       </div>
-                    ) : directoryHandle ? (
-                        <div className="flex items-start gap-4">
-                            <FolderSyncIcon />
-                            <div>
-                                <p className="font-semibold text-[var(--theme-orange)] flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 bg-current rounded-full"></span>
-                                    Synced with Local Folder
-                                </p>
-                                <p className="text-sm text-[var(--theme-text-secondary)] mt-1">Data is synced with: <span className="font-mono bg-[var(--theme-bg)] px-1.5 py-0.5 rounded-md text-[var(--theme-text-primary)]">{directoryHandle.name}</span>.</p>
-                                <button onClick={onDisconnectDirectory} className="mt-3 text-sm font-semibold text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors flex items-center gap-1">
-                                    <XIcon /> Disconnect
-                                </button>
+    const dataSummary = useMemo(() => [
+        { icon: <TemplateIcon />, name: 'Templates', count: templates.length },
+        { icon: <RecordingIcon />, name: 'Recordings', count: recordings.length },
+        { icon: <PhotoIcon />, name: 'Photos', count: photos.length },
+        { icon: <NotepadIcon />, name: 'Notes', count: notes.length },
+        { icon: <ClockIcon />, name: 'Log Entries', count: logEntries.length },
+        { icon: <CalendarIcon />, name: 'Events', count: calendarEvents.length },
+    ], [templates, recordings, photos, notes, logEntries, calendarEvents]);
+
+
+    const renderTabContent = () => {
+        const contentKey = activeTab; // Key for re-rendering with animation
+        const commonClasses = "space-y-6 animate-fade-in-down";
+        switch (activeTab) {
+            case 'sync': return (
+                <div key={contentKey} className={commonClasses}>
+                     <SectionCard title="Browser Storage (Default)" description="Data is saved privately in this browser. Fast, simple, and works offline." icon={<HardDriveIcon />}>
+                        <p className="text-sm text-gray-400">This is the default mode. No setup required. Ideal for single-device use.</p>
+                    </SectionCard>
+                    <SectionCard title="Cloud Sync" description="Connect to cloud services to sync your data across all devices, including mobile and tablets." icon={<CloudIcon isConnected={googleDriveStatus.connected} />}>
+                        <div className="space-y-4">
+                            {/* Google Drive */}
+                            <div className="flex items-center gap-4 p-3 bg-black/20 rounded-lg">
+                                <GoogleDriveIcon />
+                                <div className="flex-grow">
+                                    <h5 className="font-semibold text-white">Google Drive</h5>
+                                    {googleDriveStatus.connected ? (
+                                         <p className="text-xs text-gray-400 truncate">Connected as: {googleDriveStatus.email}</p>
+                                    ) : (
+                                         <p className="text-xs text-gray-400">Syncs data to a private app folder.</p>
+                                    )}
+                                </div>
+                                {googleDriveStatus.connected ? (
+                                    <button onClick={onGoogleDriveDisconnect} className="text-sm font-semibold text-gray-400 hover:text-white flex-shrink-0">Disconnect</button>
+                                ) : (
+                                    <button onClick={onGoogleDriveConnect} className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm flex-shrink-0">Connect</button>
+                                )}
+                            </div>
+                            {/* Dropbox */}
+                             <div className="flex items-center gap-4 p-3 bg-black/20 rounded-lg opacity-60">
+                                <DropboxIcon />
+                                <div className="flex-grow">
+                                    <h5 className="font-semibold text-white">Dropbox</h5>
+                                    <p className="text-xs text-gray-400">Integration coming soon!</p>
+                                </div>
+                                <button disabled className="bg-white/10 text-white font-semibold py-2 px-4 rounded-lg text-sm flex-shrink-0 cursor-not-allowed">Connect</button>
                             </div>
                         </div>
-                    ) : (
-                         <div className="flex items-start gap-4">
-                            <HardDriveIcon />
-                            <div>
-                                <p className="font-semibold text-[var(--theme-orange)] flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 bg-current rounded-full"></span>
-                                    Local Browser Mode
-                                </p>
-                                <p className="text-sm text-[var(--theme-text-secondary)] mt-1">Data is saved in this browser. Connect a folder for persistent, cross-device access.</p>
-                                <button onClick={onSyncDirectory} className="mt-3 bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
+                    </SectionCard>
+                     <SectionCard title="Local Folder Sync (Desktop Only)" description="Saves data to a folder on your computer. Great for local backups and use with desktop-based cloud clients." icon={<FolderSyncIcon />}>
+                        <div className="flex flex-col gap-4">
+                            {directoryHandle ? (
+                                <div className="flex items-center gap-4">
+                                    <p className="text-sm font-semibold text-green-400">Connected to: <span className="font-mono bg-black/30 px-2 py-1 rounded">{directoryHandle.name}</span></p>
+                                    <button onClick={onDisconnectDirectory} className="text-sm font-semibold text-gray-400 hover:text-white">Disconnect</button>
+                                </div>
+                            ) : (
+                                <button onClick={onSyncDirectory} className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 self-start">
                                     <FolderIcon /> Connect to Folder...
                                 </button>
-                                <p className="text-xs text-[var(--theme-text-secondary)]/70 mt-2 p-2 bg-black/20 rounded-md">
-                                    <strong>Pro Tip:</strong> To sync across devices, connect to your local Google Drive, Dropbox, or OneDrive folder.
-                                </p>
-                            </div>
+                            )}
                         </div>
-                    )}
-                </InfoCard>
-
-                <InfoCard>
-                    <SectionTitle>Data Summary</SectionTitle>
-                    <div className="grid grid-cols-2 gap-y-3">
-                        <div className="flex items-center gap-3"><TemplateIcon /><p>{templates.length} Template{templates.length !== 1 && 's'}</p></div>
-                        <div className="flex items-center gap-3"><RecordingIcon /><p>{recordings.length} Recording{recordings.length !== 1 && 's'}</p></div>
-                        <div className="flex items-center gap-3"><PhotoIcon /><p>{photos.length} Photo{photos.length !== 1 && 's'}</p></div>
-                        <div className="flex items-center gap-3"><NotepadIcon /><p>{notes.length} Note{notes.length !== 1 && 's'}</p></div>
-                        <div className="flex items-center gap-3"><ClockIcon /><p>{logEntries.length} Log{logEntries.length !== 1 && 's'}</p></div>
-                        <div className="flex items-center gap-3"><CalendarIcon /><p>{calendarEvents.length} Event{calendarEvents.length !== 1 && 's'}</p></div>
-                    </div>
-                </InfoCard>
-            </div>
-
-            <InfoCard>
-                <SectionTitle>Cloud Storage Sync</SectionTitle>
-                {isDriveLoading ? (
-                    <div className="flex items-center justify-center gap-2 text-[var(--theme-text-secondary)]"><Spinner /> Checking connection...</div>
-                ) : isDriveConnected ? (
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-semibold text-[var(--theme-orange)]">Connected to Google Drive</p>
-                            <p className="text-sm text-[var(--theme-text-secondary)]">as {driveUser}</p>
-                        </div>
-                        <button onClick={handleDriveDisconnect} className="text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] font-semibold">Disconnect</button>
-                    </div>
-                ) : (
-                    <a
-                        href="/api/auth/google"
-                        className="w-full bg-[var(--theme-card-bg)] text-[var(--theme-text-primary)] font-semibold py-3 px-4 rounded-md text-base inline-flex items-center justify-center gap-3 hover:bg-[var(--theme-bg)] transition-colors"
-                    >
-                        <GoogleDriveIcon /> Connect to Google Drive
-                    </a>
-                )}
-            </InfoCard>
-            
-            <InfoCard>
-                <SectionTitle>Backend &amp; API Settings</SectionTitle>
-                <div className="space-y-6">
-                    {/* Step 1: Auth Key */}
-                    <div className="p-4 bg-[var(--theme-bg)]/50 rounded-md border border-[var(--theme-border)]/30">
-                        <h4 className="font-semibold text-[var(--theme-text-primary)]">Step 1: Set Authentication Key (Required)</h4>
-                        <p className="text-sm text-[var(--theme-text-secondary)]/80 mt-1 mb-3">
-                            To fix <strong className="text-[var(--theme-red)]">'Unauthorized'</strong> errors, you must provide the secret key you configured on your server (e.g., your <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_SECRET_KEY</code> from Vercel).
-                        </p>
-                        <InputField 
-                            id="customApiAuthKey" 
-                            label="Backend Auth Key" 
-                            value={apiSettings.customApiAuthKey} 
-                            onChange={handleApiSettingsChange} 
-                            placeholder="Paste your secret key here" 
-                            type="password"
-                        />
-                    </div>
-
-                    {/* Step 2: API Server URL */}
-                    <div className="p-4 bg-[var(--theme-bg)]/50 rounded-md border border-[var(--theme-border)]/30">
-                        <h4 className="font-semibold text-[var(--theme-text-primary)]">Step 2: Connect to Sync Server (Optional)</h4>
-                        <p className="text-sm text-[var(--theme-text-secondary)]/80 mt-1 mb-3">
-                            For multi-device or team sync, enter your custom API server URL below. If you are just using the app on Vercel, <strong className="text-[var(--theme-orange)]">leave this field blank.</strong>
-                        </p>
-                        <div className="flex items-end gap-4">
-                            <div className="flex-grow">
-                                <InputField 
-                                    id="customApiEndpoint" 
-                                    label="Custom API Server URL" 
-                                    value={apiSettings.customApiEndpoint} 
-                                    onChange={handleApiSettingsChange} 
-                                    placeholder="Leave blank for standard use" 
-                                />
-                            </div>
-                            <button 
-                                onClick={handleConnectClick} 
-                                disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
-                                className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center justify-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed h-[42px] flex-shrink-0 min-w-[160px]"
-                            >
-                               {isApiConnecting ? (
-                                    <>
-                                        <Spinner className="h-4 w-4" />
-                                        <span>Connecting...</span>
-                                    </>
-                               ) : 'Connect & Sync'}
-                            </button>
-                        </div>
-                         {siteSettings.syncMode === 'api' && isApiConnected && (
-                            <p className="text-xs text-[var(--theme-orange)] mt-2">Successfully connected and syncing with the server.</p>
-                        )}
-                    </div>
-
-                    <div className="flex justify-end pt-2">
-                         <button 
-                            onClick={handleApiSettingsSave} 
-                            className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-6 rounded-md text-sm"
-                        >
-                            Save All Settings
-                        </button>
-                    </div>
+                    </SectionCard>
                 </div>
-            </InfoCard>
-
-            <InfoCard>
-                <SectionTitle>Backup & Restore</SectionTitle>
-                <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Save all app data to a single backup file.</p>
-                        <button onClick={onBackup} className="bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
-                            <DownloadIcon /> Download Full Backup (.zip)
+            );
+            case 'backup': return (
+                 <div key={contentKey} className={commonClasses}>
+                    <SectionCard title="Download Full Backup" description="Save all app data (notes, photos, recordings, settings) to a single portable .zip file." icon={<DownloadIcon />}>
+                        <button onClick={handleCreateBackup} className="bg-orange-500 hover:bg-orange-600 text-black font-bold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2">
+                            Download Backup
                         </button>
-                    </div>
-                    <div className="pt-5 border-t border-[var(--theme-border)]/50 md:pt-0 md:border-t-0 md:pl-6 md:border-l md:border-[var(--theme-border)]/50">
-                        <p className="text-sm text-[var(--theme-text-secondary)] mb-2">Restore data from a backup file. This will <span className="font-semibold text-[var(--theme-red)]">overwrite all</span> existing data.</p>
-                         <label htmlFor="restore-upload" className="cursor-pointer bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
-                            <RestoreIcon /> Choose Backup File (.zip)...
+                    </SectionCard>
+                     <SectionCard title="Restore from Backup" description="This will overwrite all current data in the app. This action cannot be undone." icon={<RestoreIcon />}>
+                        <label htmlFor="restore-upload" className="cursor-pointer bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2">
+                            Choose Backup File...
                         </label>
                         <input id="restore-upload" type="file" className="sr-only" onChange={handleRestoreFileSelect} accept=".zip" />
-                        {restoreError && <p className="text-[var(--theme-red)] text-sm mt-2">{restoreError}</p>}
-                    </div>
+                        {restoreError && <p className="text-red-400 text-sm mt-2">{restoreError}</p>}
+                    </SectionCard>
                 </div>
-            </InfoCard>
+            );
+            case 'api': return (
+                 <div key={contentKey} className={commonClasses}>
+                    <SectionCard title="Backend & API Settings" description="Configure your API Key for AI features and an optional custom sync server." icon={<CodeIcon />}>
+                         <div className="space-y-4">
+                            <div>
+                                <h4 className="font-semibold text-orange-400 mb-1">Authentication Key (Required)</h4>
+                                <p className="text-sm text-gray-400 mb-3">To fix <strong className="text-red-400">'Unauthorized'</strong> errors, provide the secret key configured on your server (e.g., Vercel `API_SECRET_KEY`).</p>
+                                <InputField 
+                                    id="customApiAuthKey" 
+                                    label="Auth Key" 
+                                    value={apiSettings.customApiAuthKey} 
+                                    onChange={handleApiSettingsChange} 
+                                    placeholder="Paste your secret key" 
+                                    type="password"
+                                />
+                            </div>
+                            <div className="pt-4 border-t border-white/10">
+                                <h4 className="font-semibold text-orange-400 mb-1">Custom API Server (Advanced)</h4>
+                                <p className="text-sm text-gray-400 mb-3">For team sync, enter your custom API URL. Leave blank for standard Vercel use with Google Drive sync.</p>
+                                <div className="flex items-end gap-4">
+                                    <div className="flex-grow">
+                                        <InputField 
+                                            id="customApiEndpoint" 
+                                            label="Custom API URL" 
+                                            value={apiSettings.customApiEndpoint} 
+                                            onChange={handleApiSettingsChange} 
+                                            placeholder="e.g., https://my-sync-server.com" 
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={handleConnectClick} 
+                                        disabled={isApiConnecting || !apiSettings.customApiEndpoint || !apiSettings.customApiAuthKey} 
+                                        className="bg-orange-500 hover:bg-orange-600 text-black font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center justify-center gap-2 disabled:bg-gray-600 disabled:cursor-not-allowed h-11 flex-shrink-0 min-w-[140px]"
+                                    >
+                                    {isApiConnecting ? <><Spinner /> Connecting...</> : 'Connect'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex justify-end pt-4 border-t border-white/10">
+                                <button onClick={handleApiSettingsSave} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg text-sm">Save Settings</button>
+                            </div>
+                        </div>
+                    </SectionCard>
+                </div>
+            );
+            case 'danger': return (
+                <div key={contentKey} className={commonClasses}>
+                    <SectionCard title="Clear All Local Data" description="Permanently delete all data from your browser. This action cannot be undone." icon={<TrashIcon />}>
+                        <button onClick={onClearLocalData} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 flex-shrink-0">
+                            Clear Browser Data
+                        </button>
+                    </SectionCard>
+                </div>
+            );
+            default: return null;
+        }
+    }
 
-            <div className="bg-[var(--theme-red)]/10 p-6 rounded-lg border border-[var(--theme-red)]/30">
-                <SectionTitle>Danger Zone</SectionTitle>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <p className="font-semibold text-[var(--theme-red)]">Clear All Local Data</p>
-                        <p className="text-sm text-[var(--theme-red)]/80 mt-1">This will permanently delete all data from your browser. This action cannot be undone.</p>
-                    </div>
-                    <button onClick={onClearLocalData} className="bg-[var(--theme-red)]/80 hover:bg-[var(--theme-red)] text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 flex-shrink-0">
-                        <TrashIcon /> Clear All Data
-                    </button>
+    return (
+        <div className="flex flex-col h-full">
+            <nav className="flex-shrink-0 px-4 pt-4 border-b border-white/10">
+                <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-3">
+                    <TabButton title="Sync & Cloud" isActive={activeTab === 'sync'} onClick={() => setActiveTab('sync')} />
+                    <TabButton title="Backup & Restore" isActive={activeTab === 'backup'} onClick={() => setActiveTab('backup')} />
+                    <TabButton title="API Settings" isActive={activeTab === 'api'} onClick={() => setActiveTab('api')} />
+                    <TabButton title="Danger Zone" isActive={activeTab === 'danger'} onClick={() => setActiveTab('danger')} />
                 </div>
-            </div>
+            </nav>
+
+            <main className="flex-1 overflow-y-auto p-4 md:p-6">
+                {renderTabContent()}
+            </main>
         </div>
     );
 };

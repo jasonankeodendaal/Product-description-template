@@ -122,6 +122,7 @@ export const useRecorder = () => {
       stopRecording,
       pauseRecording,
       resumeRecording,
-      analyserNode: analyserRef.current 
+      analyserNode: analyserRef.current,
+      setAudioBlob,
     };
 };

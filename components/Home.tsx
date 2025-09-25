@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../App';
 import { SiteSettings } from '../constants';
@@ -35,6 +34,7 @@ interface HomeProps {
     onLogout: () => void;
     userRole: UserRole;
     onOpenOnboarding: () => void;
+    onOpenCalendar: () => void;
 }
 
 export const Home: React.FC<HomeProps> = (props) => {
@@ -52,6 +52,7 @@ export const Home: React.FC<HomeProps> = (props) => {
                 <WelcomeScreen
                     userRole={props.userRole}
                     creatorName={props.siteSettings.creator.name}
+                    userName={props.siteSettings.userName || 'User'}
                     onDismiss={handleDismissWelcome}
                 />
             )}
@@ -61,18 +62,18 @@ export const Home: React.FC<HomeProps> = (props) => {
                     <MessageOfTheDay />
                 </div>
                 
-                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
-                    <HomeTile className="col-span-2 sm:row-span-2" style={{ animationDelay: '50ms' }}>
+                <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                    <HomeTile className="col-span-2 row-span-2" style={{ animationDelay: '50ms' }}>
                         <StorageDetailsWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} />
                     </HomeTile>
-                    <HomeTile className="col-span-2" style={{ animationDelay: '100ms' }}>
-                        <CalendarWidget onOpenCalendar={() => props.onNavigate('calendar')} events={props.calendarEvents} />
+                    <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '100ms' }}>
+                        <CalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
                     </HomeTile>
-                    <HomeTile className="col-span-2 sm:col-span-1" style={{ animationDelay: '150ms' }}>
+                    <HomeTile className="col-span-1 row-span-2" style={{ animationDelay: '150ms' }}>
                         <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />
                     </HomeTile>
-                    <HomeTile className="col-span-1" style={{ animationDelay: '200ms' }}><ClockWidget /></HomeTile>
-                    <HomeTile className="col-span-1" style={{ animationDelay: '250ms' }}><WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} /></HomeTile>
+                    <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '200ms' }}><ClockWidget /></HomeTile>
+                    <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '250ms' }}><WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} /></HomeTile>
 
                     <div className="col-span-full mt-2 mb-1 pl-1 text-lg font-bold text-white/90">Tools & Actions</div>
 

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
@@ -96,16 +97,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
         <div className="flex-1 flex flex-col bg-gray-900 text-white font-inter animate-fade-in-down overflow-hidden">
              {/* Header */}
             <header className="p-4 flex justify-between items-center flex-shrink-0">
-                <button onClick={onClose} className="p-2"><ChevronLeftIcon /></button>
+                <div className="w-10"></div>
                 <div className="flex items-center gap-4">
                     <button onClick={() => changeMonth(-1)} className="p-2 text-gray-400 hover:text-white"><ChevronLeftIcon /></button>
                     <h2 className="text-2xl font-bold text-green-400 w-40 text-center">{viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}</h2>
                     <button onClick={() => changeMonth(1)} className="p-2 text-gray-400 hover:text-white"><ChevronRightIcon /></button>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button className="p-2"><SearchIcon /></button>
-                    <button className="p-2"><HamburgerIcon /></button>
-                </div>
+                <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><XIcon /></button>
             </header>
 
             {/* Calendar Grid */}

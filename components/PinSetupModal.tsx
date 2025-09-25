@@ -3,12 +3,13 @@ import { CREATOR_PIN, SiteSettings } from '../constants';
 import { AuthBrandingPanel } from './AuthBrandingPanel';
 
 interface PinSetupModalProps {
-  onSetPin: (pin: string) => void;
+  onSetPin: (pin: string, name: string) => void;
   mode: 'setup' | 'reset';
   siteSettings: SiteSettings;
 }
 
 export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, siteSettings }) => {
+  const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
@@ -26,6 +27,10 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === 'setup' && !name.trim()) {
+        setError("Please enter your name.");
+        return;
+    }
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
         setError("PIN must be exactly 4 digits.");
         return;
@@ -38,12 +43,12 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
     if (pin.toLowerCase() === CREATOR_PIN.substring(0, 4)) {
         setShowCreatorPopup(true);
     }
-    onSetPin(pin);
+    onSetPin(pin, name);
   };
 
-  const title = mode === 'setup' ? 'Create Your PIN' : 'Reset Your PIN';
+  const title = mode === 'setup' ? 'Setup Your Workspace' : 'Reset Your PIN';
   const description = mode === 'setup' 
-    ? "For security, please create a 4-digit PIN to protect access to your application."
+    ? "First, let's get your workspace set up with a name and a secure PIN."
     : "Please enter a new 4-digit PIN. This will replace your old PIN immediately.";
 
   return (
@@ -53,15 +58,32 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                 Creator PIN detected!
             </div>
         )}
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 auth-modal-container" aria-modal="true" role="dialog">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-start md:items-center justify-center p-4 auth-modal-container overflow-y-auto pt-16 md:pt-4 pb-8" aria-modal="true" role="dialog">
             <div className="bg-slate-800 w-full max-w-4xl rounded-xl shadow-2xl border border-slate-700/50 relative animate-modal-scale-in flex flex-col md:flex-row overflow-hidden md:min-h-[550px]">
                 <AuthBrandingPanel creator={siteSettings.creator} />
                 <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center auth-form-panel">
                     <h2 className="text-2xl sm:text-3xl font-bold text-orange-500">{title}</h2>
                     <p className="text-slate-400 mt-2 text-sm sm:text-base">{description}</p>
                     <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+                        {mode === 'setup' && (
+                             <div>
+                                <label htmlFor="user-name" className="block text-sm font-medium text-slate-400 mb-2">What should we call you?</label>
+                                <input
+                                    id="user-name"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        setError('');
+                                    }}
+                                    placeholder="e.g., Alex"
+                                    className="w-full bg-white border-2 border-slate-300 rounded-lg p-3 text-lg font-sans text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                    autoFocus={mode === 'setup'}
+                                />
+                            </div>
+                        )}
                         <div>
-                            <label htmlFor="new-pin" className="block text-sm font-medium text-slate-400 mb-2">New PIN</label>
+                            <label htmlFor="new-pin" className="block text-sm font-medium text-slate-400 mb-2">{mode === 'setup' ? 'Create a PIN' : 'New PIN'}</label>
                             <input
                                 id="new-pin"
                                 type="password"
@@ -75,7 +97,7 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                                 }}
                                 placeholder="••••"
                                 className="w-full bg-white border-2 border-slate-300 rounded-lg p-3 text-center text-3xl tracking-[0.3em] sm:p-4 sm:text-4xl sm:tracking-[0.5em] font-mono text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                autoFocus
+                                autoFocus={mode === 'reset'}
                             />
                         </div>
                         <div>
@@ -100,7 +122,7 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                             type="submit"
                             style={{ backgroundColor: '#A0522D' }} // A brownish-orange color from image
                             className="w-full text-white font-bold py-4 px-4 rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors text-lg"
-                            disabled={pin.length < 4 || confirmPin.length < 4}
+                            disabled={(mode === 'setup' && !name.trim()) || pin.length < 4 || confirmPin.length < 4}
                         >
                             Save & Continue
                         </button>
