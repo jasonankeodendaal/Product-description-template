@@ -54,11 +54,11 @@ const AnimatedValue: React.FC<{ value: number }> = ({ value }) => {
 const getSyncInfo = (syncMode: SiteSettings['syncMode'], isConnected: boolean) => {
     switch (syncMode) {
         case 'folder':
-            return { icon: <FolderSyncIcon />, text: 'Local Folder Sync', details: 'Data is safe on your machine.' };
+            return { icon: <FolderSyncIcon />, text: 'Local Folder Sync' };
         case 'api':
-            return { icon: <CloudIcon isConnected={isConnected} />, text: isConnected ? 'API Sync Active' : 'API Disconnected', details: isConnected ? 'Synced across all devices.' : 'Connection failed.' };
+            return { icon: <CloudIcon isConnected={isConnected} />, text: isConnected ? 'API Sync Active' : 'API Disconnected' };
         default:
-            return { icon: <HardDriveIcon />, text: 'Browser Storage', details: 'Data is local to this browser.' };
+            return { icon: <HardDriveIcon />, text: 'Browser Storage' };
     }
 };
 
@@ -77,19 +77,18 @@ export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSe
     const hasData = total > 0;
 
     return (
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col justify-between">
-            <div className="flex items-center gap-3">
-                <div className="text-emerald-400 w-8 h-8 animate-pulse-slow">{syncInfo.icon}</div>
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col justify-between">
+            <div className="flex items-center gap-2">
+                <div className="text-emerald-400 w-6 h-6 animate-pulse-slow">{syncInfo.icon}</div>
                 <div>
-                    <h3 className="text-white font-bold">{syncInfo.text}</h3>
-                    <p className="text-gray-400 text-xs">{syncInfo.details}</p>
+                    <h3 className="text-white font-bold text-sm">{syncInfo.text}</h3>
                 </div>
             </div>
 
-            <div className="flex-grow my-2 flex flex-col md:flex-row items-center justify-around gap-2 overflow-hidden">
+            <div className="flex-grow my-1 flex flex-col md:flex-row items-center justify-around gap-2 overflow-hidden">
                 {hasData && Recharts ? (
                     <>
-                        <div className="w-full md:w-2/5 h-28 md:h-full relative">
+                        <div className="w-full md:w-2/5 h-24 md:h-full relative">
                             <Recharts.ResponsiveContainer width="100%" height="100%">
                                 <Recharts.PieChart>
                                     <Recharts.Pie data={breakdown} dataKey="bytes" nameKey="name" cx="50%" cy="50%" innerRadius="70%" outerRadius="90%" paddingAngle={5} stroke="none">
@@ -100,20 +99,20 @@ export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSe
                                 </Recharts.PieChart>
                             </Recharts.ResponsiveContainer>
                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="font-bold text-white text-lg lg:text-xl animate-pulse-slow"><AnimatedValue value={total} /></span>
+                                <span className="font-bold text-white text-base animate-pulse-slow"><AnimatedValue value={total} /></span>
                                 <p className="text-gray-400 text-xs">Total Used</p>
                             </div>
                         </div>
-                        <div className="w-full md:w-3/5 space-y-1.5 overflow-y-auto no-scrollbar">
+                        <div className="w-full md:w-3/5 space-y-1 overflow-y-auto no-scrollbar">
                             {breakdown.map((item, index) => (
                                 <div 
                                     key={item.name} 
-                                    className="flex items-center gap-2 text-xs p-1 bg-white/5 rounded-md animate-list-item-in"
+                                    className="flex items-center gap-1 text-[11px] py-0.5 px-1 bg-white/5 rounded-md animate-list-item-in"
                                     style={{ animationDelay: `${index * 50}ms` }}
                                 >
-                                    <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
+                                    <div className="w-4 h-4 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
                                     <span className="flex-grow truncate text-gray-300">{item.name}</span>
-                                    <span className="font-mono text-gray-400">{formatBytes(item.bytes)}</span>
+                                    <span className="font-mono text-gray-400 text-[10px]">{formatBytes(item.bytes)}</span>
                                     <div className="w-10 text-right font-semibold" style={{ color: item.fill }}>{total > 0 ? `${Math.round((item.bytes / total) * 100)}%` : '0%'}</div>
                                 </div>
                             ))}

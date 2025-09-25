@@ -15,6 +15,8 @@ interface WeatherWidgetProps {
 
 interface WeatherData {
     city: string;
+    latitude: number;
+    longitude: number;
     temperatureCelsius: number;
     condition: string;
     icon: 'SUNNY' | 'CLOUDY' | 'PARTLY_CLOUDY' | 'RAIN' | 'SNOW' | 'WIND' | 'FOG' | 'STORM' | 'UNKNOWN';
@@ -44,7 +46,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
         setIsLoading(true);
         setError(null);
         try {
-            const data = await getWeatherInfo(location, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey);
+            const data = await getWeatherInfo(location);
             setWeather(data);
             if (data.city) {
                 setCityInput(data.city);
@@ -55,7 +57,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
         } finally {
             setIsLoading(false);
         }
-    }, [getWeatherInfo, siteSettings]);
+    }, [getWeatherInfo]);
     
     useEffect(() => {
         setIsDetecting(true);
@@ -92,7 +94,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
     };
 
     return (
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col justify-between">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col justify-between">
             <div className="flex justify-between items-start">
                 {isEditingCity ? (
                     <form onSubmit={handleCitySubmit} className="flex-grow">
@@ -100,13 +102,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
                             type="text"
                             value={cityInput}
                             onChange={(e) => setCityInput(e.target.value)}
-                            className="w-full bg-transparent border-b-2 border-orange-500 text-white text-base font-bold focus:outline-none"
+                            className="w-full bg-transparent border-b-2 border-orange-500 text-white text-sm font-semibold focus:outline-none"
                             autoFocus
                             onBlur={handleCitySubmit}
                         />
                     </form>
                 ) : (
-                    <button onClick={() => setIsEditingCity(true)} className="text-base font-bold text-white hover:text-orange-400 truncate">
+                    <button onClick={() => setIsEditingCity(true)} className="text-sm font-semibold text-white hover:text-orange-400 truncate">
                         {isDetecting ? 'Detecting...' : (weather?.city || cityInput)}
                     </button>
                 )}
@@ -115,17 +117,17 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
                 </button>
             </div>
 
-            <div className="flex-grow flex items-center justify-center py-2">
+            <div className="flex-grow flex items-center justify-center py-1">
                 {isLoading || isDetecting ? (
-                    <Spinner className="w-8 h-8 text-white" />
+                    <Spinner className="w-6 h-6 text-white" />
                 ) : error ? (
                     <p className="text-rose-400 text-xs text-center">{error}</p>
                 ) : weather ? (
-                    <div className="flex items-center gap-2">
-                        <div className="w-12 h-12 text-white">{<WeatherIcon icon={weather.icon} />}</div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-10 h-10 text-white">{<WeatherIcon icon={weather.icon} />}</div>
                         <div>
-                            <p className="text-4xl font-bold text-white">{Math.round(weather.temperatureCelsius)}°C</p>
-                            <p className="text-gray-300 font-semibold text-sm">{weather.condition}</p>
+                            <p className="text-3xl font-bold text-white">{Math.round(weather.temperatureCelsius)}°C</p>
+                            <p className="text-gray-300 font-semibold text-xs -mt-1">{weather.condition}</p>
                         </div>
                     </div>
                 ) : (

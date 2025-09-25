@@ -74,40 +74,40 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, on
     };
 
     return (
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col">
-            <div className="flex justify-between items-center mb-2">
-                 <h3 className="text-white font-bold text-lg">Timesheet</h3>
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col">
+            <div className="flex justify-between items-center mb-1">
+                 <h3 className="text-white font-bold text-sm">Timesheet</h3>
                  <button onClick={() => onNavigate('timesheet')} className="text-xs font-semibold text-gray-300 hover:text-white hover:underline">View Log →</button>
             </div>
-             <div className="text-center my-2">
-                <p className="text-4xl font-bold text-white tracking-tighter">{workedHours}</p>
-                <p className="text-sm text-gray-400 font-semibold">Today's Hours</p>
+             <div className="text-center my-1">
+                <p className="text-3xl font-bold text-white tracking-tighter">{workedHours}</p>
+                <p className="text-xs text-gray-400 font-semibold">Today's Hours</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 mb-2">
+            <div className="grid grid-cols-2 gap-1.5 my-1">
                 <button
                     onClick={() => onSaveLogEntry('Clock In')}
                     disabled={isClockedIn}
-                    className="flex items-center justify-center gap-1.5 p-2 bg-emerald-600/50 hover:bg-emerald-600/80 text-white rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-1.5 p-1.5 bg-emerald-600/50 hover:bg-emerald-600/80 text-white rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
                     <ClockInIcon />
-                    <span className="font-semibold text-sm">Clock In</span>
+                    <span className="font-semibold text-xs">Clock In</span>
                 </button>
                  <button
                     onClick={() => onSaveLogEntry('Clock Out')}
                     disabled={!isClockedIn}
-                    className="flex items-center justify-center gap-1.5 p-2 bg-rose-600/50 hover:bg-rose-600/80 text-white rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-1.5 p-1.5 bg-rose-600/50 hover:bg-rose-600/80 text-white rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
                     <ClockOutIcon />
-                    <span className="font-semibold text-sm">Clock Out</span>
+                    <span className="font-semibold text-xs">Clock Out</span>
                 </button>
             </div>
-            <div className="flex-grow space-y-1 overflow-y-auto no-scrollbar pr-2 -mr-2 text-xs">
+            <div className="flex-grow space-y-1 overflow-y-auto no-scrollbar pr-2 -mr-2 text-[11px]">
                 {logEntries.length > 0 ? logEntries.slice(0, 2).map(entry => (
-                    <div key={entry.id} className="flex justify-between items-center p-1.5 bg-white/5 rounded">
+                    <div key={entry.id} className="flex justify-between items-center p-1 bg-white/5 rounded">
                         <span className={`font-medium truncate max-w-[60%] ${entry.type === 'Clock In' ? 'text-emerald-400' : entry.type === 'Clock Out' ? 'text-rose-400' : 'text-gray-300'}`}>
                             {entry.task || entry.type}
                         </span>
-                        <span className="text-gray-400 text-xs">{formatRelativeTime(entry.timestamp)}</span>
+                        <span className="text-gray-400 text-[10px]">{formatRelativeTime(entry.timestamp)}</span>
                     </div>
                 )) : (
                     <div className="h-full flex items-center justify-center text-gray-500 text-xs">No log entries yet.</div>
