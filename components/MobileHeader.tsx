@@ -1,22 +1,30 @@
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { SiteSettings } from '../constants';
 import { MoreVerticalIcon } from './icons/MoreVerticalIcon';
 import { ImageIcon } from './icons/ImageIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
-import { View } from '../App';
+// FIX: Import UserRole to use it as a prop type for conditional rendering.
+import { View, UserRole } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RotateIcon } from './icons/RotateIcon';
+// FIX: Import UserIcon for the Creator Info menu item.
+import { UserIcon } from './icons/UserIcon';
 
 interface MobileHeaderProps {
   siteSettings: SiteSettings;
   onNavigate: (view: View) => void;
   onOpenDashboard: () => void;
   onOpenInfo: () => void;
+  onOpenCreatorInfo: () => void;
   showInstallButton: boolean;
   onInstallClick: () => void;
   onToggleOrientation: () => void;
   isLandscapeLocked: boolean;
+  // FIX: Add userRole to determine if creator-specific options should be shown.
+  userRole: UserRole;
 }
 
 const MoreMenuItem: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void; isActive?: boolean }> = ({ label, icon, onClick, isActive }) => (
@@ -29,7 +37,8 @@ const MoreMenuItem: React.FC<{ label: string; icon: React.ReactNode; onClick: ()
     </button>
 );
 
-export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, showInstallButton, onInstallClick, onToggleOrientation, isLandscapeLocked }) => {
+// FIX: Destructure onOpenCreatorInfo and userRole to use them in the component.
+export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, onOpenCreatorInfo, userRole, showInstallButton, onInstallClick, onToggleOrientation, isLandscapeLocked }) => {
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const moreMenuRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +89,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
                             className="absolute top-full right-0 mt-2 w-60 bg-[var(--theme-dark-bg)] rounded-xl shadow-2xl border border-[var(--theme-border)]/50 overflow-hidden z-30 animate-fade-in-down"
                         >
                             <ul>
+                                {/* FIX: Add Creator Info menu item, visible only to creators. */}
+                                {userRole === 'creator' && (
+                                    <li><MoreMenuItem label="Creator Info" icon={<UserIcon />} onClick={() => { onOpenCreatorInfo(); setIsMoreMenuOpen(false); }} /></li>
+                                )}
                                 <li><MoreMenuItem label="Image Squarer" icon={<ImageIcon />} onClick={() => { onNavigate('image-tool'); setIsMoreMenuOpen(false); }} /></li>
                                 <li><MoreMenuItem label="Lock Landscape" icon={<RotateIcon />} onClick={() => { onToggleOrientation(); setIsMoreMenuOpen(false); }} isActive={isLandscapeLocked} /></li>
                                 <li><MoreMenuItem label="Dashboard" icon={<DatabaseIcon />} onClick={() => { onOpenDashboard(); setIsMoreMenuOpen(false); }} /></li>

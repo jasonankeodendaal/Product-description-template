@@ -1,4 +1,3 @@
-// FIX: SiteSettings is exported from constants.ts, not App.tsx.
 import { SiteSettings } from '../constants';
 import { PrintableEntry } from '../components/PrintPreview';
 

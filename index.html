@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,8 +157,8 @@
       grid-column: 1 / -1; font-size: 1.5rem; font-weight: 700; color: var(--theme-orange);
       margin-bottom: -0.5rem; padding-left: 0.5rem; border-bottom: 2px solid var(--theme-border); padding-bottom: 0.5rem;
     }
-    @keyframes tile-in { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    .animate-tile-in { animation: tile-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; opacity: 0; }
+    @keyframes tile-in { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .animate-tile-in { animation: tile-in 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; opacity: 0; }
     
     .clock-time { font-size: clamp(2.5rem, 8vw, 4rem); line-height: 1; }
     .clock-date { font-size: clamp(0.8rem, 2vw, 1rem); }
@@ -244,6 +245,32 @@
         .creator-modal-animate-in { animation-name: flex-modal-scale-in; animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .creator-modal-animate-out { animation-name: flex-modal-scale-out; animation-timing-function: ease-in; }
     }
+    
+    .home-tile-bg-effect {
+        background-image: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 60%);
+        transform: scale(0);
+        transition: transform 0.5s ease-out;
+    }
+    .group:hover .home-tile-bg-effect {
+        transform: scale(2.5);
+    }
+    
+    @keyframes holographic-shift {
+        0% { transform: translate(0, 0); }
+        25% { transform: translate(1px, -1px); }
+        50% { transform: translate(-1px, 1px); }
+        75% { transform: translate(-1px, -1px); }
+        100% { transform: translate(0, 0); }
+    }
+    .holographic-text {
+        text-shadow:
+            0.5px 0.5px 1px rgba(0, 255, 255, 0.5),
+            -0.5px -0.5px 1px rgba(255, 0, 255, 0.5);
+    }
+    .group:hover .holographic-icon {
+        animation: holographic-shift 0.4s ease-in-out infinite;
+    }
+
   </style>
 <script type="importmap">
 {

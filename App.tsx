@@ -250,10 +250,8 @@ const App: React.FC = () => {
             }
 
             if (isLandscapeLocked) {
-                // FIX: Cast screen.orientation to 'any' to bypass TypeScript error for the experimental 'lock' method.
                 await (screen.orientation as any).lock('portrait-primary');
             } else {
-                // FIX: Cast screen.orientation to 'any' to bypass TypeScript error for the experimental 'lock' method.
                 await (screen.orientation as any).lock('landscape-primary');
             }
             setIsLandscapeLocked(!isLandscapeLocked);
@@ -1190,14 +1188,18 @@ const App: React.FC = () => {
                     onNavigate={setCurrentView}
                     onOpenDashboard={() => setIsDashboardOpen(true)}
                     onOpenInfo={() => setIsInfoModalOpen(true)}
+                    // FIX: Pass the required 'onOpenCreatorInfo' prop to satisfy the component's prop types.
+                    onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                     showInstallButton={!isAppInstalled}
                     onInstallClick={() => setIsInstallOptionsModalOpen(true)}
                     onToggleOrientation={toggleOrientationLock}
                     isLandscapeLocked={isLandscapeLocked}
+                    // FIX: Pass userRole to enable creator-specific functionality in the header.
+                    userRole={userRole}
                 />
             </div>
             
-            <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24">
+            <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-8">
                  <div className="bg-slate-950/70 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
                     {/* --- Desktop Header (Now inside the main panel) --- */}
                     <Header 

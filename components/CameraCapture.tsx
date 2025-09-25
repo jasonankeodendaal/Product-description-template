@@ -28,7 +28,6 @@ interface CameraCaptureProps {
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose, mode = 'photo' }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // FIX: Destructure 'devices' from the useCamera hook to make it available in the component scope.
   const { stream, error, capabilities, switchCamera, applyAdvancedConstraint, activeDevice, devices } = useCamera();
 
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
@@ -52,7 +51,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   useEffect(() => {
     if (capabilities.torch) {
-      // FIX: Cast advanced constraints to 'any' to bypass TypeScript errors for non-standard properties like 'torch'.
       applyAdvancedConstraint([{ torch: flashMode === 'on' } as any]);
     }
   }, [flashMode, capabilities.torch, applyAdvancedConstraint]);
@@ -61,7 +59,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     if (!capabilities.zoom) return;
     const clampedZoom = Math.max(capabilities.zoom.min, Math.min(newZoom, capabilities.zoom.max));
     setZoom(clampedZoom);
-    // FIX: Cast advanced constraints to 'any' to bypass TypeScript errors for non-standard properties like 'zoom'.
     applyAdvancedConstraint([{ zoom: clampedZoom } as any]);
   }, [capabilities.zoom, applyAdvancedConstraint]);
 

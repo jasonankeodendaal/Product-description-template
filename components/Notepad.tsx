@@ -33,7 +33,6 @@ interface NotepadProps {
     onDeleteNoteRecording: (id: string) => Promise<void>;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
-    // FIX: Added performAiAction to the props to match what is passed from App.tsx.
     performAiAction: (prompt: string, context: string) => Promise<any>;
 }
 
@@ -395,7 +394,7 @@ export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDel
                 setSelectedNote(null);
             }
         }
-    }, [notes]); // Only depend on the notes prop
+    }, [notes, selectedNote]); // Only depend on the notes prop and selectedNote
 
 
     const filteredNotes = useMemo(() => {

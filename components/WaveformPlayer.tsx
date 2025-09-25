@@ -46,8 +46,6 @@ export const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioBlob }) => 
              setDuration(Math.floor(newDuration));
              setCurrentTime(0);
         });
-        // FIX: The 'audioprocess' event was deprecated in WaveSurfer v7. Replaced with 'timeupdate' for compatibility.
-        // ws.on('audioprocess', (time: number) => setCurrentTime(Math.floor(time)));
 
 
         return () => {

@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { View } from '../../App';
-import { PhotoIcon } from '../icons/PhotoIcon';
+import { PhotosToolIcon } from '../icons/PhotosToolIcon';
 
 interface PhotosTileProps {
     onNavigate: (view: View) => void;
@@ -8,11 +9,13 @@ interface PhotosTileProps {
 }
 
 export const PhotosTile: React.FC<PhotosTileProps> = ({ onNavigate, count }) => (
-    <button onClick={() => onNavigate('photos')} className="w-full h-full bg-purple-500 text-white p-2 flex flex-col justify-start items-start gap-2 hover:bg-purple-600 transition-colors">
-        <PhotoIcon className="w-7 h-7" />
-        <div className="text-left mt-auto">
-            <span className="font-bold text-2xl">{count}</span>
-            <p className="text-xs">Photos</p>
+    <button onClick={() => onNavigate('photos')} className="w-full h-full bg-purple-500 text-white p-3 flex flex-col justify-between items-start gap-2 hover:bg-purple-600 transition-colors">
+        <div className="w-10 h-10 holographic-icon">
+            <PhotosToolIcon />
+        </div>
+        <div className="text-left">
+            <span className="font-bold text-xl sm:text-2xl holographic-text">{count}</span>
+            <p className="text-xs font-semibold">Photos</p>
         </div>
     </button>
 );
