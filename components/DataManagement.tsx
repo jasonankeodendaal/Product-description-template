@@ -1,8 +1,4 @@
-
-
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RestoreIcon } from './icons/RestoreIcon';
@@ -93,6 +89,31 @@ export const DataManagement: React.FC<DataManagementProps> = ({
 }) => {
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
     const [restoreError, setRestoreError] = useState('');
+    const [isDriveConnected, setIsDriveConnected] = useState(false);
+    const [driveUser, setDriveUser] = useState<string | null>(null);
+    const [isDriveLoading, setIsDriveLoading] = useState(true);
+
+
+    useEffect(() => {
+        // Check drive connection status on component mount
+        const checkStatus = async () => {
+            try {
+                const res = await fetch('/api/auth/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.email) {
+                        setIsDriveConnected(true);
+                        setDriveUser(data.email);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to check Google Drive status:", error);
+            } finally {
+                setIsDriveLoading(false);
+            }
+        };
+        checkStatus();
+    }, []);
 
     const [apiSettings, setApiSettings] = useState({
         customApiEndpoint: siteSettings.customApiEndpoint || '',
@@ -137,6 +158,12 @@ export const DataManagement: React.FC<DataManagementProps> = ({
             }
         }
         if (e.target) e.target.value = '';
+    };
+
+    const handleDriveDisconnect = async () => {
+        await fetch('/api/auth/disconnect');
+        setIsDriveConnected(false);
+        setDriveUser(null);
     };
 
     return (
@@ -207,17 +234,24 @@ export const DataManagement: React.FC<DataManagementProps> = ({
 
             <InfoCard>
                 <SectionTitle>Cloud Storage Sync</SectionTitle>
-                <div className="relative group">
-                    <button
-                        disabled
-                        className="w-full bg-[var(--theme-card-bg)] text-[var(--theme-text-primary)] font-semibold py-3 px-4 rounded-md text-base inline-flex items-center justify-center gap-3 opacity-50 cursor-not-allowed"
+                {isDriveLoading ? (
+                    <div className="flex items-center justify-center gap-2 text-[var(--theme-text-secondary)]"><Spinner /> Checking connection...</div>
+                ) : isDriveConnected ? (
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="font-semibold text-[var(--theme-green)]">Connected to Google Drive</p>
+                            <p className="text-sm text-[var(--theme-text-secondary)]">as {driveUser}</p>
+                        </div>
+                        <button onClick={handleDriveDisconnect} className="text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] font-semibold">Disconnect</button>
+                    </div>
+                ) : (
+                    <a
+                        href="/api/auth/google"
+                        className="w-full bg-[var(--theme-card-bg)] text-[var(--theme-text-primary)] font-semibold py-3 px-4 rounded-md text-base inline-flex items-center justify-center gap-3 hover:bg-[var(--theme-bg)] transition-colors"
                     >
                         <GoogleDriveIcon /> Connect to Google Drive
-                    </button>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-black/80 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                        Full Google Drive sync and login requires backend OAuth changes and is planned for a future update.
-                    </div>
-                </div>
+                    </a>
+                )}
             </InfoCard>
             
             <InfoCard>
