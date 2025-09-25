@@ -4,6 +4,7 @@ import { XIcon } from './icons/XIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { EventEditorModal } from './EventEditorModal';
 import { BellIcon } from './icons/BellIcon';
+import { PlusIcon } from './icons/PlusIcon';
 
 interface CalendarViewProps {
     events: CalendarEvent[];
@@ -17,12 +18,12 @@ interface CalendarViewProps {
 }
 
 const colorMap: Record<string, string> = {
-    sky: 'bg-sky-500',
-    purple: 'bg-purple-500',
-    emerald: 'bg-emerald-500',
-    amber: 'bg-amber-500',
-    pink: 'bg-pink-500',
-    cyan: 'bg-cyan-500',
+    sky: 'bg-sky-500 border-sky-600',
+    purple: 'bg-purple-500 border-purple-600',
+    emerald: 'bg-emerald-500 border-emerald-600',
+    amber: 'bg-amber-500 border-amber-600',
+    pink: 'bg-pink-500 border-pink-600',
+    cyan: 'bg-cyan-500 border-cyan-600',
 };
 
 export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent, onDeleteEvent, photos, onSavePhoto, onClose, recordings, onSaveRecording }) => {
@@ -90,20 +91,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300 animate-flex-modal-scale-in" aria-modal="true" role="dialog">
             <div className="bg-[var(--theme-dark-bg)] border-t md:border border-[var(--theme-border)] w-full h-full md:max-w-6xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden">
                 <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/10"><ChevronLeftIcon /></button>
-                        <h2 className="text-xl font-bold text-[var(--theme-text-primary)] w-48 text-center">
-                            {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                        </h2>
-                        <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-white/10"><ChevronRightIcon /></button>
+                    <div className="flex items-center gap-2">
+                         <div className="flex items-center gap-1 p-1 bg-gray-900/50 border border-[var(--theme-border)]/50 rounded-md">
+                            <button onClick={() => changeMonth(-1)} className="p-1 rounded-md hover:bg-white/10"><ChevronLeftIcon /></button>
+                            <button onClick={() => changeMonth(1)} className="p-1 rounded-md hover:bg-white/10"><ChevronRightIcon /></button>
+                        </div>
+                         <button onClick={() => setCurrentDate(new Date())} className="text-sm font-semibold px-3 py-1.5 rounded-md hover:bg-white/10 border border-transparent hover:border-[var(--theme-border)]/50">Today</button>
                     </div>
+                    <h2 className="text-xl font-bold text-[var(--theme-text-primary)]">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
                     <div className="flex items-center gap-4">
                          {notificationPermission === 'default' && (
                             <button onClick={handleRequestNotification} className="text-sm flex items-center gap-2 bg-amber-600/20 text-amber-300 px-3 py-1.5 rounded-md hover:bg-amber-600/40">
                                 <BellIcon /> Enable Reminders
                             </button>
                         )}
-                         <button onClick={onClose} className="text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
+                         <button onClick={onClose} className="p-2 -mr-2 text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
                     </div>
                 </header>
                 
@@ -117,7 +119,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
                         const isToday = date && date.toDateString() === new Date().toDateString();
 
                         return (
-                            <div key={index} className="border-b border-r border-[var(--theme-border)]/50 p-1.5 flex flex-col overflow-hidden relative transition-colors hover:bg-white/5 cursor-pointer" onClick={() => date && openEditorForNewEvent(date)}>
+                            <div key={index} className="border-b border-r border-[var(--theme-border)]/50 p-1.5 flex flex-col overflow-hidden relative transition-all duration-200 hover:bg-[var(--theme-card-bg)]/50 cursor-pointer group" onClick={() => date && openEditorForNewEvent(date)}>
                                 {date && (
                                     <>
                                         <time dateTime={dateKey} className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[var(--theme-green)] text-black' : 'text-white'}`}>
@@ -125,11 +127,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
                                         </time>
                                         <div className="flex-grow overflow-y-auto no-scrollbar mt-1 space-y-1">
                                             {dayEvents.map(event => (
-                                                <button key={event.id} onClick={(e) => { e.stopPropagation(); openEditorForExistingEvent(event); }} className={`w-full text-left text-xs p-1 rounded ${colorMap[event.color]}/50 text-white truncate`}>
+                                                <button key={event.id} onClick={(e) => { e.stopPropagation(); openEditorForExistingEvent(event); }} className={`w-full text-left text-xs px-2 py-1 rounded ${colorMap[event.color]} text-black font-bold truncate hover:opacity-80 transition-opacity border-b-2`}>
                                                     {event.title}
                                                 </button>
                                             ))}
                                         </div>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openEditorForNewEvent(date); }}
+                                            className="absolute top-1 right-1 w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                           <PlusIcon />
+                                        </button>
                                     </>
                                 )}
                             </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from '../../App';
-import { RecordingIcon } from '../icons/RecordingIcon';
+import { WaveformIcon } from '../icons/WaveformIcon';
 
 interface RecordingsTileProps {
     onNavigate: (view: View) => void;
@@ -9,7 +9,7 @@ interface RecordingsTileProps {
 
 export const RecordingsTile: React.FC<RecordingsTileProps> = ({ onNavigate, count }) => (
     <button onClick={() => onNavigate('recordings')} className="w-full h-full bg-pink-500 text-white p-4 flex flex-col justify-start items-start gap-4 hover:bg-pink-600 transition-colors">
-        <RecordingIcon className="w-8 h-8" />
+        <WaveformIcon className="w-10 h-10 text-white" />
         <div className="text-left">
             <span className="font-bold text-3xl">{count}</span>
             <p className="text-sm">Recordings</p>

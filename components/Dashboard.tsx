@@ -19,7 +19,6 @@ import { AppPublishingGuide } from './AppPublishingGuide';
 
 interface DashboardProps {
   onClose: () => void;
-  onLock: () => void;
   templates: Template[];
   recordings: Recording[];
   photos: Photo[];
@@ -46,7 +45,6 @@ type Section = 'data' | 'settings' | 'setup' | 'about' | 'publishing';
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   onClose, 
-  onLock,
   templates,
   recordings,
   photos,
@@ -87,8 +85,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <p className="text-[var(--theme-text-secondary)] mt-1 text-sm">Manage your application's data, settings, and local folder connection.</p>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={onLock} className="text-sm font-semibold text-[var(--theme-red)] hover:opacity-80 transition-opacity">Lock & Logout</button>
-            <button onClick={onClose} className="text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
+            <button onClick={onClose} className="p-2 -mr-2 text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
           </div>
         </header>
         

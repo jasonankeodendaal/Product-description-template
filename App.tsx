@@ -29,6 +29,7 @@ import { CalendarView } from './components/CalendarView';
 import { TimesheetManager } from './components/TimesheetManager';
 import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
 import { OnboardingTour } from './components/OnboardingTour';
+import { PrintPreview } from './components/PrintPreview';
 
 declare var JSZip: any;
 
@@ -223,6 +224,11 @@ const App: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
+    
+    // Timer State
+    const [activeTimer, setActiveTimer] = useState<{ startTime: number; task: string } | null>(null);
+    const [timerDuration, setTimerDuration] = useState(0);
     
     // PWA Install Prompt State
     const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -239,6 +245,25 @@ const App: React.FC = () => {
     useEffect(() => {
         setStorageUsage(calculateStorageUsage({ photos, recordings, notes, logEntries, templates, calendarEvents }));
     }, [photos, recordings, notes, logEntries, templates, calendarEvents]);
+
+    // Effect for the live timer
+    useEffect(() => {
+        let interval: number | null = null;
+        if (activeTimer) {
+            // Set initial duration immediately
+            setTimerDuration(Math.floor((Date.now() - activeTimer.startTime) / 1000));
+            interval = window.setInterval(() => {
+                setTimerDuration(Math.floor((Date.now() - activeTimer.startTime) / 1000));
+            }, 1000);
+        } else {
+            setTimerDuration(0);
+        }
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+    }, [activeTimer]);
 
     // --- PWA Installation Logic ---
     useEffect(() => {
@@ -591,6 +616,36 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
     }, [directoryHandle]);
 
+    // --- Timer Handlers ---
+    const handleStartTimer = (task: string) => {
+        if (activeTimer) return; // Prevent starting a new timer if one is active
+        setActiveTimer({ startTime: Date.now(), task });
+    };
+
+    const handleStopTimer = () => {
+        if (!activeTimer) return;
+        
+        const endTime = new Date();
+        const startTime = new Date(activeTimer.startTime);
+
+        // Don't log entries less than a second
+        if (endTime.getTime() - startTime.getTime() < 1000) {
+            setActiveTimer(null);
+            return;
+        }
+        
+        const newEntry: Omit<LogEntry, 'id'> = {
+            type: 'Manual Task',
+            task: activeTimer.task,
+            timestamp: startTime.toISOString(),
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+        };
+
+        handleSaveLogEntry(newEntry);
+        setActiveTimer(null);
+    };
+
     // --- Other Handlers ---
     const handleGenerate = async () => {
       const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
@@ -918,11 +973,6 @@ const App: React.FC = () => {
         localStorage.removeItem('loginData');
     }, [handleSaveLogEntry]);
 
-    const handleDashboardLockAndLogout = () => {
-        setIsDashboardOpen(false);
-        handleLogout();
-    };
-
 
     if (!isInitialized) {
         return <FullScreenLoader message="Initializing App..." />;
@@ -1026,7 +1076,11 @@ const App: React.FC = () => {
             case 'timesheet':
                 return <TimesheetManager 
                     logEntries={logEntries}
-                    onSaveLogEntry={handleSaveLogEntry}
+                    activeTimer={activeTimer}
+                    timerDuration={timerDuration}
+                    onStartTimer={handleStartTimer}
+                    onStopTimer={handleStopTimer}
+                    onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
                 />;
             case 'calendar':
                 // This view is now handled by the modal
@@ -1093,7 +1147,6 @@ const App: React.FC = () => {
             {isDashboardOpen && (
                 <Dashboard 
                     onClose={() => setIsDashboardOpen(false)}
-                    onLock={handleDashboardLockAndLogout}
                     templates={templates}
                     recordings={recordings}
                     photos={photos}
@@ -1114,6 +1167,13 @@ const App: React.FC = () => {
                     isApiConnected={isApiConnected}
                     onDownloadSource={handleDownloadSourceZip}
                     userRole={userRole}
+                />
+            )}
+            {isPrintPreviewOpen && (
+                <PrintPreview 
+                    logEntries={logEntries} 
+                    onClose={() => setIsPrintPreviewOpen(false)}
+                    siteSettings={siteSettings}
                 />
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}

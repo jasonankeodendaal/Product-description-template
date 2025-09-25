@@ -4,13 +4,21 @@ export const PhotosIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
         <style>
             {`
-                .photo-1, .photo-2, .photo-3 {
-                    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    transform-origin: center;
+                @keyframes photo-float-1 {
+                    0%, 100% { transform: translate(-2px, -2px) rotate(-5deg); }
+                    50% { transform: translate(0px, 0px) rotate(-2deg); }
                 }
-                .group:hover .photo-1 { transform: translate(-2px, -2px) rotate(-5deg) scale(1.05); }
-                .group:hover .photo-2 { transform: translate(2px, -2px) rotate(5deg) scale(1.05); }
-                .group:hover .photo-3 { transform: translate(0px, 2px) rotate(0deg) scale(1.05); }
+                @keyframes photo-float-2 {
+                    0%, 100% { transform: translate(2px, -2px) rotate(5deg); }
+                    50% { transform: translate(0px, 0px) rotate(2deg); }
+                }
+                @keyframes photo-float-3 {
+                    0%, 100% { transform: translate(0px, 2px) rotate(0deg); }
+                    50% { transform: translate(-1px, 0px) rotate(1deg); }
+                }
+                .photo-1 { animation: photo-float-1 6s ease-in-out infinite; }
+                .photo-2 { animation: photo-float-2 7s ease-in-out infinite; }
+                .photo-3 { animation: photo-float-3 5s ease-in-out infinite; }
             `}
         </style>
         <defs>
@@ -18,20 +26,20 @@ export const PhotosIcon: React.FC = () => (
                 <feDropShadow dx="0.5" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.2"/>
             </filter>
             <linearGradient id="photo-fill-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#34D399"/>
-                <stop offset="100%" stopColor="#10B981"/>
+                <stop offset="0%" stopColor="#F97316"/>
+                <stop offset="100%" stopColor="#EA580C"/>
             </linearGradient>
         </defs>
         <g filter="url(#photo-shadow)">
-            <g className="photo-3" transform="rotate(-2, 12, 12)">
+            <g className="photo-3" transform-origin="center">
                 <rect x="5" y="5" width="14" height="14" rx="1.5" fill="#E9E2D5"/>
                 <rect x="7" y="7" width="10" height="8" fill="url(#photo-fill-grad)"/>
             </g>
-            <g className="photo-2" transform="rotate(5, 12, 12)">
+            <g className="photo-2" transform-origin="center">
                 <rect x="5" y="5" width="14" height="14" rx="1.5" fill="#E9E2D5"/>
                 <rect x="7" y="7" width="10" height="8" fill="url(#photo-fill-grad)"/>
             </g>
-            <g className="photo-1" transform="rotate(-5, 12, 12)">
+            <g className="photo-1" transform-origin="center">
                 <rect x="5" y="5" width="14" height="14" rx="1.5" fill="#FFFFFF"/>
                 <rect x="7" y="7" width="10" height="8" fill="url(#photo-fill-grad)"/>
             </g>

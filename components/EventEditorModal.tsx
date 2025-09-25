@@ -11,6 +11,7 @@ import { MicIcon } from './icons/MicIcon';
 import { formatTime } from '../utils/formatters';
 import { LiveWaveform } from './LiveWaveform';
 import { WaveformPlayer } from './WaveformPlayer';
+import { CheckIcon } from './icons/CheckIcon';
 
 interface EventEditorModalProps {
     onClose: () => void;
@@ -133,18 +134,21 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                 <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
                         <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
-                            <h3 className="text-lg font-bold text-[var(--theme-text-primary)]">
-                                {event ? 'Edit Event' : 'New Event'} on {targetDate.toLocaleDateString()}
-                            </h3>
-                            <button type="button" onClick={onClose} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]"><XIcon /></button>
+                            <div>
+                                <h3 className="text-lg font-bold text-[var(--theme-text-primary)]">
+                                    {event ? 'Edit Event' : 'New Event'}
+                                </h3>
+                                <p className="text-sm text-[var(--theme-text-secondary)]">{targetDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            </div>
+                            <button type="button" onClick={onClose} className="p-2 -mr-2 text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]"><XIcon /></button>
                         </header>
                         <div className="p-6 space-y-4 overflow-y-auto">
                             <input
                                 type="text"
                                 value={title}
                                 onChange={e => setTitle(e.target.value)}
-                                placeholder="Event Title"
-                                className="w-full text-xl font-semibold bg-transparent border-b-2 border-[var(--theme-border)]/50 focus:border-[var(--theme-green)] focus:outline-none"
+                                placeholder="Add a title for your event"
+                                className="w-full text-xl font-semibold bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)] focus:border-[var(--theme-green)] focus:ring-2 focus:ring-[var(--theme-green)]/50 focus:outline-none"
                                 autoFocus
                             />
                             <textarea
@@ -152,7 +156,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                                 onChange={e => setNotes(e.target.value)}
                                 placeholder="Notes..."
                                 rows={3}
-                                className="w-full bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)]"
+                                className="w-full bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)] focus:border-[var(--theme-green)] focus:ring-2 focus:ring-[var(--theme-green)]/50 focus:outline-none"
                             />
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -161,20 +165,22 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-1">Reminder</label>
-                                    <select value={reminderOffset} onChange={e => setReminderOffset(Number(e.target.value))} className="w-full bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)] h-[42px]">
+                                    <select value={reminderOffset} onChange={e => setReminderOffset(Number(e.target.value))} className="w-full bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)] h-[42px] focus:border-[var(--theme-green)] focus:ring-2 focus:ring-[var(--theme-green)]/50 focus:outline-none">
                                         {reminderOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">Color Tag</label>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-wrap">
                                     {defaultColors.map(c => (
-                                        <button key={c} type="button" onClick={() => setColor(c)} className={`w-6 h-6 rounded-full ${colorMap[c].bg} ${color === c ? `ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ${colorMap[c].ring}` : ''}`}></button>
+                                        <button key={c} type="button" onClick={() => setColor(c)} className={`w-8 h-8 rounded-full transition-transform transform hover:scale-110 flex items-center justify-center ${colorMap[c].bg} ${color === c ? `ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ${colorMap[c].ring}` : ''}`}>
+                                            {color === c && <CheckIcon className="w-full h-full p-1.5 text-black" />}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
-                             <div>
+                             <div className="pt-2">
                                 <h4 className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">Attachments</h4>
                                 <div className="flex items-start gap-3">
                                     {attachedPhoto ? (

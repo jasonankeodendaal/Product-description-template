@@ -35,6 +35,7 @@
       --theme-border: #4B5563; /* Medium Grey */
       --theme-green: #F97316; /* Bright Orange */
       --theme-red: #F87171; /* Softer Red */
+      --theme-bright-green: #22c55e; /* Green 500 for START button */
       --theme-text-primary: #F9FAFB; /* Off-white */
       --theme-text-secondary: #9CA3AF; /* Light Grey */
       
@@ -365,6 +366,68 @@
             linear-gradient(to right, rgba(249, 115, 22, 0.05) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(249, 115, 22, 0.05) 1px, transparent 1px);
         background-size: 1.5rem 1.5rem;
+    }
+    
+    /* Camera Grid Overlay */
+    .camera-grid-overlay {
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+    }
+    .camera-grid-overlay::before,
+    .camera-grid-overlay::after {
+        content: '';
+        position: absolute;
+    }
+    .camera-grid-overlay::before { /* Vertical lines */
+        left: 33.33%;
+        right: 33.33%;
+        top: 0;
+        bottom: 0;
+        border-left: 1px solid rgba(255, 255, 255, 0.2);
+        border-right: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .camera-grid-overlay::after { /* Horizontal lines */
+        top: 33.33%;
+        bottom: 33.33%;
+        left: 0;
+        right: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Vertical Zoom Slider */
+    .zoom-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        cursor: pointer;
+        /* The width becomes the height after rotation */
+        width: 150px; 
+    }
+    .zoom-slider::-webkit-slider-runnable-track {
+        height: 3px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 2px;
+    }
+    .zoom-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        margin-top: -8.5px; /* (thumb height - track height) / 2 */
+        height: 20px;
+        width: 20px;
+        background-color: white;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    @keyframes pulse-slow {
+        0%, 100% { opacity: 0.7; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.05); }
+    }
+    .animate-pulse-slow {
+        animation: pulse-slow 3s ease-in-out infinite;
     }
 
     /* md breakpoint: 768px */

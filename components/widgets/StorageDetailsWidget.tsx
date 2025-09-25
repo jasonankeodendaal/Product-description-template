@@ -4,6 +4,13 @@ import { StorageUsage } from '../../utils/storageUtils';
 import { HardDriveIcon } from '../icons/HardDriveIcon';
 import { FolderSyncIcon } from '../icons/FolderSyncIcon';
 import { CloudIcon } from '../icons/CloudIcon';
+import { useRecharts } from '../../hooks/useRecharts';
+import { Spinner } from '../icons/Spinner';
+import { PhotoIcon } from '../icons/PhotoIcon';
+import { RecordingIcon } from '../icons/RecordingIcon';
+import { NotepadIcon } from '../icons/NotepadIcon';
+import { CalendarIcon } from '../icons/CalendarIcon';
+import { ClockIcon } from '../icons/ClockIcon';
 
 const formatBytes = (bytes: number, decimals = 2): string => {
     if (bytes === 0) return '0 Bytes';
@@ -39,7 +46,7 @@ const AnimatedValue: React.FC<{ value: number }> = ({ value }) => {
         const handle = requestAnimationFrame(animationFrame);
 
         return () => cancelAnimationFrame(handle);
-    }, [value]);
+    }, [value, displayValue]);
 
     return <span>{formatBytes(displayValue)}</span>;
 };
@@ -55,40 +62,63 @@ const getSyncInfo = (syncMode: SiteSettings['syncMode'], isConnected: boolean) =
     }
 };
 
+const categoryIcons: { [key: string]: React.ReactNode } = {
+    'Photos': <PhotoIcon className="w-4 h-4 text-purple-400" />,
+    'Recordings': <RecordingIcon className="w-4 h-4 text-pink-400" />,
+    'Notes': <NotepadIcon className="w-4 h-4 text-sky-400" />,
+    'Calendar': <CalendarIcon className="w-4 h-4 text-emerald-400" />,
+    'Logs & Templates': <ClockIcon className="w-4 h-4 text-orange-400" />,
+};
+
 export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSettings: SiteSettings }> = ({ storageUsage, siteSettings }) => {
+    const Recharts = useRecharts();
     const { total, breakdown } = storageUsage;
-    // Assuming API is connected if mode is API, as we don't have the live status here. This is a display component.
     const syncInfo = getSyncInfo(siteSettings.syncMode, true);
+    const hasData = total > 0;
 
     return (
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col justify-between">
-            <div>
-                <div className="flex items-center gap-3">
-                    <div className="text-emerald-400 w-8 h-8 animate-[hologram-pulse_4s_ease-in-out_infinite]">{syncInfo.icon}</div>
-                    <div>
-                        <h3 className="text-white font-bold">{syncInfo.text}</h3>
-                        <p className="text-gray-400 text-xs">{syncInfo.details}</p>
-                    </div>
+            <div className="flex items-center gap-3">
+                <div className="text-emerald-400 w-8 h-8 animate-pulse-slow">{syncInfo.icon}</div>
+                <div>
+                    <h3 className="text-white font-bold">{syncInfo.text}</h3>
+                    <p className="text-gray-400 text-xs">{syncInfo.details}</p>
                 </div>
             </div>
 
-            <div className="my-2">
-                <div className="text-center">
-                    <span className="font-bold text-white text-3xl"><AnimatedValue value={total} /></span>
-                    <p className="text-gray-400 text-sm">Total Storage Used</p>
-                </div>
-            </div>
-
-            <div className="space-y-1 text-xs text-gray-300 overflow-y-auto no-scrollbar max-h-24">
-                {breakdown.length > 0 ? breakdown.map((item) => (
-                    <div key={item.name} className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.fill }}></div>
-                        <span className="flex-grow font-medium">{item.name}</span>
-                        <span className="font-mono text-gray-400">{item.count} items</span>
-                        <span className="font-mono w-20 text-right">{formatBytes(item.bytes)}</span>
+            <div className="flex-grow my-2 flex flex-col md:flex-row items-center justify-around gap-2 overflow-hidden">
+                {hasData && Recharts ? (
+                    <>
+                        <div className="w-full md:w-2/5 h-28 md:h-full relative">
+                            <Recharts.ResponsiveContainer width="100%" height="100%">
+                                <Recharts.PieChart>
+                                    <Recharts.Pie data={breakdown} dataKey="bytes" nameKey="name" cx="50%" cy="50%" innerRadius="70%" outerRadius="90%" paddingAngle={5} stroke="none">
+                                        {breakdown.map((entry, index) => (
+                                            <Recharts.Cell key={`cell-${index}`} fill={entry.fill} />
+                                        ))}
+                                    </Recharts.Pie>
+                                </Recharts.PieChart>
+                            </Recharts.ResponsiveContainer>
+                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span className="font-bold text-white text-lg lg:text-xl"><AnimatedValue value={total} /></span>
+                                <p className="text-gray-400 text-xs">Total Used</p>
+                            </div>
+                        </div>
+                        <div className="w-full md:w-3/5 space-y-1.5 overflow-y-auto no-scrollbar">
+                            {breakdown.map((item) => (
+                                <div key={item.name} className="flex items-center gap-2 text-xs p-1 bg-white/5 rounded-md">
+                                    <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
+                                    <span className="flex-grow truncate text-gray-300">{item.name}</span>
+                                    <span className="font-mono text-gray-400">{formatBytes(item.bytes)}</span>
+                                    <div className="w-10 text-right font-semibold" style={{ color: item.fill }}>{total > 0 ? `${Math.round((item.bytes / total) * 100)}%` : '0%'}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
+                        {hasData && !Recharts ? <Spinner /> : 'No data stored yet.'}
                     </div>
-                )) : (
-                     <p className="text-center text-gray-500 py-4">No data stored yet.</p>
                 )}
             </div>
         </div>
