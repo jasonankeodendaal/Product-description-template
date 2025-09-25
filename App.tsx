@@ -3,7 +3,7 @@ import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN } from './constants';
 import { GeneratorView } from './components/GeneratorView';
-import { generateProductDescription, getWeatherInfo } from './services/geminiService';
+import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
 import { GenerationResult } from './components/OutputPanel';
 import { FullScreenLoader } from './components/FullScreenLoader';
 import { db } from './services/db';
@@ -225,6 +225,7 @@ const App: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
     const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
+    const [isLandscapeLocked, setIsLandscapeLocked] = useState(false);
     
     // Timer State
     const [activeTimer, setActiveTimer] = useState<{ startTime: number; task: string } | null>(null);
@@ -240,6 +241,41 @@ const App: React.FC = () => {
     
     // App Update State
     const [showUpdateToast, setShowUpdateToast] = useState(false);
+
+    // --- Screen Orientation Control ---
+    const toggleOrientationLock = useCallback(async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+            }
+
+            if (isLandscapeLocked) {
+                // FIX: Cast screen.orientation to 'any' to bypass TypeScript error for the experimental 'lock' method.
+                await (screen.orientation as any).lock('portrait-primary');
+            } else {
+                // FIX: Cast screen.orientation to 'any' to bypass TypeScript error for the experimental 'lock' method.
+                await (screen.orientation as any).lock('landscape-primary');
+            }
+            setIsLandscapeLocked(!isLandscapeLocked);
+        } catch (err) {
+            console.error("Orientation lock failed:", err);
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            alert("Could not change orientation. This feature may not be supported by your browser or requires fullscreen mode.");
+        }
+    }, [isLandscapeLocked]);
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            if (!document.fullscreenElement && isLandscapeLocked) {
+                screen.orientation.unlock();
+                setIsLandscapeLocked(false);
+            }
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, [isLandscapeLocked]);
 
     // Effect to recalculate storage whenever data changes
     useEffect(() => {
@@ -1115,6 +1151,7 @@ const App: React.FC = () => {
                     onDeleteNoteRecording={handleDeleteNoteRecording}
                     photos={photos}
                     onSavePhoto={handleSavePhoto}
+                    performAiAction={(prompt, context) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
                 />;
             case 'image-tool':
                 return <ImageTool initialImage={imageToEdit} onClearInitialImage={() => setImageToEdit(null)} />;
@@ -1153,13 +1190,14 @@ const App: React.FC = () => {
                     onNavigate={setCurrentView}
                     onOpenDashboard={() => setIsDashboardOpen(true)}
                     onOpenInfo={() => setIsInfoModalOpen(true)}
-                    onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                     showInstallButton={!isAppInstalled}
                     onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                    onToggleOrientation={toggleOrientationLock}
+                    isLandscapeLocked={isLandscapeLocked}
                 />
             </div>
             
-            <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
+            <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24">
                  <div className="bg-slate-950/70 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
                     {/* --- Desktop Header (Now inside the main panel) --- */}
                     <Header 
@@ -1169,9 +1207,10 @@ const App: React.FC = () => {
                         onNavigate={setCurrentView}
                         onOpenDashboard={() => setIsDashboardOpen(true)}
                         onOpenInfo={() => setIsInfoModalOpen(true)}
-                        onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                         showInstallButton={!isAppInstalled}
                         onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                        onToggleOrientation={toggleOrientationLock}
+                        isLandscapeLocked={isLandscapeLocked}
                     />
                     {renderView()}
                 </div>
@@ -1208,6 +1247,7 @@ const App: React.FC = () => {
                     onDownloadSource={handleDownloadSourceZip}
                     userRole={userRole}
                     onInitiatePinReset={handleInitiatePinReset}
+                    onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                 />
             )}
             {isPrintPreviewOpen && (

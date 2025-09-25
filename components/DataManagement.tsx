@@ -41,13 +41,13 @@ interface DataManagementProps {
 }
 
 const InfoCard: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50 ${className}`}>
+    <div className={`bg-white/5 backdrop-blur-sm p-6 rounded-lg border border-[var(--theme-border)]/50 dashboard-card-glow-anim ${className}`}>
         {children}
     </div>
 );
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <h3 className="text-lg font-semibold text-[var(--theme-text-primary)] mb-4">{children}</h3>
+    <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-4">{children}</h3>
 );
 
 const InputField: React.FC<{ label: string; id: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; placeholder?: string; type?: string }> = 

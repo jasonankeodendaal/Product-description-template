@@ -1,40 +1,16 @@
 import React from 'react';
 
 export const NotepadIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-[var(--theme-text-secondary)]" {...props}>
-        <style>{`
-            @keyframes write-line-1 {
-                0%, 100% { stroke-dashoffset: 8; }
-                50% { stroke-dashoffset: 0; }
-            }
-             @keyframes write-line-2 {
-                0%, 100% { stroke-dashoffset: 5; }
-                50% { stroke-dashoffset: 0; }
-            }
-            .writing-line-1 {
-                stroke-dasharray: 8;
-                stroke-dashoffset: 8;
-                animation: write-line-1 2.5s ease-in-out infinite;
-            }
-             .writing-line-2 {
-                stroke-dasharray: 5;
-                stroke-dashoffset: 5;
-                animation: write-line-2 2.5s ease-in-out infinite;
-                animation-delay: 0.5s;
-            }
-            @keyframes float-subtle {
-              0%, 100% { transform: translateY(0); }
-              50% { transform: translateY(-2px); }
-            }
-            .notepad-float {
-                animation: float-subtle 4s ease-in-out infinite;
-            }
-        `}</style>
-        <g className="notepad-float">
-            <path d="M13.5 2H6.5C5.5 2 5 2.5 5 3.5V20.5C5 21.5 5.5 22 6.5 22H17.5C18.5 22 19 21.5 19 20.5V8.5L13.5 2Z" />
-            <polyline points="13 2 13 9 20 9" />
-            <line className="writing-line-1" x1="8" y1="14" x2="16" y2="14" />
-            <line className="writing-line-2" x1="8" y1="18" x2="13" y2="18" />
-        </g>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+        <defs>
+            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--theme-orange)" />
+                <stop offset="100%" stopColor="var(--theme-bright-orange)" />
+            </linearGradient>
+        </defs>
+        <path fill="url(#g)" d="M15,2H9A3,3,0,0,0,6,5V19a3,3,0,0,0,3,3h6a3,3,0,0,0,3-3V5A3,3,0,0,0,15,2Zm0,17H9a1,1,0,0,1-1-1V5A1,1,0,0,1,9,4h6a1,1,0,0,1,1,1V18A1,1,0,0,1,15,19Z"/>
+        <path fill="url(#g)" d="M10,8h4a1,1,0,0,0,0-2H10a1,1,0,0,0,0,2Z"/>
+        <path fill="url(#g)" d="M14,10H10a1,1,0,0,0,0,2h4a1,1,0,0,0,0-2Z"/>
+        <path fill="url(#g)" d="M14,14H10a1,1,0,0,0,0,2h4a1,1,0,0,0,0-2Z"/>
     </svg>
 );

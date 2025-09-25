@@ -4,8 +4,6 @@ import { StorageUsage } from '../../utils/storageUtils';
 import { HardDriveIcon } from '../icons/HardDriveIcon';
 import { FolderSyncIcon } from '../icons/FolderSyncIcon';
 import { CloudIcon } from '../icons/CloudIcon';
-import { useRecharts } from '../../hooks/useRecharts';
-import { Spinner } from '../icons/Spinner';
 import { PhotoIcon } from '../icons/PhotoIcon';
 import { RecordingIcon } from '../icons/RecordingIcon';
 import { NotepadIcon } from '../icons/NotepadIcon';

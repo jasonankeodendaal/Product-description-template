@@ -3,32 +3,33 @@ import { SiteSettings } from '../constants';
 import { MoreVerticalIcon } from './icons/MoreVerticalIcon';
 import { ImageIcon } from './icons/ImageIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
-import { UserIcon } from './icons/UserIcon';
 import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
 import { View } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { RotateIcon } from './icons/RotateIcon';
 
 interface MobileHeaderProps {
   siteSettings: SiteSettings;
   onNavigate: (view: View) => void;
   onOpenDashboard: () => void;
   onOpenInfo: () => void;
-  onOpenCreatorInfo: () => void;
   showInstallButton: boolean;
   onInstallClick: () => void;
+  onToggleOrientation: () => void;
+  isLandscapeLocked: boolean;
 }
 
-const MoreMenuItem: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void }> = ({ label, icon, onClick }) => (
+const MoreMenuItem: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void; isActive?: boolean }> = ({ label, icon, onClick, isActive }) => (
     <button
         onClick={onClick}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left text-[var(--theme-text-primary)] hover:bg-[var(--theme-card-bg)]/50"
+        className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--theme-card-bg)]/50 ${isActive ? 'text-[var(--theme-orange)]' : 'text-[var(--theme-text-primary)]'}`}
     >
-        <div className="w-6 h-6 text-[var(--theme-text-secondary)]">{icon}</div>
+        <div className={`w-6 h-6 ${isActive ? 'text-[var(--theme-orange)]' : 'text-[var(--theme-text-secondary)]'}`}>{icon}</div>
         <span>{label}</span>
     </button>
 );
 
-export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, onOpenCreatorInfo, showInstallButton, onInstallClick }) => {
+export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavigate, onOpenDashboard, onOpenInfo, showInstallButton, onInstallClick, onToggleOrientation, isLandscapeLocked }) => {
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const moreMenuRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +81,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
                         >
                             <ul>
                                 <li><MoreMenuItem label="Image Squarer" icon={<ImageIcon />} onClick={() => { onNavigate('image-tool'); setIsMoreMenuOpen(false); }} /></li>
-                                <li><MoreMenuItem label="Creator Info" icon={<UserIcon />} onClick={() => { onOpenCreatorInfo(); setIsMoreMenuOpen(false); }} /></li>
+                                <li><MoreMenuItem label="Lock Landscape" icon={<RotateIcon />} onClick={() => { onToggleOrientation(); setIsMoreMenuOpen(false); }} isActive={isLandscapeLocked} /></li>
                                 <li><MoreMenuItem label="Dashboard" icon={<DatabaseIcon />} onClick={() => { onOpenDashboard(); setIsMoreMenuOpen(false); }} /></li>
                                 <li><MoreMenuItem label="About & Setup" icon={<QuestionCircleIcon />} onClick={() => { onOpenInfo(); setIsMoreMenuOpen(false); }} /></li>
                             </ul>

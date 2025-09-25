@@ -1,4 +1,3 @@
-
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { View } from '../App';
 import { SparklesIcon } from './icons/SparklesIcon';
@@ -82,7 +81,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
     }, [activeIndex, navWidth, navItems.length]);
 
     return (
-        <footer className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-4 pb-4 pt-2">
+        <footer className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-4 pt-2">
             <nav ref={navRef} className="relative w-full h-16">
                 <div className="absolute inset-0">
                     <svg width="100%" height="100%" viewBox={`0 0 ${navWidth} 64`} preserveAspectRatio="none">

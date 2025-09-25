@@ -1,19 +1,13 @@
 import React from 'react';
 
 export const CalendarIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" {...props}>
-        <style>{`
-            @keyframes calendar-peek {
-                50% { transform: translateY(-1px); }
-            }
-            .calendar-animate-page {
-                animation: calendar-peek 2s ease-in-out infinite;
-                transform-origin: top;
-            }
-        `}</style>
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="16" y1="2" x2="16" y2="6"></line>
-        <line x1="8" y1="2" x2="8" y2="6"></line>
-        <line className="calendar-animate-page" x1="3" y1="10" x2="21" y2="10"></line>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+        <defs>
+            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--theme-orange)" />
+                <stop offset="100%" stopColor="var(--theme-bright-orange)" />
+            </linearGradient>
+        </defs>
+        <path fill="url(#g)" d="M19,4H18V3a1,1,0,0,0-2,0V4H8V3A1,1,0,0,0,6,3V4H5A3,3,0,0,0,2,7V19a3,3,0,0,0,3,3H19a3,3,0,0,0,3-3V7A3,3,0,0,0,19,4Zm1,15a1,1,0,0,1-1,1H5a1,1,0,0,1-1-1V11H20Z"/>
     </svg>
 );

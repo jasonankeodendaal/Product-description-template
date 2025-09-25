@@ -1,19 +1,14 @@
 import React from 'react';
 
 export const ClockIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" {...props}>
-        <style>{`
-            @keyframes tick-tock {
-                to { transform: rotate(360deg); }
-            }
-            .clock-second-hand {
-                animation: tick-tock 60s steps(60, end) infinite;
-                transform-origin: center;
-                stroke: var(--theme-red);
-            }
-        `}</style>
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-        <line x1="12" y1="12" x2="12" y2="7" className="clock-second-hand" strokeWidth="1"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+        <defs>
+            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--theme-orange)" />
+                <stop offset="100%" stopColor="var(--theme-bright-orange)" />
+            </linearGradient>
+        </defs>
+        <path fill="url(#g)" d="M12,2A10,10,0,1,0,22,12,10,10,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"/>
+        <path fill="url(#g)" d="M16,11H13V8a1,1,0,0,0-2,0v4a1,1,0,0,0,1,1h4a1,1,0,0,0,0-2Z"/>
     </svg>
 );

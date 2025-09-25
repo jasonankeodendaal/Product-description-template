@@ -1,9 +1,14 @@
 import React from 'react';
 
-export const QuestionCircleIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+export const QuestionCircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+        <defs>
+            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--theme-orange)" />
+                <stop offset="100%" stopColor="var(--theme-bright-orange)" />
+            </linearGradient>
+        </defs>
+        <path fill="url(#g)" d="M12,2A10,10,0,1,0,22,12,10,10,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"/>
+        <path fill="url(#g)" d="M12,13a1,1,0,0,0,1-1V11a3,3,0,0,0-3-3H9a1,1,0,0,0,0,2h1a1,1,0,0,1,1,1v1A1,1,0,0,0,12,13Zm-1,3a1,1,0,1,0,1,1A1,1,0,0,0,11,16Z"/>
     </svg>
 );

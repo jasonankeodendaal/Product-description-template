@@ -15,7 +15,7 @@ interface OnboardingTourProps {
 const tourSteps = [
     {
         icon: (
-            <div className="text-4xl animate-bounce" style={{ animationDuration: '1.5s' }}>👋</div>
+            <div className="text-5xl animate-bounce" style={{ animationDuration: '1.5s' }}>👋</div>
         ),
         title: "Welcome to Your AI Workspace!",
         content: "Let's take a quick tour to see how you can supercharge your workflow. It'll only take a moment."
@@ -77,42 +77,43 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
         }
     };
 
+    const progressPercentage = ((currentStep + 1) / tourSteps.length) * 100;
+
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4" aria-modal="true" role="dialog">
-            <div className="bg-[var(--theme-card-bg)] w-full max-w-md rounded-2xl shadow-xl border border-[var(--theme-border)] relative animate-modal-scale-in flex flex-col text-center">
-                <div className="p-8 space-y-4">
-                    <div className="w-20 h-20 mx-auto flex items-center justify-center text-emerald-400">
-                        {tourSteps[currentStep].icon}
-                    </div>
-                    <h2 className="text-2xl font-bold text-white">{tourSteps[currentStep].title}</h2>
-                    <p className="text-[var(--theme-text-secondary)]">{tourSteps[currentStep].content}</p>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4 font-inter" aria-modal="true" role="dialog">
+            <div className="bg-slate-900/50 backdrop-blur-2xl w-full max-w-2xl rounded-2xl shadow-2xl border border-orange-500/20 relative animate-modal-scale-in flex flex-col overflow-hidden">
+                
+                {/* Progress Bar */}
+                <div className="w-full bg-slate-800/50 h-2.5">
+                    <div 
+                        className="bg-gradient-to-r from-orange-500 to-amber-500 h-2.5 rounded-r-full transition-all duration-300 ease-out"
+                        style={{ width: `${progressPercentage}%` }}
+                    />
                 </div>
 
-                <div className="p-6 bg-black/20 border-t border-[var(--theme-border)]/50 space-y-4">
-                    <div className="flex justify-center gap-2">
-                        {tourSteps.map((_, index) => (
-                            <div
-                                key={index}
-                                className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                                    index === currentStep ? 'bg-[var(--theme-green)]' : 'bg-gray-600'
-                                }`}
-                            />
-                        ))}
+                <div className="p-8 md:p-12 flex flex-col justify-center text-left min-h-[450px]">
+                    <div key={currentStep} className="animate-tour-content-in">
+                        <div className="w-24 h-24 mb-6 flex items-center justify-center text-emerald-400 bg-slate-800/50 rounded-2xl">
+                            {tourSteps[currentStep].icon}
+                        </div>
+                        <h2 className="text-4xl font-bold text-white leading-tight">{tourSteps[currentStep].title}</h2>
+                        <p className="text-slate-300 mt-4 text-lg max-w-prose">{tourSteps[currentStep].content}</p>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <button
-                            onClick={onFinish}
-                            className="text-sm font-semibold text-gray-400 hover:text-white"
-                        >
-                            Skip
-                        </button>
-                        <button
-                            onClick={handleNext}
-                            className="bg-[var(--theme-green)] text-black font-bold py-2 px-6 rounded-full"
-                        >
-                            {currentStep === tourSteps.length - 1 ? "Finish Tour" : "Next"}
-                        </button>
-                    </div>
+                </div>
+
+                <div className="p-6 bg-black/30 border-t border-orange-500/10 flex items-center justify-between">
+                    <button
+                        onClick={onFinish}
+                        className="text-sm font-semibold text-slate-400 hover:text-white transition-colors"
+                    >
+                        Skip Tour
+                    </button>
+                    <button
+                        onClick={handleNext}
+                        className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-8 rounded-full transition-colors transform hover:scale-105"
+                    >
+                        {currentStep === tourSteps.length - 1 ? "Get Started" : "Next"}
+                    </button>
                 </div>
             </div>
         </div>

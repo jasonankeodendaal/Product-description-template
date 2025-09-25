@@ -53,15 +53,15 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                 Creator PIN detected!
             </div>
         )}
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4" aria-modal="true" role="dialog">
-            <div className="bg-[var(--theme-card-bg)] w-full max-w-4xl rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in flex flex-col md:flex-row overflow-hidden min-h-[500px]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 auth-modal-container" aria-modal="true" role="dialog">
+            <div className="bg-slate-800 w-full max-w-4xl rounded-xl shadow-2xl border border-slate-700/50 relative animate-modal-scale-in flex flex-col md:flex-row overflow-hidden md:min-h-[550px]">
                 <AuthBrandingPanel creator={siteSettings.creator} />
-                <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
-                    <h2 className="text-3xl font-bold text-[var(--theme-orange)]">{title}</h2>
-                    <p className="text-[var(--theme-text-secondary)] mt-2">{description}</p>
-                    <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+                <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center auth-form-panel">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-orange-500">{title}</h2>
+                    <p className="text-slate-400 mt-2 text-sm sm:text-base">{description}</p>
+                    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
                         <div>
-                            <label htmlFor="new-pin" className="sr-only">New PIN</label>
+                            <label htmlFor="new-pin" className="block text-sm font-medium text-slate-400 mb-2">New PIN</label>
                             <input
                                 id="new-pin"
                                 type="password"
@@ -73,13 +73,13 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                                     setPin(e.target.value.replace(/[^0-9]/g, ''));
                                     setError('');
                                 }}
-                                placeholder="Enter 4-digit PIN"
-                                className="w-full bg-[var(--theme-text-primary)] border-2 border-[var(--theme-border)] rounded-lg p-4 text-center text-3xl tracking-[0.5em] font-mono text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-orange)] focus:border-[var(--theme-orange)]"
+                                placeholder="••••"
+                                className="w-full bg-white border-2 border-slate-300 rounded-lg p-3 text-center text-3xl tracking-[0.3em] sm:p-4 sm:text-4xl sm:tracking-[0.5em] font-mono text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                                 autoFocus
                             />
                         </div>
                         <div>
-                            <label htmlFor="confirm-pin" className="sr-only">Confirm PIN</label>
+                            <label htmlFor="confirm-pin" className="block text-sm font-medium text-slate-400 mb-2">Confirm PIN</label>
                             <input
                                 id="confirm-pin"
                                 type="password"
@@ -91,15 +91,15 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                                     setConfirmPin(e.target.value.replace(/[^0-9]/g, ''));
                                     setError('');
                                 }}
-                                placeholder="Confirm PIN"
-                                className="w-full bg-[var(--theme-text-primary)] border-2 border-[var(--theme-border)] rounded-lg p-4 text-center text-3xl tracking-[0.5em] font-mono text-[var(--theme-dark-bg)] placeholder:text-[var(--theme-dark-bg)]/60 focus:ring-2 focus:ring-[var(--theme-orange)] focus:border-[var(--theme-orange)]"
+                                placeholder="••••"
+                                className="w-full bg-white border-2 border-slate-300 rounded-lg p-3 text-center text-3xl tracking-[0.3em] sm:p-4 sm:text-4xl sm:tracking-[0.5em] font-mono text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
-                        {error && <p className="text-[var(--theme-red)] text-sm text-center">{error}</p>}
+                        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
                         <button
                             type="submit"
-                            style={{ backgroundColor: 'var(--theme-orange)'}}
-                            className="w-full text-black font-bold py-4 px-4 rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors text-lg"
+                            style={{ backgroundColor: '#A0522D' }} // A brownish-orange color from image
+                            className="w-full text-white font-bold py-4 px-4 rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors text-lg"
                             disabled={pin.length < 4 || confirmPin.length < 4}
                         >
                             Save & Continue

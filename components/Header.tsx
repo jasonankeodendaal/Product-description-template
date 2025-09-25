@@ -10,11 +10,11 @@ import { NotepadIcon } from './icons/NotepadIcon';
 import { ImageIcon } from './icons/ImageIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
-import { UserIcon } from './icons/UserIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { ClockIcon } from './icons/ClockIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
+import { RotateIcon } from './icons/RotateIcon';
 
 interface HeaderProps {
   siteSettings: SiteSettings;
@@ -23,9 +23,10 @@ interface HeaderProps {
   onNavigate: (view: View) => void;
   onOpenDashboard: () => void;
   onOpenInfo: () => void;
-  onOpenCreatorInfo: () => void;
   showInstallButton: boolean;
   onInstallClick: () => void;
+  onToggleOrientation: () => void;
+  isLandscapeLocked: boolean;
 }
 
 const HeaderNavItem: React.FC<{
@@ -47,8 +48,8 @@ const HeaderNavItem: React.FC<{
     </button>
 );
 
-const UtilityButton: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void; }> = ({ label, icon, onClick }) => (
-    <button onClick={onClick} className="group flex flex-col items-center justify-center text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] transition-colors" title={label}>
+const UtilityButton: React.FC<{ label: string; icon: React.ReactNode; onClick: () => void; isActive?: boolean }> = ({ label, icon, onClick, isActive }) => (
+    <button onClick={onClick} className={`group flex flex-col items-center justify-center transition-colors ${isActive ? 'text-[var(--theme-orange)]' : 'text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)]'}`} title={label}>
         <div className="w-6 h-6">{icon}</div>
     </button>
 );
@@ -60,9 +61,10 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     onNavigate,
     onOpenDashboard,
     onOpenInfo,
-    onOpenCreatorInfo,
     showInstallButton,
     onInstallClick,
+    onToggleOrientation,
+    isLandscapeLocked,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -99,7 +101,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             {isDropdownOpen && <CompanyInfoDropdown settings={siteSettings} onClose={() => setIsDropdownOpen(false)} />}
         </div>
 
-        <nav className="flex items-center gap-1.5">
+        <nav className="hidden xl:flex items-center gap-1.5">
             <HeaderNavItem label="Home" icon={<HomeIcon />} isActive={currentView === 'home'} onClick={() => onNavigate('home')} />
             <HeaderNavItem label="Generator" icon={<SparklesIcon />} isActive={currentView === 'generator'} onClick={() => onNavigate('generator')} />
             <HeaderNavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} />
@@ -121,7 +123,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
                     <span>Install App</span>
                 </button>
             )}
-            <UtilityButton label="Creator Info" icon={<UserIcon />} onClick={onOpenCreatorInfo} />
+            <UtilityButton label="Lock Landscape" icon={<RotateIcon />} onClick={onToggleOrientation} isActive={isLandscapeLocked} />
             <UtilityButton label="Dashboard" icon={<DatabaseIcon />} onClick={onOpenDashboard} />
             <UtilityButton label="About & Setup" icon={<QuestionCircleIcon />} onClick={onOpenInfo} />
             

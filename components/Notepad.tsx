@@ -33,6 +33,8 @@ interface NotepadProps {
     onDeleteNoteRecording: (id: string) => Promise<void>;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
+    // FIX: Added performAiAction to the props to match what is passed from App.tsx.
+    performAiAction: (prompt: string, context: string) => Promise<any>;
 }
 
 // Mapping note colors to Tailwind classes
@@ -103,7 +105,8 @@ const NoteEditor: React.FC<{
     onDeleteNoteRecording: (id: string) => Promise<void>,
     photos: Photo[],
     onOpenScanner: () => void,
-}> = ({ note, onNoteChange, onDelete, onClose, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onOpenScanner }) => {
+    performAiAction: (prompt: string, context: string) => Promise<any>,
+}> = ({ note, onNoteChange, onDelete, onClose, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onOpenScanner, performAiAction }) => {
     const contentRef = useRef<HTMLDivElement>(null);
     const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode } = useRecorder();
     
@@ -310,7 +313,7 @@ const NoteEditor: React.FC<{
     );
 };
 
-export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDelete, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onSavePhoto }) => {
+export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDelete, noteRecordings, onSaveNoteRecording, onDeleteNoteRecording, photos, onSavePhoto, performAiAction }) => {
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -463,6 +466,7 @@ export const Notepad: React.FC<NotepadProps> = ({ notes, onSave, onUpdate, onDel
                             onDeleteNoteRecording={onDeleteNoteRecording}
                             photos={photos}
                             onOpenScanner={() => setIsScanning(true)}
+                            performAiAction={performAiAction}
                         />
                     ) : (
                         <div className="hidden md:flex w-full h-full items-center justify-center text-center text-[var(--theme-text-secondary)] p-8">

@@ -1,8 +1,13 @@
 import React from 'react';
 
 export const HomeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" {...props}>
-        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
+        <defs>
+            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--theme-orange)" />
+                <stop offset="100%" stopColor="var(--theme-bright-orange)" />
+            </linearGradient>
+        </defs>
+        <path fill="url(#g)" d="M12.71,2.29a1,1,0,0,0-1.42,0l-9,9A1,1,0,0,0,3,13H4v7a1,1,0,0,0,1,1H9V16a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v5h4a1,1,0,0,0,1-1V13h1a1,1,0,0,0,.71-1.71Z"/>
     </svg>
 );

@@ -149,7 +149,7 @@ export async function performAiAction(
     context: string,
     customApiUrl?: string | null,
     customApiAuthKey?: string | null
-): Promise<string> {
+): Promise<any> { // Return type is now any to support different JSON structures
      try {
         const baseUrl = customApiUrl || '';
         const response = await fetch(`${baseUrl}/api/ai-action`, {
@@ -157,11 +157,7 @@ export async function performAiAction(
             headers: getHeaders(customApiAuthKey),
             body: JSON.stringify({ prompt, context }),
         });
-        const data = await handleFetchErrors(response);
-        if (typeof data.text === 'undefined') {
-            throw new Error("Received an invalid response from the backend.");
-        }
-        return data.text;
+        return await handleFetchErrors(response);
     } catch (error) {
         console.error("Error calling /api/ai-action:", error);
         throw error;

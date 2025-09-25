@@ -80,7 +80,7 @@ export const SetupGuide: React.FC = () => (
                 <li>Under "Connection Status", click the <strong className="text-white">Connect to Folder...</strong> button.</li>
                 <li>Your browser will open a file dialog. Navigate to your Google Drive folder and choose an empty sub-folder or create a new one (e.g., "My Ai App Data").</li>
                 <li>Grant the app permission to read and write to the folder.</li>
-                <li>The app is now synced! All changes will be saved as files in your chosen folder and automatically backed up to the cloud.</li>
+                <li>The app is now synced! All changes will be saved as files in your chosen folder and automatically backed up to the cloud. You can also download the project from GitHub: <a href="https://github.com/jasonankeodendaal/Product-description-template.git" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-orange)] hover:underline">Download from GitHub</a></li>
             </ol>
         </Section>
         
