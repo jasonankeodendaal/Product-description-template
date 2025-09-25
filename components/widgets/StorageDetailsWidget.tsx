@@ -100,13 +100,17 @@ export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSe
                                 </Recharts.PieChart>
                             </Recharts.ResponsiveContainer>
                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="font-bold text-white text-lg lg:text-xl"><AnimatedValue value={total} /></span>
+                                <span className="font-bold text-white text-lg lg:text-xl animate-pulse-slow"><AnimatedValue value={total} /></span>
                                 <p className="text-gray-400 text-xs">Total Used</p>
                             </div>
                         </div>
                         <div className="w-full md:w-3/5 space-y-1.5 overflow-y-auto no-scrollbar">
-                            {breakdown.map((item) => (
-                                <div key={item.name} className="flex items-center gap-2 text-xs p-1 bg-white/5 rounded-md">
+                            {breakdown.map((item, index) => (
+                                <div 
+                                    key={item.name} 
+                                    className="flex items-center gap-2 text-xs p-1 bg-white/5 rounded-md animate-list-item-in"
+                                    style={{ animationDelay: `${index * 50}ms` }}
+                                >
                                     <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
                                     <span className="flex-grow truncate text-gray-300">{item.name}</span>
                                     <span className="font-mono text-gray-400">{formatBytes(item.bytes)}</span>
