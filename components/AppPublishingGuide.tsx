@@ -20,7 +20,7 @@ const Alert: React.FC<{ type: 'info' | 'warning' | 'tip', children: React.ReactN
     const colors = {
         info: 'border-sky-500/30 bg-sky-500/10 text-sky-300',
         warning: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-        tip: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+        tip: 'border-orange-500/30 bg-orange-500/10 text-orange-300',
     }
     return (
         <div className={`p-4 rounded-lg border ${colors[type]}`}>
@@ -57,10 +57,10 @@ export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownlo
                 <h3 className="text-xl font-bold text-white mb-4">Prerequisites</h3>
                 <p className="mb-4 text-gray-400">Before you begin, make sure you have the following ready:</p>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-emerald-400 text-2xl">✅</span> <div><strong className="text-white">A Vercel Account:</strong> We'll use this for free, high-performance hosting. Sign up at <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">vercel.com</a>.</div></li>
-                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-emerald-400 text-2xl">✅</span> <div><strong className="text-white">A Google Gemini API Key:</strong> To power the AI features. Get one from <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Google AI Studio</a>.</div></li>
-                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-emerald-400 text-2xl">✅</span> <div><strong className="text-white">An `API_SECRET_KEY`:</strong> This is a strong password you create yourself to protect your app's AI functions.</div></li>
-                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-emerald-400 text-2xl">✅</span> <div><strong className="text-white">Android Studio:</strong> The official software for building Android apps. Download it from the <a href="https://developer.android.com/studio" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">official website</a>.</div></li>
+                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">A Vercel Account:</strong> We'll use this for free, high-performance hosting. Sign up at <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">vercel.com</a>.</div></li>
+                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">A Google Gemini API Key:</strong> To power the AI features. Get one from <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">Google AI Studio</a>.</div></li>
+                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">An `API_SECRET_KEY`:</strong> This is a strong password you create yourself to protect your app's AI functions.</div></li>
+                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">Android Studio:</strong> The official software for building Android apps. Download it from the <a href="https://developer.android.com/studio" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">official website</a>.</div></li>
                 </ul>
             </section>
 
@@ -82,15 +82,18 @@ export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownlo
                     </Step>
 
                     <Step num="3" title="Add Environment Variables (Crucial!)">
-                        <p>Your deployed app needs your secret keys to function. Without them, the AI features will fail.</p>
+                        <p>Your deployed app needs your secret keys to function. Without them, the AI features and Google Drive sync will fail.</p>
                         <p>1. After deploying, go to your new project's dashboard on Vercel.</p>
                         <p>2. Click the <strong className="text-white">"Settings"</strong> tab, then <strong className="text-white">"Environment Variables"</strong> on the left.</p>
-                        <p>3. Create two variables:</p>
+                        <p>3. Create the following variables:</p>
                         <ul className="list-disc list-inside space-y-2 pl-4">
                             <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_KEY</code>, <strong>Value:</strong> Paste your Google Gemini API Key here.</li>
                             <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_SECRET_KEY</code>, <strong>Value:</strong> Paste the strong password you created.</li>
+                            <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">GOOGLE_CLIENT_ID</code>, <strong>Value:</strong> Your Client ID for Google Drive sync (if configured).</li>
+                            <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">GOOGLE_CLIENT_SECRET</code>, <strong>Value:</strong> Your Client Secret for Google Drive sync (if configured).</li>
+                            <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">NEXTAUTH_URL</code>, <strong>Value:</strong> Your full Vercel app URL (e.g., <code className="bg-black/30 px-1 py-0.5 rounded text-xs">https://your-project-name.vercel.app</code>).</li>
                         </ul>
-                         <p>4. After adding them, you must <strong className="text-white">re-deploy</strong> the app for the changes to take effect. Go to the "Deployments" tab, click the latest one, and find the "Redeploy" option in the menu (...).</p>
+                        <p>4. After adding them, you must <strong className="text-white">re-deploy</strong> the app for the changes to take effect. Go to the "Deployments" tab, click the latest one, and find the "Redeploy" option in the menu (...).</p>
                     </Step>
                      <Step num="4" title="Get Your Public URL">
                         <p>Once redeployed, Vercel will give you a public URL, like <code className="bg-black/30 px-1 py-0.5 rounded text-xs">https://your-project-name.vercel.app</code>. Visit this URL and test the AI generator to ensure your keys are working. Copy this URL for the next part.</p>
@@ -177,7 +180,7 @@ export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownlo
              <section>
                 <h3 className="text-xl font-bold text-white mb-4">Part 4: Next Steps</h3>
                 <Alert type="tip">
-                    You've successfully built a release-ready Android App Bundle. The final step is to create a developer account on the <a href="https://play.google.com/console" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">Google Play Console</a> (this has a one-time fee), create a new app listing, and upload your `.aab` file.
+                    You've successfully built a release-ready Android App Bundle. The final step is to create a developer account on the <a href="https://play.google.com/console" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">Google Play Console</a> (this has a one-time fee), create a new app listing, and upload your `.aab` file.
                 </Alert>
             </section>
         </div>
