@@ -1,31 +1,50 @@
 import { useState, useEffect } from 'react';
 
+export interface RechartsStatus {
+    lib: any | null;
+    error: boolean;
+    loading: boolean;
+}
+
 // Custom hook to safely access the Recharts library loaded from a CDN.
-// This prevents race conditions where a component might try to render a chart
-// before the Recharts script has fully loaded and initialized.
 export const useRecharts = () => {
-  // Initialize state with the Recharts object if it's already available on the window.
-  const [recharts, setRecharts] = useState((window as any).Recharts);
+    const [recharts, setRecharts] = useState<RechartsStatus>({
+        lib: (window as any).Recharts || null,
+        error: false,
+        loading: !(window as any).Recharts,
+    });
 
-  useEffect(() => {
-    // If Recharts is already loaded, we don't need to do anything.
-    if (recharts) return;
+    useEffect(() => {
+        // If library is already loaded or there was an error, do nothing.
+        if (recharts.lib || recharts.error) return;
 
-    // If not loaded, set up an interval to check for its availability.
-    // This is a robust way to handle scripts loaded asynchronously.
-    const checkRecharts = () => {
-      if ((window as any).Recharts) {
-        setRecharts((window as any).Recharts);
-        // Once found, clear the interval to stop checking.
-        clearInterval(intervalId);
-      }
-    };
+        let timeoutId: number;
 
-    const intervalId = setInterval(checkRecharts, 100); // Check every 100ms.
+        const checkRecharts = () => {
+            if ((window as any).Recharts) {
+                setRecharts({ lib: (window as any).Recharts, error: false, loading: false });
+                clearInterval(intervalId);
+                clearTimeout(timeoutId);
+            }
+        };
 
-    // Cleanup function to clear the interval when the component unmounts.
-    return () => clearInterval(intervalId);
-  }, [recharts]); // The effect depends on the `recharts` state.
+        const intervalId = setInterval(checkRecharts, 100);
 
-  return recharts;
+        // Set a timeout to show an error if it takes too long to load.
+        timeoutId = window.setTimeout(() => {
+            if (!(window as any).Recharts) {
+                console.error("Recharts library failed to load after 10 seconds.");
+                setRecharts({ lib: null, error: true, loading: false });
+                clearInterval(intervalId);
+            }
+        }, 10000); // 10-second timeout
+
+        // Cleanup function to clear timers when the component unmounts.
+        return () => {
+            clearInterval(intervalId);
+            clearTimeout(timeoutId);
+        };
+    }, [recharts.lib, recharts.error]);
+
+    return recharts;
 };

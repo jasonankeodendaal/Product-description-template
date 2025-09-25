@@ -1,3 +1,4 @@
+
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { View } from '../App';
 import { SparklesIcon } from './icons/SparklesIcon';
@@ -5,6 +6,7 @@ import { RecordingIcon } from './icons/RecordingIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
 import { HomeIcon } from './icons/HomeIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
 
 interface BottomNavBarProps {
   currentView: View;
@@ -21,7 +23,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
         { view: 'recordings', label: 'Recordings', icon: RecordingIcon },
         { view: 'notepad', label: 'Notepad', icon: NotepadIcon },
         { view: 'photos', label: 'Photos', icon: PhotoIcon },
-        { view: 'generator', label: 'Generator', icon: SparklesIcon }
+        { view: 'calendar', label: 'Calendar', icon: CalendarIcon }
     ], []);
 
     const activeIndex = useMemo(() => navItems.findIndex(item => item.view === currentView), [currentView, navItems]);

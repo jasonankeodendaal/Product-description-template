@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -181,6 +182,9 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                                 <button onClick={onSyncDirectory} className="mt-3 bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-3 rounded-md text-sm inline-flex items-center gap-2">
                                     <FolderIcon /> Connect to Folder...
                                 </button>
+                                <p className="text-xs text-[var(--theme-text-secondary)]/70 mt-2 p-2 bg-black/20 rounded-md">
+                                    <strong>Pro Tip:</strong> To sync across devices, connect to your local Google Drive, Dropbox, or OneDrive folder.
+                                </p>
                             </div>
                         </div>
                     )}

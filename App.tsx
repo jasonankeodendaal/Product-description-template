@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -215,6 +216,7 @@ const App: React.FC = () => {
     const [isCreatorInfoOpen, setIsCreatorInfoOpen] = useState(false);
     const [userRole, setUserRole] = useState<UserRole>('user');
     const [isPinSetupModalOpen, setIsPinSetupModalOpen] = useState(false);
+    const [isPinResetting, setIsPinResetting] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
@@ -223,7 +225,6 @@ const App: React.FC = () => {
 
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
     
     // Timer State
@@ -419,33 +420,60 @@ const App: React.FC = () => {
                 }
                 setTemplates(initialTemplates);
                 setSelectedTemplateId(initialTemplates[0]?.id || '');
-
+                
                 const handle = await db.getDirectoryHandle();
+                let folderSyncSuccess = false;
+
                 if (handle) {
-                    if (await (handle as any).queryPermission({ mode: 'readwrite' }) === 'granted') {
+                    let hasPermission = false;
+                    // Check silently first.
+                    // FIX: The standard FileSystemDirectoryHandle type may not include 'queryPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
+                    if ((await (handle as any).queryPermission({ mode: 'readwrite' })) === 'granted') {
+                        hasPermission = true;
+                    } else {
+                        // If not granted, try to re-request it. This may show a browser prompt.
+                        try {
+                            // FIX: The standard FileSystemDirectoryHandle type may not include 'requestPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
+                            if ((await (handle as any).requestPermission({ mode: 'readwrite' })) === 'granted') {
+                                hasPermission = true;
+                            }
+                        } catch (err) {
+                            console.warn('Could not re-acquire permission for folder handle.', err);
+                        }
+                    }
+
+                    if (hasPermission) {
                         setDirectoryHandle(handle);
                         settings = { ...settings, syncMode: 'folder' };
                         await syncFromDirectory(handle);
+                        folderSyncSuccess = true;
                     } else {
+                        // Permission was not granted, so disconnect.
                         await db.clearDirectoryHandle();
+                        settings.syncMode = 'local'; // Fallback to local storage.
                     }
-                } else if (settings.syncMode === 'api' && settings.customApiEndpoint && settings.customApiAuthKey) {
-                    await handleApiConnect(settings.customApiEndpoint, settings.customApiAuthKey, true);
-                } else {
-                    const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
-                        db.getAllRecordings(),
-                        db.getAllPhotos(),
-                        db.getAllNotes(),
-                        db.getAllNoteRecordings(),
-                        db.getAllLogEntries(),
-                        db.getAllCalendarEvents(),
-                    ]);
-                    setRecordings(dbRecordings);
-                    setPhotos(dbPhotos);
-                    setNotes(dbNotes.map(migrateNote));
-                    setNoteRecordings(dbNoteRecordings);
-                    setLogEntries(dbLogEntries);
-                    setCalendarEvents(dbCalendarEvents);
+                }
+                
+                if (!folderSyncSuccess) {
+                    if (settings.syncMode === 'api' && settings.customApiEndpoint && settings.customApiAuthKey) {
+                        await handleApiConnect(settings.customApiEndpoint, settings.customApiAuthKey, true);
+                    } else {
+                        // This is the fallback for local storage
+                        const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
+                            db.getAllRecordings(),
+                            db.getAllPhotos(),
+                            db.getAllNotes(),
+                            db.getAllNoteRecordings(),
+                            db.getAllLogEntries(),
+                            db.getAllCalendarEvents(),
+                        ]);
+                        setRecordings(dbRecordings);
+                        setPhotos(dbPhotos);
+                        setNotes(dbNotes.map(migrateNote));
+                        setNoteRecordings(dbNoteRecordings);
+                        setLogEntries(dbLogEntries);
+                        setCalendarEvents(dbCalendarEvents);
+                    }
                 }
                 setSiteSettings(settings);
 
@@ -535,13 +563,26 @@ const App: React.FC = () => {
             setIsOnboardingOpen(true);
         }
     };
+    
+    const handleInitiatePinReset = () => {
+        setIsPinResetting(true);
+        setIsDashboardOpen(false); // Close dashboard to show PIN modal
+    };
+    
+    const handleSetNewPinAfterReset = async (pin: string) => {
+        const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true };
+        await handleUpdateSettings(newSettings);
+        setIsPinResetting(false);
+        alert("PIN has been successfully reset.");
+    };
 
     const handleSaveRecording = useCallback(async (recording: Recording) => {
-        setRecordings(prev => [recording, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        await db.saveRecording(recording);
-        if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, recording);
+        const newRecording = { ...recording, id: recording.id || crypto.randomUUID() };
+        setRecordings(prev => [newRecording, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        await db.saveRecording(newRecording);
+        if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, newRecording);
         await handleSaveLogEntry({type: 'Recording Added', timestamp: new Date().toISOString()});
-        return recording; // Return the saved recording so its ID can be used
+        return newRecording; // Return the saved recording so its ID can be used
     }, [directoryHandle, handleSaveLogEntry]);
 
     const handleUpdateRecording = useCallback(async (recording: Recording) => {
@@ -978,8 +1019,12 @@ const App: React.FC = () => {
         return <FullScreenLoader message="Initializing App..." />;
     }
     
+    if (isPinResetting) {
+        return <PinSetupModal onSetPin={handleSetNewPinAfterReset} mode="reset" />;
+    }
+
     if (!siteSettings.pinIsSet) {
-        return <PinSetupModal onSetPin={handleSetUserPin} />;
+        return <PinSetupModal onSetPin={handleSetUserPin} mode="setup" />;
     }
     
     if (isOnboardingOpen) {
@@ -1003,7 +1048,6 @@ const App: React.FC = () => {
                         logEntries={logEntries}
                         onSaveLogEntry={(type) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
                         siteSettings={siteSettings}
-                        onOpenCalendar={() => setIsCalendarOpen(true)}
                         onOpenDashboard={() => setIsDashboardOpen(true)}
                         calendarEvents={calendarEvents}
                         getWeatherInfo={getWeatherInfo}
@@ -1083,8 +1127,16 @@ const App: React.FC = () => {
                     onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
                 />;
             case 'calendar':
-                // This view is now handled by the modal
-                return null;
+                return <CalendarView
+                    onClose={() => setCurrentView('home')}
+                    events={calendarEvents}
+                    onSaveEvent={handleSaveCalendarEvent}
+                    onDeleteEvent={handleDeleteCalendarEvent}
+                    photos={photos}
+                    onSavePhoto={handleSavePhoto}
+                    recordings={recordings}
+                    onSaveRecording={handleSaveRecording}
+                />;
             default:
                 return null;
         }
@@ -1131,19 +1183,6 @@ const App: React.FC = () => {
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
             
-            {isCalendarOpen && (
-                <CalendarView
-                    onClose={() => setIsCalendarOpen(false)}
-                    events={calendarEvents}
-                    onSaveEvent={handleSaveCalendarEvent}
-                    onDeleteEvent={handleDeleteCalendarEvent}
-                    photos={photos}
-                    onSavePhoto={handleSavePhoto}
-                    recordings={recordings}
-                    onSaveRecording={handleSaveRecording}
-                />
-            )}
-
             {isDashboardOpen && (
                 <Dashboard 
                     onClose={() => setIsDashboardOpen(false)}
@@ -1167,6 +1206,7 @@ const App: React.FC = () => {
                     isApiConnected={isApiConnected}
                     onDownloadSource={handleDownloadSourceZip}
                     userRole={userRole}
+                    onInitiatePinReset={handleInitiatePinReset}
                 />
             )}
             {isPrintPreviewOpen && (

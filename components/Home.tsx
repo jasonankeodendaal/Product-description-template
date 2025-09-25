@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../App';
 import { SiteSettings } from '../constants';
@@ -25,7 +26,6 @@ interface HomeProps {
     logEntries: LogEntry[];
     onSaveLogEntry: (type: LogEntry['type']) => Promise<void>;
     siteSettings: SiteSettings;
-    onOpenCalendar: () => void;
     onOpenDashboard: () => void;
     calendarEvents: CalendarEvent[];
     getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }) => Promise<any>;
@@ -71,7 +71,7 @@ export const Home: React.FC<HomeProps> = (props) => {
                     <StorageDetailsWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} />
                 </HomeTile>
                 <HomeTile className="col-span-1 md:col-span-2 lg:col-span-3 row-span-2 animate-tile-in" style={{ animationDelay: '100ms' }}>
-                    <CalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
+                    <CalendarWidget onOpenCalendar={() => props.onNavigate('calendar')} events={props.calendarEvents} />
                 </HomeTile>
                 
                 <HomeTile className="col-span-2 md:col-span-4 lg:col-span-6 animate-tile-in" style={{ animationDelay: '150ms' }}>

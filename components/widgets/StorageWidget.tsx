@@ -16,7 +16,8 @@ interface StorageWidgetProps {
 }
 
 export const StorageWidget: React.FC<StorageWidgetProps> = ({ siteSettings, itemCounts }) => {
-    const Recharts = useRecharts();
+    // FIX: The useRecharts hook returns a status object. Destructure its properties.
+    const { lib: Recharts, loading, error } = useRecharts();
 
     const totalItems = itemCounts.notes + itemCounts.photos + itemCounts.recordings;
     const storageCap = 500; // Arbitrary cap for progress visualization
@@ -51,7 +52,14 @@ export const StorageWidget: React.FC<StorageWidgetProps> = ({ siteSettings, item
                 </div>
             </div>
             <div className="flex-grow my-2 h-16">
-                {Recharts ? (
+                {/* FIX: Check loading, error, and library existence before attempting to render the chart. */}
+                {loading || error || !Recharts ? (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
+                        <Spinner className="w-4 h-4 mr-2" />
+                        {loading ? 'Loading chart...' : 'Chart failed.'}
+                    </div>
+                ) : (
+                    // FIX: Destructure chart components from the loaded library object.
                     <Recharts.ResponsiveContainer width="100%" height="100%">
                          <Recharts.BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
                             <Recharts.XAxis type="number" hide />
@@ -63,11 +71,6 @@ export const StorageWidget: React.FC<StorageWidgetProps> = ({ siteSettings, item
                             <Recharts.Bar dataKey="count" barSize={15} radius={[0, 5, 5, 0]} />
                         </Recharts.BarChart>
                     </Recharts.ResponsiveContainer>
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                        <Spinner className="w-4 h-4 mr-2" />
-                        Loading chart...
-                    </div>
                 )}
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2.5">

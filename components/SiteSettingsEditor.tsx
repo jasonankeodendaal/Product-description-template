@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SiteSettings } from '../constants';
 import { BuildingIcon } from './icons/BuildingIcon';
@@ -5,15 +6,17 @@ import { UserIcon } from './icons/UserIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { UserRole } from '../App';
+import { ShieldIcon } from './icons/ShieldIcon';
 
 interface SiteSettingsEditorProps {
     settings: SiteSettings;
     onSave: (newSettings: SiteSettings) => Promise<void>;
     userRole: UserRole;
+    onInitiatePinReset: () => void;
 }
 
 const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; disabled?: boolean }> = ({ title, icon, children, disabled }) => (
-    <div className={`bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50 transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`bg-[var(--theme-card-bg)]/50 p-6 rounded-lg border border-[var(--theme-border)]/50 transition-opacity relative ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="flex items-center gap-3">
             <div className="text-[var(--theme-green)]">{icon}</div>
             <h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">{title}</h3>
@@ -74,7 +77,7 @@ const ImageUploader: React.FC<{ label: string; id: string; src: string | null; o
 };
 
 
-export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings, onSave, userRole }) => {
+export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings, onSave, userRole, onInitiatePinReset }) => {
     const [formData, setFormData] = useState<SiteSettings>(settings);
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -138,6 +141,19 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ settings
                     <InputField id="creator-email" label="Creator Email" value={formData.creator.email} onChange={handleCreatorFormChange} />
                     <InputField id="creator-whatsapp" label="Creator WhatsApp 1" value={formData.creator.whatsapp} onChange={handleCreatorFormChange} placeholder="Full URL or phone number" />
                     <InputField id="creator-whatsapp2" label="Creator WhatsApp 2" value={formData.creator.whatsapp2 || ''} onChange={handleCreatorFormChange} placeholder="Full URL or phone number" />
+                </SectionCard>
+
+                <SectionCard title="Security" icon={<ShieldIcon />}>
+                    <div className="md:col-span-2">
+                        <p className="text-sm text-[var(--theme-text-secondary)]">Reset the 4-digit PIN used to access the application.</p>
+                        <button 
+                            type="button" 
+                            onClick={onInitiatePinReset} 
+                            className="mt-3 bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 border border-[var(--theme-border)]"
+                        >
+                            Reset Application PIN...
+                        </button>
+                    </div>
                 </SectionCard>
             </div>
             

@@ -12,7 +12,7 @@ import { NotepadIcon } from '../icons/NotepadIcon';
 import { CalendarIcon } from '../icons/CalendarIcon';
 import { ClockIcon } from '../icons/ClockIcon';
 
-const formatBytes = (bytes: number, decimals = 2): string => {
+const formatBytes = (bytes: number, decimals = 1): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
@@ -63,15 +63,15 @@ const getSyncInfo = (syncMode: SiteSettings['syncMode'], isConnected: boolean) =
 };
 
 const categoryIcons: { [key: string]: React.ReactNode } = {
-    'Photos': <PhotoIcon className="w-4 h-4 text-purple-400" />,
-    'Recordings': <RecordingIcon className="w-4 h-4 text-pink-400" />,
-    'Notes': <NotepadIcon className="w-4 h-4 text-sky-400" />,
-    'Calendar': <CalendarIcon className="w-4 h-4 text-emerald-400" />,
-    'Logs & Templates': <ClockIcon className="w-4 h-4 text-orange-400" />,
+    'Photos': <PhotoIcon className="w-3 h-3 text-purple-400" />,
+    'Recordings': <RecordingIcon className="w-3 h-3 text-pink-400" />,
+    'Notes': <NotepadIcon className="w-3 h-3 text-sky-400" />,
+    'Calendar': <CalendarIcon className="w-3 h-3 text-emerald-400" />,
+    'Logs & Templates': <ClockIcon className="w-3 h-3 text-orange-400" />,
 };
 
 export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSettings: SiteSettings }> = ({ storageUsage, siteSettings }) => {
-    const Recharts = useRecharts();
+    const { lib: Recharts, loading, error } = useRecharts();
     const { total, breakdown } = storageUsage;
     const syncInfo = getSyncInfo(siteSettings.syncMode, true);
     const hasData = total > 0;
@@ -79,49 +79,51 @@ export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSe
     return (
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col justify-between">
             <div className="flex items-center gap-2">
-                <div className="text-emerald-400 w-6 h-6 animate-pulse-slow">{syncInfo.icon}</div>
+                <div className="text-emerald-400 w-5 h-5 animate-pulse-slow">{syncInfo.icon}</div>
                 <div>
-                    <h3 className="text-white font-bold text-sm">{syncInfo.text}</h3>
+                    <h3 className="text-white font-bold text-xs">{syncInfo.text}</h3>
                 </div>
             </div>
 
             <div className="flex-grow my-1 flex flex-col md:flex-row items-center justify-around gap-2 overflow-hidden">
-                {hasData && Recharts ? (
+                {loading && <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs"><Spinner /></div>}
+                
+                {error && <div className="w-full h-full flex items-center justify-center text-rose-400 text-xs text-center p-1">Chart library failed to load.</div>}
+
+                {!loading && !error && !hasData && <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">No data stored yet.</div>}
+
+                {!loading && !error && hasData && Recharts && (
                     <>
-                        <div className="w-full md:w-2/5 h-24 md:h-full relative">
+                        <div className="w-full md:w-2/5 h-20 md:h-full relative">
                             <Recharts.ResponsiveContainer width="100%" height="100%">
                                 <Recharts.PieChart>
                                     <Recharts.Pie data={breakdown} dataKey="bytes" nameKey="name" cx="50%" cy="50%" innerRadius="70%" outerRadius="90%" paddingAngle={5} stroke="none">
-                                        {breakdown.map((entry, index) => (
+                                        {breakdown.map((entry: any, index: number) => (
                                             <Recharts.Cell key={`cell-${index}`} fill={entry.fill} />
                                         ))}
                                     </Recharts.Pie>
                                 </Recharts.PieChart>
                             </Recharts.ResponsiveContainer>
                              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="font-bold text-white text-base animate-pulse-slow"><AnimatedValue value={total} /></span>
-                                <p className="text-gray-400 text-xs">Total Used</p>
+                                <span className="font-bold text-white text-sm animate-pulse-slow"><AnimatedValue value={total} /></span>
+                                <p className="text-gray-400 text-[10px]">Total Used</p>
                             </div>
                         </div>
-                        <div className="w-full md:w-3/5 space-y-1 overflow-y-auto no-scrollbar">
+                        <div className="w-full md:w-3/5 space-y-0.5 overflow-y-auto no-scrollbar">
                             {breakdown.map((item, index) => (
                                 <div 
                                     key={item.name} 
-                                    className="flex items-center gap-1 text-[11px] py-0.5 px-1 bg-white/5 rounded-md animate-list-item-in"
+                                    className="flex items-center gap-1.5 text-[10px] py-0.5 px-1 bg-white/5 rounded-md animate-list-item-in"
                                     style={{ animationDelay: `${index * 50}ms` }}
                                 >
-                                    <div className="w-4 h-4 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
+                                    <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center">{categoryIcons[item.name]}</div>
                                     <span className="flex-grow truncate text-gray-300">{item.name}</span>
-                                    <span className="font-mono text-gray-400 text-[10px]">{formatBytes(item.bytes)}</span>
-                                    <div className="w-10 text-right font-semibold" style={{ color: item.fill }}>{total > 0 ? `${Math.round((item.bytes / total) * 100)}%` : '0%'}</div>
+                                    <span className="font-mono text-gray-400 text-[9px]">{formatBytes(item.bytes)}</span>
+                                    <div className="w-8 text-right font-semibold" style={{ color: item.fill }}>{total > 0 ? `${Math.round((item.bytes / total) * 100)}%` : '0%'}</div>
                                 </div>
                             ))}
                         </div>
                     </>
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
-                        {hasData && !Recharts ? <Spinner /> : 'No data stored yet.'}
-                    </div>
                 )}
             </div>
         </div>

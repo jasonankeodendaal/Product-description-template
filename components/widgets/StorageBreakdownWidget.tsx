@@ -48,17 +48,20 @@ interface StorageBreakdownWidgetProps {
 }
 
 export const StorageBreakdownWidget: React.FC<StorageBreakdownWidgetProps> = ({ storageUsage }) => {
-    const Recharts = useRecharts();
+    // FIX: The useRecharts hook returns a status object. Destructure its properties.
+    const { lib: Recharts, loading, error } = useRecharts();
 
-    if (!Recharts) {
+    // FIX: Check loading, error, and library existence before attempting to render the chart.
+    if (loading || error || !Recharts) {
         return (
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col items-center justify-center">
                 <Spinner />
-                <p className="text-white/70 mt-2 text-sm">Loading chart...</p>
+                <p className="text-white/70 mt-2 text-sm">{loading ? 'Loading chart...' : 'Chart failed to load.'}</p>
             </div>
         );
     }
 
+    // FIX: Destructure chart components from the loaded library object.
     const { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } = Recharts;
     const { total, breakdown } = storageUsage;
     const hasData = total > 0;

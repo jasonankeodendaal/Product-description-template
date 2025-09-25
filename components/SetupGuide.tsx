@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HardDriveIcon } from './icons/HardDriveIcon';
 import { FolderSyncIcon } from './icons/FolderSyncIcon';
@@ -51,21 +52,22 @@ export const SetupGuide: React.FC = () => (
              <p><strong>Setup:</strong> None! You're already using it.</p>
         </Section>
         
-        <Section icon={<FolderSyncIcon />} title="Local Folder Sync Mode">
-            <p><strong>Best for:</strong> Automatic backups and syncing your data across your personal computers.</p>
+        <Section icon={<FolderSyncIcon />} title="Local Folder Sync Mode (with Cloud Backup)">
+            <p><strong>Best for:</strong> Automatic backups and syncing your data across your personal computers via services like Google Drive.</p>
             <p>
                 This mode connects the app to a folder on your computer. All your work—notes, recordings, photos, and settings—is saved as plain, readable files (like `.json` and `.webm`) right in that folder.
             </p>
-            <div className="text-xs mt-2 p-3 bg-[var(--theme-bg)]/50 rounded-md border border-[var(--theme-border)]/30">
-                <strong>Pro Tip:</strong> To sync between computers, simply choose your Google Drive, Dropbox, or OneDrive folder when you connect. Any changes you make on one computer will automatically sync to the others via that service.
+            <div className="text-sm mt-2 p-3 bg-emerald-500/10 rounded-md border border-emerald-500/30">
+                <strong className="text-emerald-300">Pro Tip: Sync with Google Drive or Dropbox!</strong>
+                <p className="text-emerald-300/80 mt-1">To sync between computers, simply install the Google Drive (or Dropbox/OneDrive) desktop app, and then choose your local cloud drive folder when you connect. Any changes you make on one computer will automatically upload and sync to your other devices. This is the easiest way to get cloud-powered sync and backup.</p>
             </div>
-            <h4 className="font-semibold text-[var(--theme-text-primary)] mt-2">Setup Instructions:</h4>
+            <h4 className="font-semibold text-[var(--theme-text-primary)] mt-4">Setup Instructions:</h4>
             <ol className="list-decimal list-inside space-y-2">
                 <li>Go to the <strong className="text-white">Data Management</strong> tab in the Dashboard.</li>
                 <li>Under "Connection Status", click the <strong className="text-white">Connect to Folder...</strong> button.</li>
-                <li>Your browser will open a file dialog. Choose an empty folder or create a new one (e.g., "My Ai App Data").</li>
+                <li>Your browser will open a file dialog. Navigate to your Google Drive folder and choose an empty sub-folder or create a new one (e.g., "My Ai App Data").</li>
                 <li>Grant the app permission to read and write to the folder.</li>
-                <li>The app is now synced! All changes will be saved as files in your chosen folder.</li>
+                <li>The app is now synced! All changes will be saved as files in your chosen folder and automatically backed up to the cloud.</li>
             </ol>
         </Section>
 
@@ -155,7 +157,7 @@ API_SECRET_KEY="a-very-strong-and-secret-password-you-make-up"`}
                      <ol className="list-decimal list-inside space-y-2 mt-4">
                         <li>Go to the <strong className="text-white">Data Management</strong> tab in the Dashboard.</li>
                         <li>In the <strong className="text-white">Sync & API Settings</strong> section:</li>
-                        <li>Paste your <code className="bg-black/30 px-1 py-0.5 rounded">.trycloudflare.com</code> URL into the "Custom API URL" field.</li>
+                        <li>Paste your <code className="bg-black/30 px-1 py-0.5 rounded text-xs">.trycloudflare.com</code> URL into the "Custom API URL" field.</li>
                         <li>Enter the secret key you created in your `.env` file (`API_SECRET_KEY`) into the "Custom API Auth Key" field.</li>
                         <li>Click <strong className="text-white">Save Settings</strong>, then click <strong className="text-white">Connect & Sync</strong>.</li>
                     </ol>

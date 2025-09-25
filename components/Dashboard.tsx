@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent } from '../App';
 import { XIcon } from './icons/XIcon';
@@ -39,6 +40,7 @@ interface DashboardProps {
   isApiConnected: boolean;
   onDownloadSource: () => void;
   userRole: UserRole;
+  onInitiatePinReset: () => void;
 }
 
 type Section = 'data' | 'settings' | 'setup' | 'about' | 'publishing';
@@ -64,7 +66,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   isApiConnecting,
   isApiConnected,
   onDownloadSource,
-  userRole
+  userRole,
+  onInitiatePinReset,
 }) => {
   const [activeSection, setActiveSection] = useState<Section>('about');
 
@@ -129,6 +132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         settings={siteSettings}
                         onSave={onUpdateSettings}
                         userRole={userRole}
+                        onInitiatePinReset={onInitiatePinReset}
                     />
                 )}
                 {activeSection === 'setup' && <SetupGuide />}

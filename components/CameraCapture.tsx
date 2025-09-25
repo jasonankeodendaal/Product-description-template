@@ -52,7 +52,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   useEffect(() => {
     if (capabilities.torch) {
-      applyAdvancedConstraint([{ torch: flashMode === 'on' }]);
+      // FIX: Cast advanced constraints to 'any' to bypass TypeScript errors for non-standard properties like 'torch'.
+      applyAdvancedConstraint([{ torch: flashMode === 'on' } as any]);
     }
   }, [flashMode, capabilities.torch, applyAdvancedConstraint]);
 
@@ -60,7 +61,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     if (!capabilities.zoom) return;
     const clampedZoom = Math.max(capabilities.zoom.min, Math.min(newZoom, capabilities.zoom.max));
     setZoom(clampedZoom);
-    applyAdvancedConstraint([{ zoom: clampedZoom }]);
+    // FIX: Cast advanced constraints to 'any' to bypass TypeScript errors for non-standard properties like 'zoom'.
+    applyAdvancedConstraint([{ zoom: clampedZoom } as any]);
   }, [capabilities.zoom, applyAdvancedConstraint]);
 
   const handleCapture = useCallback(() => {
@@ -79,7 +81,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     } else {
         takePicture();
     }
-  }, [timer]);
+  }, [timer, takePicture]);
 
   const takePicture = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;

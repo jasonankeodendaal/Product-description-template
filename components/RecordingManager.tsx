@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useMemo } from 'react';
 import { Recording, Photo } from '../App';
 import { SiteSettings } from '../constants';
@@ -21,7 +22,9 @@ import { Spinner } from './icons/Spinner';
 
 interface RecordingManagerProps {
     recordings: Recording[];
-    onSave: (recording: Recording) => Promise<void>;
+    // FIX: Changed onSave to return a Promise<Recording> to match the parent implementation
+    // and allow child components to get the ID of the newly saved recording.
+    onSave: (recording: Recording) => Promise<Recording>;
     onUpdate: (recording: Recording) => Promise<void>;
     onDelete: (id: string) => Promise<void>;
     photos: Photo[];
@@ -51,8 +54,9 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({
             tags: [],
             photoIds: [],
         };
-        await onSave(newRecording);
-        setSelectedRecording(newRecording);
+        // FIX: Use the returned recording from onSave which contains the definitive ID.
+        const savedRecording = await onSave(newRecording);
+        setSelectedRecording(savedRecording);
         setIsSaving(false);
     }, [audioBlob, onSave]);
 

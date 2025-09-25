@@ -1,10 +1,13 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useCallback } from 'react';
 import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { EventEditorModal } from './EventEditorModal';
 import { BellIcon } from './icons/BellIcon';
 import { PlusIcon } from './icons/PlusIcon';
+import { SearchIcon } from './icons/SearchIcon';
+import { HamburgerIcon } from './icons/HamburgerIcon';
 
 interface CalendarViewProps {
     events: CalendarEvent[];
@@ -17,140 +20,162 @@ interface CalendarViewProps {
     onSaveRecording: (recording: Recording) => Promise<Recording>;
 }
 
-const colorMap: Record<string, string> = {
-    sky: 'bg-sky-500 border-sky-600',
-    purple: 'bg-purple-500 border-purple-600',
-    emerald: 'bg-emerald-500 border-emerald-600',
-    amber: 'bg-amber-500 border-amber-600',
-    pink: 'bg-pink-500 border-pink-600',
-    cyan: 'bg-cyan-500 border-cyan-600',
+const colorMap: Record<string, { bg: string; border: string; text: string; }> = {
+    sky: { bg: 'bg-blue-400', border: 'border-blue-500', text: 'text-blue-400' },
+    purple: { bg: 'bg-purple-400', border: 'border-purple-500', text: 'text-purple-400' },
+    emerald: { bg: 'bg-green-400', border: 'border-green-500', text: 'text-green-400' },
+    amber: { bg: 'bg-yellow-400', border: 'border-yellow-500', text: 'text-yellow-400' },
+    pink: { bg: 'bg-pink-400', border: 'border-pink-500', text: 'text-pink-400' },
+    cyan: { bg: 'bg-cyan-400', border: 'border-cyan-500', text: 'text-cyan-400' },
+    red: { bg: 'bg-red-400', border: 'border-red-500', text: 'text-red-400' },
 };
 
+// Map colors from user's image to our color system
+const eventColorMapping: Record<string, string> = {
+    yellow: 'amber',
+    green: 'emerald',
+    blue: 'sky',
+    red: 'red'
+};
+
+
 export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent, onDeleteEvent, photos, onSavePhoto, onClose, recordings, onSaveRecording }) => {
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewDate, setViewDate] = useState(new Date());
+    const [selectedDay, setSelectedDay] = useState(new Date());
     const [isEditorOpen, setIsEditorOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-    const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
 
-    const handleRequestNotification = async () => {
-        const permission = await Notification.requestPermission();
-        setNotificationPermission(permission);
-    };
-
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-    const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const firstDayOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    const lastDayOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+    const startingDayOfWeek = firstDayOfMonth.getDay();
     const daysInMonth = lastDayOfMonth.getDate();
 
     const calendarGrid = useMemo(() => {
-        const grid: (Date | null)[] = [];
-        // Add empty cells for days before the start of the month
-        for (let i = 0; i < startingDayOfWeek; i++) {
-            grid.push(null);
-        }
-        // Add days of the month
+        const grid: (Date | null)[] = Array(startingDayOfWeek).fill(null);
         for (let day = 1; day <= daysInMonth; day++) {
-            grid.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
+            grid.push(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
         }
         return grid;
-    }, [currentDate, startingDayOfWeek, daysInMonth]);
+    }, [viewDate, startingDayOfWeek, daysInMonth]);
 
     const eventsByDate = useMemo(() => {
         const map = new Map<string, CalendarEvent[]>();
         events.forEach(event => {
             const dateKey = new Date(event.startDateTime).toISOString().split('T')[0];
-            if (!map.has(dateKey)) {
-                map.set(dateKey, []);
-            }
+            if (!map.has(dateKey)) map.set(dateKey, []);
             map.get(dateKey)!.push(event);
         });
         return map;
     }, [events]);
 
     const changeMonth = (delta: number) => {
-        setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
+        setViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
     };
 
     const openEditorForNewEvent = (date: Date) => {
-        setSelectedDate(date);
+        setSelectedDay(date);
         setSelectedEvent(null);
         setIsEditorOpen(true);
     };
 
     const openEditorForExistingEvent = (event: CalendarEvent) => {
-        setSelectedDate(new Date(event.startDateTime));
+        setSelectedDay(new Date(event.startDateTime));
         setSelectedEvent(event);
         setIsEditorOpen(true);
     };
+    
+    const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const selectedDayEvents = useMemo(() => {
+        const dateKey = selectedDay.toISOString().split('T')[0];
+        return (eventsByDate.get(dateKey) || []).sort((a,b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+    }, [selectedDay, eventsByDate]);
 
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const formatEventTime = (isoString: string) => new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300 animate-flex-modal-scale-in" aria-modal="true" role="dialog">
-            <div className="bg-[var(--theme-dark-bg)] border-t md:border border-[var(--theme-border)] w-full h-full md:max-w-6xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden">
-                <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                         <div className="flex items-center gap-1 p-1 bg-gray-900/50 border border-[var(--theme-border)]/50 rounded-md">
-                            <button onClick={() => changeMonth(-1)} className="p-1 rounded-md hover:bg-white/10"><ChevronLeftIcon /></button>
-                            <button onClick={() => changeMonth(1)} className="p-1 rounded-md hover:bg-white/10"><ChevronRightIcon /></button>
-                        </div>
-                         <button onClick={() => setCurrentDate(new Date())} className="text-sm font-semibold px-3 py-1.5 rounded-md hover:bg-white/10 border border-transparent hover:border-[var(--theme-border)]/50">Today</button>
-                    </div>
-                    <h2 className="text-xl font-bold text-[var(--theme-text-primary)]">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
-                    <div className="flex items-center gap-4">
-                         {notificationPermission === 'default' && (
-                            <button onClick={handleRequestNotification} className="text-sm flex items-center gap-2 bg-amber-600/20 text-amber-300 px-3 py-1.5 rounded-md hover:bg-amber-600/40">
-                                <BellIcon /> Enable Reminders
-                            </button>
-                        )}
-                         <button onClick={onClose} className="p-2 -mr-2 text-[var(--theme-text-secondary)]/70 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
-                    </div>
-                </header>
-                
-                <div className="flex-grow grid grid-cols-7 grid-rows-[auto,1fr] overflow-hidden">
-                    {weekDays.map(day => (
-                        <div key={day} className="text-center font-bold text-xs text-[var(--theme-text-secondary)] py-2 border-b border-r border-[var(--theme-border)]/50">{day}</div>
-                    ))}
+        <div className="flex-1 flex flex-col bg-gray-900 text-white font-inter animate-fade-in-down overflow-hidden">
+             {/* Header */}
+            <header className="p-4 flex justify-between items-center flex-shrink-0">
+                <button onClick={onClose} className="p-2"><ChevronLeftIcon /></button>
+                <div className="flex items-center gap-4">
+                    <button onClick={() => changeMonth(-1)} className="p-2 text-gray-400 hover:text-white"><ChevronLeftIcon /></button>
+                    <h2 className="text-2xl font-bold text-green-400 w-40 text-center">{viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}</h2>
+                    <button onClick={() => changeMonth(1)} className="p-2 text-gray-400 hover:text-white"><ChevronRightIcon /></button>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button className="p-2"><SearchIcon /></button>
+                    <button className="p-2"><HamburgerIcon /></button>
+                </div>
+            </header>
+
+            {/* Calendar Grid */}
+            <div className="px-4 pb-4">
+                <div className="grid grid-cols-7 text-center text-xs font-bold text-gray-500 mb-2">
+                    {weekDays.map(day => <div key={day}>{day}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-y-1">
                     {calendarGrid.map((date, index) => {
-                        const dateKey = date ? date.toISOString().split('T')[0] : '';
-                        const dayEvents = date ? (eventsByDate.get(dateKey) || []) : [];
-                        const isToday = date && date.toDateString() === new Date().toDateString();
+                        if (!date) return <div key={`empty-${index}`}></div>;
+                        const dateKey = date.toISOString().split('T')[0];
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        const isSelected = date.toDateString() === selectedDay.toDateString();
+                        const dayHasEvents = eventsByDate.has(dateKey);
 
                         return (
-                            <div key={index} className="border-b border-r border-[var(--theme-border)]/50 p-1.5 flex flex-col overflow-hidden relative transition-all duration-200 hover:bg-[var(--theme-card-bg)]/50 cursor-pointer group" onClick={() => date && openEditorForNewEvent(date)}>
-                                {date && (
-                                    <>
-                                        <time dateTime={dateKey} className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[var(--theme-green)] text-black' : 'text-white'}`}>
-                                            {date.getDate()}
-                                        </time>
-                                        <div className="flex-grow overflow-y-auto no-scrollbar mt-1 space-y-1">
-                                            {dayEvents.map(event => (
-                                                <button key={event.id} onClick={(e) => { e.stopPropagation(); openEditorForExistingEvent(event); }} className={`w-full text-left text-xs px-2 py-1 rounded ${colorMap[event.color]} text-black font-bold truncate hover:opacity-80 transition-opacity border-b-2`}>
-                                                    {event.title}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); openEditorForNewEvent(date); }}
-                                            className="absolute top-1 right-1 w-5 h-5 bg-white/10 rounded-full flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                           <PlusIcon />
-                                        </button>
-                                    </>
-                                )}
+                            <div key={dateKey} className="flex justify-center items-center">
+                                <button
+                                    onClick={() => setSelectedDay(date)}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors duration-200
+                                        ${isSelected ? 'bg-green-400 text-black' : ''}
+                                        ${!isSelected && isToday ? 'bg-green-400/20 text-green-400' : ''}
+                                        ${!isSelected && dayHasEvents ? 'bg-red-500 text-white' : ''}
+                                        ${!isSelected && !isToday && !dayHasEvents ? 'text-gray-300 hover:bg-gray-700' : ''}
+                                    `}
+                                >
+                                    {date.getDate()}
+                                </button>
                             </div>
-                        )
+                        );
                     })}
                 </div>
             </div>
-            {isEditorOpen && (selectedDate || selectedEvent) && (
+
+            {/* Daily Tasks Timeline */}
+            <div className="flex-1 bg-[var(--theme-card-bg)] rounded-t-3xl p-4 overflow-y-auto relative">
+                <h3 className="font-bold text-xl mb-4">Daily Tasks</h3>
+                 <div className="space-y-3">
+                    {selectedDayEvents.length > 0 ? selectedDayEvents.map(event => {
+                        const eventColor = colorMap[event.color as keyof typeof colorMap] || colorMap['sky'];
+                        return (
+                             <div key={event.id} className="flex items-start gap-3">
+                                <div className="text-right text-xs text-gray-400 w-16 pt-1 font-mono">
+                                    {formatEventTime(event.startDateTime)}
+                                </div>
+                                <div className={`flex-1 rounded-lg p-3 ${eventColor.bg} bg-opacity-20 border-l-4 ${eventColor.border}`}>
+                                    <button onClick={() => openEditorForExistingEvent(event)} className="w-full text-left">
+                                        <p className="font-bold text-white">{event.title}</p>
+                                        <p className="text-xs text-gray-300 mt-1">{formatEventTime(event.startDateTime)} - {formatEventTime(event.endDateTime)}</p>
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    }) : (
+                        <div className="text-center text-gray-500 pt-10">No tasks for this day.</div>
+                    )}
+                </div>
+                <button
+                    onClick={() => openEditorForNewEvent(selectedDay)}
+                    className="absolute bottom-6 right-6 bg-green-500 text-black rounded-full w-14 h-14 flex items-center justify-center shadow-lg transform transition-transform hover:scale-110"
+                >
+                    <PlusIcon />
+                </button>
+            </div>
+             {isEditorOpen && (
                 <EventEditorModal
                     onClose={() => setIsEditorOpen(false)}
                     onSave={onSaveEvent}
                     onDelete={onDeleteEvent}
-                    targetDate={selectedDate!}
+                    targetDate={selectedDay}
                     event={selectedEvent}
                     photos={photos}
                     onSavePhoto={onSavePhoto}

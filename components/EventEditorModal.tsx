@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
@@ -26,12 +28,12 @@ interface EventEditorModalProps {
 }
 
 const colorMap: Record<string, { bg: string; ring: string }> = {
-    sky: { bg: 'bg-sky-500', ring: 'ring-sky-500' },
-    purple: { bg: 'bg-purple-500', ring: 'ring-purple-500' },
-    emerald: { bg: 'bg-emerald-500', ring: 'ring-emerald-500' },
-    amber: { bg: 'bg-amber-500', ring: 'ring-amber-500' },
-    pink: { bg: 'bg-pink-500', ring: 'ring-pink-500' },
-    cyan: { bg: 'bg-cyan-500', ring: 'ring-cyan-500' },
+    sky: { bg: 'bg-blue-400', ring: 'ring-blue-400' },
+    purple: { bg: 'bg-purple-400', ring: 'ring-purple-400' },
+    emerald: { bg: 'bg-green-400', ring: 'ring-green-400' },
+    amber: { bg: 'bg-yellow-400', ring: 'ring-yellow-400' },
+    pink: { bg: 'bg-pink-400', ring: 'ring-pink-400' },
+    cyan: { bg: 'bg-cyan-400', ring: 'ring-cyan-400' },
 };
 const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
 
@@ -175,6 +177,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                                 <div className="flex items-center gap-3 flex-wrap">
                                     {defaultColors.map(c => (
                                         <button key={c} type="button" onClick={() => setColor(c)} className={`w-8 h-8 rounded-full transition-transform transform hover:scale-110 flex items-center justify-center ${colorMap[c].bg} ${color === c ? `ring-2 ring-offset-2 ring-offset-[var(--theme-card-bg)] ${colorMap[c].ring}` : ''}`}>
+                                            {/* FIX: The CheckIcon component was missing props, causing a type error when passing a className. This has been resolved in the component file. */}
                                             {color === c && <CheckIcon className="w-full h-full p-1.5 text-black" />}
                                         </button>
                                     ))}
