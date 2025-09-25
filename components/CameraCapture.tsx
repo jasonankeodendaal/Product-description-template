@@ -65,24 +65,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     applyAdvancedConstraint([{ zoom: clampedZoom } as any]);
   }, [capabilities.zoom, applyAdvancedConstraint]);
 
-  const handleCapture = useCallback(() => {
-    if (timer > 0) {
-        let count = timer;
-        setCountdown(count);
-        const interval = setInterval(() => {
-            count--;
-            setCountdown(count);
-            if (count <= 0) {
-                clearInterval(interval);
-                setCountdown(null);
-                takePicture();
-            }
-        }, 1000);
-    } else {
-        takePicture();
-    }
-  }, [timer, takePicture]);
-
+  // FIX: Moved takePicture before handleCapture to resolve the "used before declaration" error.
   const takePicture = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -106,6 +89,24 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
     setPreviewDataUrl(dataUrl);
   }, [activeDevice, mode, activeFilter]);
+
+  const handleCapture = useCallback(() => {
+    if (timer > 0) {
+        let count = timer;
+        setCountdown(count);
+        const interval = setInterval(() => {
+            count--;
+            setCountdown(count);
+            if (count <= 0) {
+                clearInterval(interval);
+                setCountdown(null);
+                takePicture();
+            }
+        }, 1000);
+    } else {
+        takePicture();
+    }
+  }, [timer, takePicture]);
 
 
   const handleSave = () => {

@@ -10,6 +10,19 @@ interface CreatorInfoProps {
   onClose: () => void;
 }
 
+const ContactLink: React.FC<{ href: string; icon: React.ReactNode; text: string; }> = ({ href, icon, text }) => (
+    <a 
+        href={href} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="w-full max-w-xs flex items-center justify-center gap-3 text-lg text-gray-200 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-6 py-3 transition-all duration-200 transform hover:scale-105 hover:border-orange-500/50"
+    >
+        {icon}
+        <span className="font-semibold">{text}</span>
+    </a>
+);
+
+
 export const CreatorInfo: React.FC<CreatorInfoProps> = ({ creator, onClose }) => {
   const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -39,38 +52,28 @@ export const CreatorInfo: React.FC<CreatorInfoProps> = ({ creator, onClose }) =>
       <div 
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className={`bg-[var(--theme-card-bg)] w-full max-w-lg rounded-t-2xl md:rounded-xl shadow-2xl border-t-2 md:border border-[var(--theme-border)]/50 relative overflow-hidden ${isClosing ? 'creator-modal-animate-out' : 'creator-modal-animate-in'}`}
+        className={`bg-gray-900/50 backdrop-blur-xl w-full max-w-lg rounded-t-2xl md:rounded-xl shadow-2xl border-t-2 md:border border-orange-500/30 relative overflow-hidden ${isClosing ? 'creator-modal-animate-out' : 'creator-modal-animate-in'}`}
       >
-        <div className="p-6">
-            <div className="flex flex-col sm:flex-row items-center gap-5">
-                {creator.logoSrc && (
-                <img src={creator.logoSrc} alt={`${creator.name} logo`} className="h-28 w-28 rounded-full object-cover border-4 border-[var(--theme-green)] p-1" />
-                )}
-                <div className="text-center sm:text-left">
-                <h2 className="text-3xl font-bold text-[var(--theme-text-primary)]">{creator.name}</h2>
-                <p className="text-[var(--theme-text-secondary)] mt-1 text-md">{creator.slogan}</p>
-                </div>
-            </div>
-            <div className="mt-6 border-t border-[var(--theme-border)]/50 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
-                {creator.tel && (
-                <a href={`tel:${creator.tel}`} className="flex items-center gap-3 text-lg text-[var(--theme-text-secondary)] hover:text-[var(--theme-green)] transition-colors group">
-                    <PhoneIcon /> <span>{creator.tel}</span>
-                </a>
+        <div className="absolute inset-0 -z-10 bg-grid-orange-500/10 [mask-image:radial-gradient(ellipse_at_center,white_30%,transparent_80%)]"></div>
+        <div className="p-8 text-center">
+            {creator.logoSrc && (
+            <img src={creator.logoSrc} alt={`${creator.name} logo`} className="h-32 w-32 mx-auto rounded-full object-cover border-4 border-orange-500/50 p-1 shadow-lg" />
+            )}
+            <h2 className="text-4xl font-bold text-white mt-4">{creator.name}</h2>
+            <p className="text-orange-300/80 mt-1 text-lg font-light">{creator.slogan}</p>
+            
+            <div className="mt-8 pt-6 border-t border-orange-500/20 flex flex-col items-center gap-3">
+                 {creator.tel && (
+                    <ContactLink href={`tel:${creator.tel}`} icon={<PhoneIcon />} text={creator.tel} />
                 )}
                 {creator.email && (
-                <a href={`mailto:${creator.email}`} className="flex items-center gap-3 text-lg text-[var(--theme-text-secondary)] hover:text-[var(--theme-green)] transition-colors group">
-                    <MailIcon /> <span>{creator.email}</span>
-                </a>
+                    <ContactLink href={`mailto:${creator.email}`} icon={<MailIcon />} text={creator.email} />
                 )}
                 {creator.whatsapp && (
-                <a href={creator.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-lg text-[var(--theme-text-secondary)] hover:text-[var(--theme-green)] transition-colors group">
-                    <WhatsappIcon className="h-5 w-5 text-current" /> <span>WhatsApp</span>
-                </a>
+                    <ContactLink href={creator.whatsapp} icon={<WhatsappIcon className="h-5 w-5 text-current" />} text="WhatsApp" />
                 )}
                 {creator.whatsapp2 && (
-                <a href={creator.whatsapp2} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-lg text-[var(--theme-text-secondary)] hover:text-[var(--theme-green)] transition-colors group">
-                    <WhatsappIcon className="h-5 w-5 text-current" /> <span>WhatsApp 2</span>
-                </a>
+                    <ContactLink href={creator.whatsapp2} icon={<WhatsappIcon className="h-5 w-5 text-current" />} text="WhatsApp 2" />
                 )}
             </div>
         </div>

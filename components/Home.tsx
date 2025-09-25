@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../App';
 import { SiteSettings } from '../constants';
@@ -17,6 +18,7 @@ import { StorageDetailsWidget } from './widgets/StorageDetailsWidget';
 import { CalendarWidget } from './widgets/CalendarWidget';
 import { TimesheetWidget } from './widgets/TimesheetWidget';
 import { MessageOfTheDay } from './MessageOfTheDay';
+import { LogoutTile } from './tiles/LogoutTile';
 
 interface HomeProps {
     onNavigate: (view: View) => void;
@@ -33,15 +35,6 @@ interface HomeProps {
     onLogout: () => void;
     userRole: UserRole;
 }
-
-const LogoutIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-        <polyline points="16 17 21 12 16 7"></polyline>
-        <line x1="21" y1="12" x2="9" y2="12"></line>
-    </svg>
-);
-
 
 export const Home: React.FC<HomeProps> = (props) => {
     const [showWelcome, setShowWelcome] = useState(true);
@@ -67,42 +60,37 @@ export const Home: React.FC<HomeProps> = (props) => {
                 </div>
             )}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1.5 h-full">
-                <HomeTile className="col-span-1 md:col-span-2 lg:col-span-3 row-span-2 animate-tile-in" style={{ animationDelay: '50ms' }}>
+                {/* Large Widgets */}
+                <HomeTile className="col-span-2 md:col-span-2 lg:col-span-2 row-span-2" style={{ animationDelay: '50ms' }}>
                     <StorageDetailsWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} />
                 </HomeTile>
-                <HomeTile className="col-span-1 md:col-span-2 lg:col-span-3 row-span-2 animate-tile-in" style={{ animationDelay: '100ms' }}>
+                <HomeTile className="col-span-2 md:col-span-2 lg:col-span-2 row-span-2" style={{ animationDelay: '100ms' }}>
                     <CalendarWidget onOpenCalendar={() => props.onNavigate('calendar')} events={props.calendarEvents} />
                 </HomeTile>
-                
-                <HomeTile className="col-span-2 md:col-span-4 lg:col-span-6 animate-tile-in" style={{ animationDelay: '150ms' }}>
-                    <MessageOfTheDay />
-                </HomeTile>
-                
-                <HomeTile className="col-span-1 md:col-span-2 lg:col-span-2 animate-tile-in" style={{ animationDelay: '200ms' }}>
-                    <ClockWidget />
-                </HomeTile>
-                <HomeTile className="col-span-1 md:col-span-2 lg:col-span-2 animate-tile-in" style={{ animationDelay: '250ms' }}>
-                    <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} />
-                </HomeTile>
-                <HomeTile className="col-span-2 md:col-span-4 lg:col-span-2 row-span-2 animate-tile-in" style={{ animationDelay: '300ms' }}>
+                <HomeTile className="col-span-2 md:col-span-4 lg:col-span-2 row-span-2" style={{ animationDelay: '150ms' }}>
                     <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />
                 </HomeTile>
-
-                {/* Nav tiles */}
-                <HomeTile className="col-span-1 lg:col-span-1 animate-tile-in" style={{ animationDelay: '350ms' }}><GeneratorTile onNavigate={props.onNavigate} /></HomeTile>
-                <HomeTile className="col-span-1 lg:col-span-1 animate-tile-in" style={{ animationDelay: '400ms' }}><RecordingsTile onNavigate={props.onNavigate} count={props.recordings.length} /></HomeTile>
-                <HomeTile className="col-span-1 lg:col-span-1 animate-tile-in" style={{ animationDelay: '450ms' }}><PhotosTile onNavigate={props.onNavigate} count={props.photos.length} /></HomeTile>
-                <HomeTile className="col-span-1 lg:col-span-1 animate-tile-in" style={{ animationDelay: '500ms' }}><NotepadTile onNavigate={props.onNavigate} count={props.notes.length} /></HomeTile>
-                <HomeTile className="col-span-2 md:col-span-2 lg:col-span-1 animate-tile-in" style={{ animationDelay: '550ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
-                <HomeTile className="col-span-2 md:col-span-2 lg:col-span-1 animate-tile-in" style={{ animationDelay: '600ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
+                
+                {/* Medium Widgets */}
+                <HomeTile className="col-span-2 md:col-span-2 lg:col-span-3" style={{ animationDelay: '200ms' }}>
+                    <MessageOfTheDay />
+                </HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1 lg:col-span-1" style={{ animationDelay: '250ms' }}>
+                    <ClockWidget />
+                </HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1 lg:col-span-2" style={{ animationDelay: '300ms' }}>
+                    <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} />
+                </HomeTile>
+                
+                {/* Small Nav Tiles */}
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '350ms' }}><GeneratorTile onNavigate={props.onNavigate} /></HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '400ms' }}><RecordingsTile onNavigate={props.onNavigate} count={props.recordings.length} /></HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '450ms' }}><PhotosTile onNavigate={props.onNavigate} count={props.photos.length} /></HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '500ms' }}><NotepadTile onNavigate={props.onNavigate} count={props.notes.length} /></HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '550ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '600ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
+                <HomeTile className="col-span-2 md:col-span-2" style={{ animationDelay: '650ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
             </div>
-            <button
-                onClick={props.onLogout}
-                className="fixed bottom-28 sm:bottom-28 lg:bottom-6 right-4 sm:right-6 z-40 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full w-16 h-16 flex items-center justify-center shadow-lg transform transition-transform hover:scale-110 fab-shadow"
-                aria-label="Logout"
-            >
-                <LogoutIcon />
-            </button>
         </div>
     );
 };

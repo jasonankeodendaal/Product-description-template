@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState } from 'react';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -19,6 +20,7 @@ import { CloudIcon } from './icons/CloudIcon';
 import { Spinner } from './icons/Spinner';
 import { ClockIcon } from './icons/ClockIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
+import { GoogleDriveIcon } from './icons/GoogleDriveIcon';
 
 interface DataManagementProps {
     templates: Template[];
@@ -202,6 +204,21 @@ export const DataManagement: React.FC<DataManagementProps> = ({
                     </div>
                 </InfoCard>
             </div>
+
+            <InfoCard>
+                <SectionTitle>Cloud Storage Sync</SectionTitle>
+                <div className="relative group">
+                    <button
+                        disabled
+                        className="w-full bg-[var(--theme-card-bg)] text-[var(--theme-text-primary)] font-semibold py-3 px-4 rounded-md text-base inline-flex items-center justify-center gap-3 opacity-50 cursor-not-allowed"
+                    >
+                        <GoogleDriveIcon /> Connect to Google Drive
+                    </button>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-black/80 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        Full Google Drive sync and login requires backend OAuth changes and is planned for a future update.
+                    </div>
+                </div>
+            </InfoCard>
             
             <InfoCard>
                 <SectionTitle>Backend &amp; API Settings</SectionTitle>

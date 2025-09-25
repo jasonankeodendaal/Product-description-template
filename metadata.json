@@ -3,7 +3,6 @@
   "description": "An AI-powered application to automatically generate structured and professional product descriptions based on raw product information, following a specific template.",
   "requestFramePermissions": [
     "microphone",
-    "camera",
-    "geolocation"
+    "camera"
   ]
 }
