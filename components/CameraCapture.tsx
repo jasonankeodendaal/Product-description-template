@@ -65,7 +65,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     applyAdvancedConstraint([{ zoom: clampedZoom } as any]);
   }, [capabilities.zoom, applyAdvancedConstraint]);
 
-  // FIX: Moved takePicture before handleCapture to resolve the "used before declaration" error.
   const takePicture = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
 

@@ -19,6 +19,7 @@ import { CalendarWidget } from './widgets/CalendarWidget';
 import { TimesheetWidget } from './widgets/TimesheetWidget';
 import { MessageOfTheDay } from './MessageOfTheDay';
 import { LogoutTile } from './tiles/LogoutTile';
+import { TourTile } from './tiles/TourTile';
 
 interface HomeProps {
     onNavigate: (view: View) => void;
@@ -34,6 +35,7 @@ interface HomeProps {
     storageUsage: StorageUsage;
     onLogout: () => void;
     userRole: UserRole;
+    onOpenOnboarding: () => void;
 }
 
 export const Home: React.FC<HomeProps> = (props) => {
@@ -89,7 +91,8 @@ export const Home: React.FC<HomeProps> = (props) => {
                 <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '500ms' }}><NotepadTile onNavigate={props.onNavigate} count={props.notes.length} /></HomeTile>
                 <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '550ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
                 <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '600ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
-                <HomeTile className="col-span-2 md:col-span-2" style={{ animationDelay: '650ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '650ms' }}><TourTile onOpenTour={props.onOpenOnboarding} /></HomeTile>
+                <HomeTile className="col-span-1 md:col-span-1" style={{ animationDelay: '700ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
             </div>
         </div>
     );

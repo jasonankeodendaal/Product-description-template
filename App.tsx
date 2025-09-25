@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -742,6 +743,10 @@ const App: React.FC = () => {
         setIsOnboardingOpen(false);
     }, [siteSettings, handleUpdateSettings]);
 
+    const handleOpenOnboarding = () => {
+        setIsOnboardingOpen(true);
+    };
+
     const handleAddTemplate = useCallback(async (name: string, prompt: string) => {
         const newTemplate: Template = { id: crypto.randomUUID(), name, prompt };
         const updatedTemplates = [...templates, newTemplate];
@@ -1054,6 +1059,7 @@ const App: React.FC = () => {
                         storageUsage={storageUsage}
                         onLogout={handleLogout}
                         userRole={userRole}
+                        onOpenOnboarding={handleOpenOnboarding}
                     />
                 );
             case 'generator':

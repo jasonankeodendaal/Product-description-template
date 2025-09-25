@@ -3,13 +3,10 @@ import { SparklesIcon } from './icons/SparklesIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
-import { HardDriveIcon } from './icons/HardDriveIcon';
-import { FolderSyncIcon } from './icons/FolderSyncIcon';
 import { TemplateIcon } from './icons/TemplateIcon';
 import { ImageIcon } from './icons/ImageIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
-import { CheckIcon } from './icons/CheckIcon';
-import { CloudIcon } from './icons/CloudIcon';
+import { RocketIcon } from './icons/RocketIcon';
 
 interface OnboardingTourProps {
     onFinish: () => void;
@@ -26,17 +23,17 @@ const tourSteps = [
     {
         icon: <SparklesIcon className="w-16 h-16 text-emerald-400" />,
         title: "Meet Your AI Content Engine",
-        content: "The Generator uses powerful AI to turn messy product notes into polished descriptions. It even searches the web to find missing details like dimensions and warranty info, ensuring every description is complete."
+        content: "Turn messy notes into polished, web-ready descriptions. The AI even searches the web for missing details, ensuring every description is complete."
     },
     {
         icon: <TemplateIcon />,
         title: "Your Brand, Your Voice",
-        content: "Control the output with customizable Templates and select a Tone of Voice (e.g., Professional, Casual) to match your brand perfectly. The AI strictly follows your rules for consistent results every time."
+        content: "The AI strictly follows your custom templates and tone of voice for perfect, consistent results that match your brand."
     },
     {
         icon: <RecordingIcon className="w-16 h-16 text-pink-400" />,
         title: "Capture Ideas Instantly",
-        content: "Never lose a thought again. Record voice notes on the fly and get an accurate text transcript with a single click. You can even attach photos and notes to your recordings for full context."
+        content: "Record voice notes on the fly and get accurate text transcripts with a single click. Attach photos for full context."
     },
     {
         icon: (
@@ -46,26 +43,26 @@ const tourSteps = [
             </div>
         ),
         title: "Your Central Visual Hub",
-        content: "Manage all your product photos in one place. Organize with folders and tags, capture new images with the built-in camera, and use the Image Tool to batch-process photos into perfect squares."
+        content: "Manage, organize, and edit all your photos in one place. Use the Image Tool to create perfect square images for any platform."
     },
     {
         icon: <NotepadIcon className="w-16 h-16 text-sky-400" />,
         title: "More Than Just Notes",
-        content: "Draft ideas with a rich text editor, manage tasks with interactive checklists, and attach audio memos or scanned documents. Set due dates and reminders to stay on top of deadlines."
+        content: "Draft ideas, manage tasks with interactive checklists, set reminders, and attach audio memos or scanned documents to your notes."
     },
     {
         icon: <DatabaseIcon className="w-16 h-16 text-gray-400" />,
         title: "Your Command Center",
-        content: "The Dashboard is where you manage everything. Update your company branding, back up your data, and choose your sync mode (Local, Folder, or API). All app settings are here."
+        content: "The Dashboard is where you manage everything: update branding, back up your data, and choose your sync mode."
     },
     {
         icon: (
              <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center border-2 border-emerald-500">
-                <CheckIcon />
+                <RocketIcon className="w-8 h-8 text-emerald-400" />
             </div>
         ),
-        title: "You're All Set!",
-        content: "That's the tour! You now have a powerful, private, and offline-first workspace. Dive in and start creating."
+        title: "You're Ready for Takeoff!",
+        content: "That's the tour! Dive in and start creating with your new AI-powered toolkit."
     }
 ];
 
