@@ -64,16 +64,16 @@ export const CreatorInfo: React.FC<CreatorInfoProps> = ({ creator, onClose }) =>
             
             <div className="mt-8 pt-6 border-t border-orange-500/20 flex flex-col items-center gap-3">
                  {creator.tel && (
-                    <ContactLink href={`tel:${creator.tel}`} icon={<PhoneIcon className="h-5 w-5" />} text={creator.tel} />
+                    <ContactLink href={`tel:${creator.tel}`} icon={<PhoneIcon className="h-6 w-6" />} text={creator.tel} />
                 )}
                 {creator.email && (
-                    <ContactLink href={`mailto:${creator.email}`} icon={<MailIcon className="h-5 w-5" />} text={creator.email} />
+                    <ContactLink href={`mailto:${creator.email}`} icon={<MailIcon className="h-6 w-6" />} text={creator.email} />
                 )}
                 {creator.whatsapp && (
-                    <ContactLink href={creator.whatsapp} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp" />
+                    <ContactLink href={creator.whatsapp} icon={<WhatsappIcon className="h-6 w-6" />} text="WhatsApp" />
                 )}
                 {creator.whatsapp2 && (
-                    <ContactLink href={creator.whatsapp2} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp 2" />
+                    <ContactLink href={creator.whatsapp2} icon={<WhatsappIcon className="h-6 w-6" />} text="WhatsApp 2" />
                 )}
             </div>
         </div>

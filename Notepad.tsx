@@ -1,35 +1,35 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Note, NoteRecording, Photo } from '../App';
-import { useRecorder } from '../hooks/useRecorder';
-import { SearchIcon } from './icons/SearchIcon';
-import { PlusIcon } from './icons/PlusIcon';
-import { NotepadIcon } from './icons/NotepadIcon';
-import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import { TrashIcon } from './icons/TrashIcon';
-import { BoldIcon } from './icons/BoldIcon';
-import { ItalicIcon } from './icons/ItalicIcon';
-import { UnderlineIcon } from './icons/UnderlineIcon';
-import { ListIcon } from './icons/ListIcon';
-import { MicIcon } from './icons/MicIcon';
-import { WaveformPlayer } from './WaveformPlayer';
-import { formatTime } from '../utils/formatters';
-import { LiveWaveform } from './LiveWaveform';
-import { XIcon } from './icons/XIcon';
-import { CameraCapture } from './CameraCapture';
-import { dataURLtoBlob } from '../utils/dataUtils';
-import { ScanIcon } from './icons/ScanIcon';
-import { BellIcon } from './icons/BellIcon';
-import { SettingsIcon } from './icons/SettingsIcon';
-import { ImageIcon } from './icons/ImageIcon';
-import { StrikethroughIcon } from './icons/StrikethroughIcon';
-import { ChecklistIcon } from './icons/ChecklistIcon';
-import { MagicIcon } from './icons/MagicIcon';
-import { UploadIcon } from './icons/UploadIcon';
-import { Spinner } from './icons/Spinner';
-import { resizeImage } from '../utils/imageUtils';
-import { SaveIcon } from './icons/SaveIcon';
-import { CheckIcon } from './icons/CheckIcon';
-import { useDebounce } from '../hooks/useDebounce';
+import { Note, NoteRecording, Photo } from './App';
+import { useRecorder } from './hooks/useRecorder';
+import { SearchIcon } from './components/icons/SearchIcon';
+import { PlusIcon } from './components/icons/PlusIcon';
+import { NotepadIcon } from './components/icons/NotepadIcon';
+import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
+import { TrashIcon } from './components/icons/TrashIcon';
+import { BoldIcon } from './components/icons/BoldIcon';
+import { ItalicIcon } from './components/icons/ItalicIcon';
+import { UnderlineIcon } from './components/icons/UnderlineIcon';
+import { ListIcon } from './components/icons/ListIcon';
+import { MicIcon } from './components/icons/MicIcon';
+import { WaveformPlayer } from './components/WaveformPlayer';
+import { formatTime } from './utils/formatters';
+import { LiveWaveform } from './components/LiveWaveform';
+import { XIcon } from './components/icons/XIcon';
+import { CameraCapture } from './components/CameraCapture';
+import { dataURLtoBlob } from './utils/dataUtils';
+import { ScanIcon } from './components/icons/ScanIcon';
+import { BellIcon } from './components/icons/BellIcon';
+import { SettingsIcon } from './components/icons/SettingsIcon';
+import { ImageIcon } from './components/icons/ImageIcon';
+import { StrikethroughIcon } from './components/icons/StrikethroughIcon';
+import { ChecklistIcon } from './components/icons/ChecklistIcon';
+import { MagicIcon } from './components/icons/MagicIcon';
+import { UploadIcon } from './components/icons/UploadIcon';
+import { Spinner } from './components/icons/Spinner';
+import { resizeImage } from './utils/imageUtils';
+import { SaveIcon } from './components/icons/SaveIcon';
+import { CheckIcon } from './components/icons/CheckIcon';
+import { useDebounce } from './hooks/useDebounce';
 
 // Props definition
 interface NotepadProps {
@@ -510,7 +510,8 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
     }, [props.onUpdate]);
 
     const handleAddNewNote = useCallback(async () => {
-        const newNote: Note = { id: crypto.randomUUID(), title: 'New Note', content: '<p></p>', category: 'General', tags: [], date: new Date().toISOString(), color: defaultColors[Math.floor(Math.random() * defaultColors.length)], paperStyle: 'paper-dark', fontStyle: 'font-sans', heroImage: null, dueDate: null, reminderDate: null, reminderFired: false, recordingIds: [], photoIds: [] };
+        // FIX: Add missing `isLocked` property to conform to the `Note` interface.
+        const newNote: Note = { id: crypto.randomUUID(), title: 'New Note', content: '<p></p>', category: 'General', tags: [], date: new Date().toISOString(), color: defaultColors[Math.floor(Math.random() * defaultColors.length)], paperStyle: 'paper-dark', fontStyle: 'font-sans', heroImage: null, dueDate: null, reminderDate: null, reminderFired: false, recordingIds: [], photoIds: [], isLocked: false };
         await props.onSave(newNote);
         handleSelectNote(newNote);
     }, [props.onSave, handleSelectNote]);
@@ -577,7 +578,7 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                         <NoteEditor
                             note={selectedNote}
                             onUpdate={handleUpdate}
-                            onNoteChange={setSelectedNote}
+                            // FIX: The 'onNoteChange' prop is not valid for the NoteEditor component and has been removed.
                             onDelete={handleDelete}
                             onClose={() => handleSelectNote(null)}
                             onSaveNoteRecording={props.onSaveNoteRecording}

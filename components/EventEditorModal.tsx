@@ -121,14 +121,14 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                         </header>
                         <div className="p-6 space-y-6 overflow-y-auto no-scrollbar">
                             <section>
-                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Event Title" className="w-full text-xl font-semibold bg-transparent border-b-2 border-[var(--theme-border)] focus:border-[var(--theme-green)] focus:outline-none pb-2" autoFocus />
-                                <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add notes or a description..." rows={3} className="w-full bg-transparent p-2 mt-4 rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-green)]/50" />
+                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Event Title" className="w-full text-xl font-semibold bg-gray-100 text-gray-900 rounded-md p-2 border border-gray-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 focus:outline-none placeholder:text-gray-500" autoFocus />
+                                <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add notes or a description..." rows={3} className="w-full bg-gray-100 text-gray-900 p-2 mt-4 rounded-md border border-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 placeholder:text-gray-500" />
                             </section>
                             
                             <section className="space-y-4 pt-4 border-t border-[var(--theme-border)]/50">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div><label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-1">Time</label><input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)] h-[42px]"/></div>
-                                    <div><label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-1">Reminder</label><select value={reminderOffset} onChange={e => setReminderOffset(Number(e.target.value))} className="w-full bg-[var(--theme-bg)]/50 p-2 rounded-md border border-[var(--theme-border)] h-[42px]">{reminderOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></div>
+                                    <div><label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-1">Time</label><input type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full bg-gray-100 text-gray-900 p-2 rounded-md border border-gray-400 h-[42px] focus:ring-2 focus:ring-orange-500/50"/></div>
+                                    <div><label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-1">Reminder</label><select value={reminderOffset} onChange={e => setReminderOffset(Number(e.target.value))} className="w-full bg-gray-100 text-gray-900 p-2 rounded-md border border-gray-400 h-[42px] focus:ring-2 focus:ring-orange-500/50">{reminderOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">Color Tag</label>

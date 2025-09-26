@@ -103,7 +103,7 @@ export interface Note {
     tags: string[];
     date: string;
     color: string; // e.g., 'sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'
-    isLocked?: boolean;
+    isLocked: boolean;
     // New fields for advanced editor
     heroImage?: string | null; // Data URL for the hero image
     paperStyle: string; // 'paper-white', 'paper-dark', 'paper-yellow-lined', 'paper-grid'
@@ -164,6 +164,7 @@ const migrateNote = (note: any): Note => {
         tags: note.tags || [],
         date: note.date || new Date().toISOString(),
         color: note.color || randomColor(),
+        isLocked: note.isLocked || false, // Ensure isLocked is initialized
         heroImage: note.heroImage || null,
         paperStyle: note.paperStyle || 'paper-dark',
         fontStyle: note.fontStyle || 'font-sans',
@@ -412,7 +413,8 @@ const App: React.FC = () => {
 
                 // Check Google Drive connection status
                 const gDriveStatus = await cloudAuthService.checkStatus();
-                setGoogleDriveStatus(gDriveStatus);
+                // FIX: Ensure gDriveStatus.email has a default value to match the state type.
+                setGoogleDriveStatus({ connected: gDriveStatus.connected, email: gDriveStatus.email || '' });
 
 
                 const storedSettings = localStorage.getItem('siteSettings');

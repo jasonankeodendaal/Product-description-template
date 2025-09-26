@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { RocketIcon } from './components/icons/RocketIcon';
 
 interface OnboardingTourProps {
     onFinish: () => void;
@@ -106,7 +107,7 @@ const AnimatedNotepadIcon = () => (
             .writing-line { stroke-dasharray: 20 20; animation: write-line 1.5s linear infinite; }
         `}</style>
         <rect x="50" y="40" width="100" height="120" rx="10" fill="#38BDF8" />
-        <rect x="50" y="40" width="100" height="15" rx="0" fill="#2563EB" />
+        <rect x="50" y="40" width="100" height="15" rx="0" fill="#0369A1" />
         <path d="M 65 70 H 135 M 65 90 H 135 M 65 110 H 135 M 65 130 H 110" stroke="#E0F2FE" strokeWidth="4" strokeLinecap="round" />
         <g transform="translate(100 120) rotate(20)">
             <path d="M 0 -30 L 0 20" stroke="#F59E0B" strokeWidth="12" strokeLinecap="round" />
@@ -162,42 +163,46 @@ const tourSteps = [
     {
         icon: <div className="text-5xl animate-bounce" style={{ animationDuration: '1.5s' }}>👋</div>,
         title: "Welcome to Your AI Workspace!",
-        content: "Let's take a quick tour to see how you can supercharge your workflow. It'll only take a moment."
+        content: "This brief tour will introduce you to the powerful, integrated tools designed to streamline your creative process from idea to final product."
     },
     {
         icon: <AnimatedAiEngineIcon />,
         title: "Meet Your AI Content Engine",
-        content: "Turn messy notes into polished, web-ready descriptions. The AI even searches the web for missing details, ensuring every description is complete."
+        content: "This is your creative powerhouse. Paste raw product info, scattered notes, or even transcribed audio. The AI, powered by Google's Gemini, will intelligently reformat it into a professional description."
     },
     {
         icon: <AnimatedBrandingIcon />,
         title: "Your Brand, Your Voice",
-        content: "The AI strictly follows your custom templates and tone of voice for perfect, consistent results that match your brand."
+        content: "Define your own output structure with custom templates. The AI strictly adheres to your format and selected tone of voice for consistent, brand-aligned results every time."
     },
     {
         icon: <AnimatedRecordingIcon />,
         title: "Capture Ideas Instantly",
-        content: "Record voice notes on the fly and get accurate text transcripts with a single click. Attach photos for full context."
+        content: "Never lose a thought. Record voice notes on the fly and get accurate text transcripts with a single click. You can even attach reference photos for complete context."
     },
     {
         icon: <AnimatedVisualHubIcon />,
         title: "Your Central Visual Hub",
-        content: "Manage, organize, and edit all your photos in one place. Use the Image Tool to create perfect square images for any platform."
+        content: "Manage all your project photos in one place. Upload, capture, and organize images into folders. Use the integrated Image Tool to create perfect, broadcast-quality square images."
     },
     {
         icon: <AnimatedNotepadIcon />,
         title: "More Than Just Notes",
-        content: "Draft ideas, manage tasks with interactive checklists, set reminders, and attach audio memos or scanned documents to your notes."
+        content: "A rich-text editor that's also a productivity tool. Draft ideas, manage tasks with interactive checklists, attach audio memos, and set reminders to stay on track."
     },
     {
         icon: <AnimatedDashboardIcon />,
         title: "Your Command Center",
-        content: "The Dashboard is where you manage everything: update branding, back up your data, and choose your sync mode."
+        content: "The Dashboard is where you manage everything. Update your branding, create full data backups, and choose your preferred data sync mode—all from one place."
     },
     {
-        icon: <AnimatedRocketIcon />,
+        icon: (
+             <div className="w-24 h-24 flex items-center justify-center">
+                <AnimatedRocketIcon />
+            </div>
+        ),
         title: "You're Ready for Takeoff!",
-        content: "That's the tour! Dive in and start creating with your new AI-powered toolkit."
+        content: "That's the tour! We hope these tools remove friction and empower you to focus on what you do best: creating."
     }
 ];
 
@@ -215,10 +220,9 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
     const progressPercentage = ((currentStep + 1) / tourSteps.length) * 100;
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4 font-inter" aria-modal="true" role="dialog">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4" aria-modal="true" role="dialog">
             <div className="bg-slate-900/50 backdrop-blur-2xl w-full max-w-2xl rounded-2xl shadow-2xl border border-orange-500/20 relative animate-modal-scale-in flex flex-col overflow-hidden">
                 
-                {/* Progress Bar */}
                 <div className="w-full bg-slate-800/50 h-2.5">
                     <div 
                         className="bg-gradient-to-r from-orange-500 to-amber-500 h-2.5 rounded-r-full transition-all duration-300 ease-out"
@@ -227,7 +231,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
                 </div>
 
                 <div className="p-8 md:p-12 flex flex-col justify-center text-left min-h-[450px]">
-                    <div key={currentStep} className="animate-fade-in-down">
+                    <div key={currentStep} className="animate-tour-content-in">
                         <div className="w-24 h-24 mb-6 flex items-center justify-center">
                             {tourSteps[currentStep].icon}
                         </div>

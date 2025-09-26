@@ -35,16 +35,16 @@ export const AuthBrandingPanel: React.FC<AuthBrandingPanelProps> = ({ creator })
 
             <div className="auth-contact-button-container z-10 mt-10 md:mt-0 flex flex-col items-center md:items-start gap-4">
                 {creator.tel && (
-                    <ContactButton href={`tel:${creator.tel}`} icon={<PhoneIcon className="h-5 w-5"/>} text={creator.tel} />
+                    <ContactButton href={`tel:${creator.tel}`} icon={<PhoneIcon className="h-6 w-6"/>} text={creator.tel} />
                 )}
                 {creator.email && (
-                    <ContactButton href={`mailto:${creator.email}`} icon={<MailIcon className="h-5 w-5"/>} text={creator.email} />
+                    <ContactButton href={`mailto:${creator.email}`} icon={<MailIcon className="h-6 w-6"/>} text={creator.email} />
                 )}
                 {creator.whatsapp && (
-                    <ContactButton href={creator.whatsapp} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp" />
+                    <ContactButton href={creator.whatsapp} icon={<WhatsappIcon className="h-6 w-6" />} text="WhatsApp" />
                 )}
                 {creator.whatsapp2 && (
-                    <ContactButton href={creator.whatsapp2} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp 2" />
+                    <ContactButton href={creator.whatsapp2} icon={<WhatsappIcon className="h-6 w-6" />} text="WhatsApp 2" />
                 )}
             </div>
         </div>

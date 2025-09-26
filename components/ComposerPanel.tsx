@@ -77,7 +77,14 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                     <div className="grid grid-cols-4 gap-2">
                         {photos.slice(0, 8).map(photo => (
                             <div key={photo.id} className="relative group">
-                                <PhotoThumbnail photo={photo} onSelect={() => handleDescribeImage(photo)} onDelete={onDeletePhoto} />
+                                <PhotoThumbnail 
+                                    photo={photo} 
+                                    onSelect={() => handleDescribeImage(photo)} 
+                                    onDelete={onDeletePhoto} 
+                                    isSelected={false} 
+                                    isSelectionActive={false} 
+                                    onToggleSelection={() => {}}
+                                />
                                  {describingPhotoId === photo.id ? (
                                     <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-md">
                                         <Spinner className="h-6 w-6 text-white" />

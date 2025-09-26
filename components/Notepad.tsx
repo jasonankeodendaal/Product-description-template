@@ -27,10 +27,13 @@ import { MagicIcon } from './icons/MagicIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { Spinner } from './icons/Spinner';
 import { resizeImage } from '../utils/imageUtils';
+import { SaveIcon } from './icons/SaveIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { useDebounce } from '../hooks/useDebounce';
+import { LockIcon } from './icons/LockIcon';
+import { UnlockIcon } from './icons/UnlockIcon';
 
-// Props definition for the main Notepad component
+// Props definition
 interface NotepadProps {
     notes: Note[];
     onSave: (note: Note) => Promise<void>;
@@ -44,60 +47,78 @@ interface NotepadProps {
     performAiAction: (prompt: string, context: string) => Promise<any>;
 }
 
-// Props definition for the new standalone NoteEditor component
-interface NoteEditorProps {
-    note: Note;
-    onUpdate: (note: Note, silent: boolean) => Promise<void>;
-    onDelete: (id: string) => void;
-    onClose: () => void;
-    noteRecordings: NoteRecording[];
-    onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
-    photos: Photo[];
-    onSavePhoto: (photo: Photo) => Promise<void>;
-    performAiAction: (prompt: string, context: string) => Promise<any>;
-}
-
-
-// --- Sub-components for NoteEditor ---
-const NoteSettingsModal: React.FC<{
+// --- NoteSettingsSidebar Component (New) ---
+const NoteSettingsSidebar: React.FC<{
     note: Note;
     onNoteChange: (updater: (note: Note) => Note) => void;
     onClose: () => void;
-}> = ({ note, onNoteChange, onClose }) => {
+    isClosing: boolean;
+}> = ({ note, onNoteChange, onClose, isClosing }) => {
+    const solidColorMap: Record<string, string> = {
+        sky: '#38bdf8', purple: '#a855f7', emerald: '#10b981',
+        amber: '#f59e0b', pink: '#ec4899', cyan: '#22d3ee',
+    };
+    const paperStyles: Record<string, string> = {
+        'paper-dark': 'Dark', 'paper-grid': 'Grid',
+    };
+    const fontStyles: Record<string, string> = {
+        'font-sans': 'Sans', 'font-serif': 'Serif', 'font-mono': 'Mono',
+    };
+
     return (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center" onClick={onClose}>
-             <div onClick={e => e.stopPropagation()} className="bg-slate-900/80 backdrop-blur-md w-full md:max-w-md rounded-t-2xl md:rounded-xl shadow-xl border-t-2 md:border border-orange-500/30 note-settings-modal-in">
-                <div className="p-4 flex justify-between items-center border-b border-white/10">
-                    <h4 className="font-bold text-white">Note Settings</h4>
-                    <button onClick={onClose} className="p-1"><XIcon/></button>
-                </div>
-                <div className="p-4 space-y-4">
-                     <div>
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-400"><BellIcon /> Due Date</label>
-                        <input type="datetime-local" value={note.dueDate ? note.dueDate.slice(0, 16) : ''} onChange={e => onNoteChange(n => ({...n, dueDate: e.target.value || null}))} className="w-full bg-gray-800 text-sm p-1 rounded-md border border-gray-600 mt-1" />
-                    </div>
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-400"><NotepadIcon /> Paper Style</label>
-                        <select value={note.paperStyle} onChange={e => onNoteChange(n => ({ ...n, paperStyle: e.target.value }))} className="w-full bg-gray-800 text-sm p-1.5 rounded-md border border-gray-600 mt-1">
-                            {Object.keys(paperStyles).map(s => <option key={s} value={s}>{s.replace('paper-','').replace('-',' ')}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-400">Aa Font Style</label>
-                        <select value={note.fontStyle} onChange={e => onNoteChange(n => ({ ...n, fontStyle: e.target.value }))} className="w-full bg-gray-800 text-sm p-1.5 rounded-md border border-gray-600 mt-1">
-                            {Object.keys(fontStyles).map(s => <option key={s} value={s}>{s.replace('font-','')}</option>)}
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2 pt-2">
-                        {defaultColors.map(c => (
-                            <button key={c} type="button" onClick={() => onNoteChange(n => ({...n, color:c}))} className={`w-6 h-6 rounded-full ${colorMap[c].bg} ${note.color === c ? `ring-2 ring-offset-2 ring-offset-slate-900 ${colorMap[c].ring}` : ''}`}></button>
-                        ))}
+        <div className={`note-settings-sidebar ${isClosing ? 'note-settings-sidebar-out' : ''}`}>
+            <header className="settings-sidebar-header">
+                <h3 className="text-lg font-bold">Note Settings</h3>
+                <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><XIcon /></button>
+            </header>
+            <div className="settings-sidebar-content">
+                {/* Due Date Section */}
+                <div className="settings-section">
+                    <BellIcon className="settings-section-icon" />
+                    <div className="settings-section-controls">
+                        <label htmlFor="due-date">Due Date</label>
+                        <input id="due-date" type="datetime-local" value={note.dueDate ? note.dueDate.slice(0, 16) : ''} onChange={e => onNoteChange(n => ({...n, dueDate: e.target.value || null, reminderDate: e.target.value || null, reminderFired: false }))} className="settings-input" />
                     </div>
                 </div>
-             </div>
+
+                {/* Paper & Font Section */}
+                <div className="settings-section">
+                     <NotepadIcon className="settings-section-icon" />
+                    <div className="settings-section-controls">
+                        <label htmlFor="paper-style">Paper Style</label>
+                        <select id="paper-style" value={note.paperStyle} onChange={e => onNoteChange(n => ({ ...n, paperStyle: e.target.value }))} className="settings-select">
+                            {Object.entries(paperStyles).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
+                        </select>
+                        <label htmlFor="font-style" className="mt-4">Aa Font Style</label>
+                        <select id="font-style" value={note.fontStyle} onChange={e => onNoteChange(n => ({ ...n, fontStyle: e.target.value }))} className="settings-select">
+                            {Object.entries(fontStyles).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
+                        </select>
+                        <div className="settings-color-palette">
+                            {Object.entries(solidColorMap).map(([name, color]) => (
+                                <button key={name} type="button" onClick={() => onNoteChange(n => ({...n, color:name}))} className={`settings-color-swatch ${note.color === name ? 'selected' : ''}`} style={{ backgroundColor: color }}>
+                                    {note.color === name && <CheckIcon className="w-4 h-4 text-black" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Security Section */}
+                <div className="settings-section">
+                    <LockIcon className="settings-section-icon" />
+                    <div className="settings-section-controls w-full">
+                        <label>Security</label>
+                        <button onClick={() => onNoteChange(n => ({...n, isLocked: !n.isLocked}))} className="w-full flex items-center justify-center gap-2 p-2 mt-2 rounded-md bg-gray-800 hover:bg-gray-700 border border-gray-600">
+                            {note.isLocked ? <UnlockIcon /> : <LockIcon />}
+                            <span className="font-semibold">{note.isLocked ? 'Unlock Note' : 'Lock Note'}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
+
 
 const AudioPlayerModal: React.FC<{recording: NoteRecording, onClose: () => void}> = ({ recording, onClose }) => (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -122,12 +143,22 @@ const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo
 );
 
 
-const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClose, noteRecordings, onSaveNoteRecording, photos, onSavePhoto, performAiAction }) => {
+const NoteEditor: React.FC<{
+    note: Note;
+    onUpdate: (note: Note) => Promise<void>;
+    onDelete: (id: string) => void;
+    onClose: () => void;
+    onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
+    onSavePhoto: (photo: Photo) => Promise<void>;
+    performAiAction: (prompt: string, context: string) => Promise<any>;
+}> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onSavePhoto, performAiAction }) => {
     const [localNote, setLocalNote] = useState(note);
+    const [isDirty, setIsDirty] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
     const contentRef = useRef<HTMLDivElement>(null);
     const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode, setAudioBlob } = useRecorder();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isSettingsClosing, setIsSettingsClosing] = useState(false);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [cameraMode, setCameraMode] = useState<'photo' | 'document'>('photo');
     const [isRecordingPanelOpen, setIsRecordingPanelOpen] = useState(false);
@@ -137,39 +168,41 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
     const [playingRecording, setPlayingRecording] = useState<NoteRecording | null>(null);
     const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
     const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
-    
-    const localNoteRef = useRef(localNote);
-    useEffect(() => {
-        localNoteRef.current = localNote;
-    }, [localNote]);
-    
+
     useEffect(() => {
         setLocalNote(note);
-        if (contentRef.current && contentRef.current.innerHTML !== note.content) {
+        setIsDirty(false);
+        setSaveState('idle');
+        if (contentRef.current) {
             contentRef.current.innerHTML = note.content;
         }
-        setSaveState('idle');
     }, [note]);
 
-    const isDirty = useMemo(() => {
-        return JSON.stringify(localNote) !== JSON.stringify(note);
-    }, [localNote, note]);
-
-    // Auto-save on unmount if dirty
-    useEffect(() => {
-        return () => {
-            if (JSON.stringify(localNoteRef.current) !== JSON.stringify(note)) {
-                onUpdate(localNoteRef.current, true);
+    const updateLocalNote = (updater: (prevNote: Note) => Note) => {
+        setLocalNote(prev => {
+            const newState = updater(prev);
+            if (JSON.stringify(newState) !== JSON.stringify(note)) {
+                setIsDirty(true);
+                setSaveState('idle');
             }
-        };
-    }, [note, onUpdate]);
-
+            return newState;
+        });
+    };
+    
+    const handleCloseSettings = () => {
+        setIsSettingsClosing(true);
+        setTimeout(() => {
+            setIsSettingsOpen(false);
+            setIsSettingsClosing(false);
+        }, 300);
+    };
 
     const handleSave = async () => {
         if (!isDirty) return;
         setSaveState('saving');
         try {
-            await onUpdate(localNote, false);
+            await onUpdate(localNote);
+            setIsDirty(false);
             setSaveState('saved');
             setTimeout(() => setSaveState('idle'), 2000);
         } catch (e) {
@@ -180,7 +213,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
     
     const handleContentChange = useCallback(() => {
         if (contentRef.current) {
-            setLocalNote(prev => ({ ...prev, content: contentRef.current!.innerHTML, date: new Date().toISOString() }));
+            updateLocalNote(prev => ({ ...prev, content: contentRef.current!.innerHTML, date: new Date().toISOString() }));
         }
     }, []);
 
@@ -189,12 +222,12 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
         handleContentChange();
         contentRef.current?.focus();
     };
-    
+
     const insertHtml = (html: string) => {
         document.execCommand('insertHTML', false, html);
         handleContentChange();
     };
-
+    
     const handleChecklist = () => {
         executeCommand('insertUnorderedList');
         const ul = contentRef.current?.querySelector('ul:not([data-type])');
@@ -253,7 +286,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
         if (file) {
             try {
                 const resizedDataUrl = await resizeImage(file, 800);
-                setLocalNote(prev => ({ ...prev, heroImage: resizedDataUrl, date: new Date().toISOString() }));
+                updateLocalNote(prev => ({ ...prev, heroImage: resizedDataUrl, date: new Date().toISOString() }));
             } catch (err) {
                 alert('Could not process image.');
             }
@@ -281,110 +314,68 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
     };
 
     useEffect(() => {
-        const editor = contentRef.current;
-        if (!editor) return;
-
-        const handleClick = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-
-            const imageSpan = target.closest<HTMLSpanElement>('span[data-photo-id]');
-            if (imageSpan) {
-                e.preventDefault();
-                const photoId = imageSpan.dataset.photoId;
-                const photo = photos.find(p => p.id === photoId);
-                if (photo) {
-                    setViewingPhoto(photo);
-                }
-                return;
-            }
-
-            const recordingSpan = target.closest<HTMLSpanElement>('span[data-recording-id]');
-            if (recordingSpan) {
-                e.preventDefault();
-                const recordingId = recordingSpan.dataset.recordingId;
-                const recording = noteRecordings.find(r => r.id === recordingId);
-                if (recording) {
-                    setPlayingRecording(recording);
-                }
-                return;
-            }
-            
-            const li = target.closest<HTMLLIElement>('li[data-checked]');
-            if (li && e.offsetX < 30) {
-                const isChecked = li.dataset.checked === 'true';
-                li.dataset.checked = String(!isChecked);
-                handleContentChange();
-            }
-        };
-
-        editor.addEventListener('click', handleClick);
-        return () => editor.removeEventListener('click', handleClick);
-    }, [photos, noteRecordings, handleContentChange]);
-
-    useEffect(() => {
-        const editor = contentRef.current;
-        if (!editor) return;
-        let draggedItem: HTMLLIElement | null = null;
-        let dropIndicator: HTMLLIElement | null = null;
-        const createDropIndicator = () => { /* ... */ };
-        // This logic remains the same, but it calls handleContentChange at the end
+        const editor = contentRef.current; if (!editor) return;
+        let draggedItem: HTMLLIElement | null = null, dropIndicator: HTMLLIElement | null = null;
+        const createDropIndicator = () => { const li = document.createElement('li'); li.className = 'drop-indicator-li'; const div = document.createElement('div'); div.className = 'drop-indicator'; li.appendChild(div); return li; };
+        const handleDragStart = (e: DragEvent) => { const target = e.target as HTMLLIElement; if (target.tagName === 'LI' && target.closest('ul[data-type="checklist"]')) { draggedItem = target; setTimeout(() => target.classList.add('dragging'), 0); } };
+        const handleDragOver = (e: DragEvent) => { e.preventDefault(); if (!draggedItem) return; const target = (e.target as HTMLElement).closest('li'); const ul = (e.target as HTMLElement).closest('ul[data-type="checklist"]'); if (!ul) return; if (!dropIndicator) dropIndicator = createDropIndicator(); if (target && target !== draggedItem && ul.contains(target)) { const rect = target.getBoundingClientRect(); const isAfter = e.clientY > rect.top + rect.height / 2; ul.insertBefore(dropIndicator, isAfter ? target.nextSibling : target); } else if (!target) { ul.appendChild(dropIndicator); } };
+        const handleDrop = (e: DragEvent) => { e.preventDefault(); if (draggedItem && dropIndicator && dropIndicator.parentNode) { dropIndicator.parentNode.replaceChild(draggedItem, dropIndicator); handleContentChange(); } };
+        const handleDragEnd = () => { draggedItem?.classList.remove('dragging'); draggedItem = null; dropIndicator?.remove(); dropIndicator = null; };
+        editor.addEventListener('dragstart', handleDragStart); editor.addEventListener('dragover', handleDragOver); editor.addEventListener('drop', handleDrop); editor.addEventListener('dragend', handleDragEnd);
+        return () => { editor.removeEventListener('dragstart', handleDragStart); editor.removeEventListener('dragover', handleDragOver); editor.removeEventListener('drop', handleDrop); editor.removeEventListener('dragend', handleDragEnd); };
     }, [handleContentChange]);
     
     useEffect(() => {
-        const updateToolbarState = () => {
-            const newFormats = new Set<string>();
-            ['bold', 'italic', 'underline', 'strikeThrough'].forEach(cmd => {
-                if (document.queryCommandState(cmd)) newFormats.add(cmd);
-            });
-            setActiveFormats(newFormats);
-        };
+        const updateToolbarState = () => { const newFormats = new Set<string>(); ['bold', 'italic', 'underline', 'strikeThrough'].forEach(cmd => { if (document.queryCommandState(cmd)) newFormats.add(cmd); }); setActiveFormats(newFormats); };
         document.addEventListener('selectionchange', updateToolbarState);
         return () => document.removeEventListener('selectionchange', updateToolbarState);
     }, []);
 
+    const paperStyles: Record<string, string> = { 'paper-dark': 'bg-gray-800 text-gray-200', 'paper-grid': 'bg-gray-800 text-gray-200 bg-cover bg-[linear-gradient(to_right,rgba(128,128,128,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.1)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]' };
+    const fontStyles: Record<string, string> = { 'font-sans': 'font-sans', 'font-serif': 'font-lora', 'font-mono': 'font-mono' };
+
     return (
-        <div className="h-full flex flex-col bg-[var(--theme-card-bg)]">
-            {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} mode={cameraMode} />}
-            {isSettingsOpen && <NoteSettingsModal note={localNote} onNoteChange={setLocalNote} onClose={() => setIsSettingsOpen(false)} />}
-            {playingRecording && <AudioPlayerModal recording={playingRecording} onClose={() => setPlayingRecording(null)}/>}
-            {viewingPhoto && <PhotoViewerModal photo={viewingPhoto} onClose={() => setViewingPhoto(null)}/>}
+        <div className="h-full flex flex-col bg-[var(--theme-card-bg)] relative overflow-hidden">
+           {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} mode={cameraMode} />}
+           {isSettingsOpen && <NoteSettingsSidebar note={localNote} onNoteChange={updateLocalNote} onClose={handleCloseSettings} isClosing={isSettingsClosing} />}
+           {playingRecording && <AudioPlayerModal recording={playingRecording} onClose={() => setPlayingRecording(null)}/>}
+           {viewingPhoto && <PhotoViewerModal photo={viewingPhoto} onClose={() => setViewingPhoto(null)}/>}
            
-            <input type="file" ref={heroFileInputRef} className="sr-only" accept="image/*" onChange={handleHeroImageSelect} />
-            {localNote.heroImage ? (
-                <div className="note-hero-container group">
-                    <img src={localNote.heroImage} alt="Note hero" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button onClick={() => setLocalNote(n => ({ ...n, heroImage: null }))} className="bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm flex items-center gap-2"><TrashIcon /> Remove Header</button>
-                    </div>
-                </div>
-            ) : (
-                <div className="p-2 border-b border-[var(--theme-border)]"><button onClick={() => heroFileInputRef.current?.click()} className="w-full text-sm text-center py-2 bg-[var(--theme-bg)]/50 hover:bg-[var(--theme-bg)] rounded-md text-gray-400">+ Add Header Image</button></div>
-            )}
+           <input type="file" ref={heroFileInputRef} className="sr-only" accept="image/*" onChange={handleHeroImageSelect} />
+           {localNote.heroImage ? (
+               <div className="note-hero-container group">
+                   <img src={localNote.heroImage} alt="Note hero" />
+                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                       <button onClick={() => updateLocalNote(n => ({ ...n, heroImage: null }))} className="bg-red-500 text-white font-bold py-2 px-4 rounded-full text-sm flex items-center gap-2"><TrashIcon /> Remove Header</button>
+                   </div>
+               </div>
+           ) : (
+               <div className="p-2 border-b border-[var(--theme-border)]"><button onClick={() => heroFileInputRef.current?.click()} className="w-full text-sm text-center py-2 bg-[var(--theme-bg)]/50 hover:bg-[var(--theme-bg)] rounded-md text-gray-400">+ Add Header Image</button></div>
+           )}
            
-            <header className="p-2 border-b border-[var(--theme-border)] flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-2 flex-grow min-w-0">
-                    <button onClick={onClose} className="md:hidden p-2 text-[var(--theme-text-secondary)]"><ChevronLeftIcon /></button>
-                    <input type="text" value={localNote.title} onChange={e => setLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-green)] focus:outline-none w-full truncate" />
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+           <header className="p-2 border-b border-[var(--theme-border)] flex items-center justify-between flex-shrink-0">
+               <div className="flex items-center gap-2 flex-grow min-w-0">
+                   <button onClick={onClose} className="p-2 text-[var(--theme-text-secondary)]"><ChevronLeftIcon /></button>
+                   <input type="text" value={localNote.title} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-green)] focus:outline-none w-full truncate" />
+               </div>
+               <div className="flex items-center gap-2 flex-shrink-0">
                     {isDirty && (
                        <button onClick={handleSave} disabled={saveState === 'saving'} className="text-sm font-semibold py-1.5 px-4 rounded-full flex items-center gap-1.5 transition-colors duration-200 bg-orange-600 text-white hover:bg-orange-500 disabled:bg-gray-500">
                            {saveState === 'saving' ? <><Spinner className="w-4 h-4" /> Saving...</> : saveState === 'saved' ? <><CheckIcon /> Saved</> : 'Save'}
                        </button>
                    )}
-                   <button onClick={() => setIsSettingsOpen(p => !p)} className="p-2 text-[var(--theme-text-secondary)] hover:text-white relative"><SettingsIcon /></button>
+                   <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-[var(--theme-text-secondary)] hover:text-white relative"><SettingsIcon /></button>
                    <button onClick={() => onDelete(localNote.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]"><TrashIcon /></button>
                </div>
-            </header>
+           </header>
            
-            <div className="flex-grow overflow-y-auto relative" style={{ paddingBottom: '60px' }} {...dragHandlers}>
-                {isDraggingOver && <div className="dropzone-overlay"><UploadIcon /><p>Drop to attach file</p></div>}
-                <div ref={contentRef} onInput={handleContentChange} contentEditable suppressContentEditableWarning className={`note-editor-content p-4 outline-none min-h-full ${paperStyles[localNote.paperStyle]} ${fontStyles[localNote.fontStyle]}`}/>
-            </div>
+           <div className="flex-grow overflow-y-auto relative" style={{ paddingBottom: '60px' }} {...dragHandlers}>
+               {isDraggingOver && <div className="dropzone-overlay"><UploadIcon /><p>Drop to attach file</p></div>}
+               <div ref={contentRef} onInput={handleContentChange} contentEditable suppressContentEditableWarning className={`note-editor-content p-4 outline-none min-h-full ${paperStyles[localNote.paperStyle]} ${fontStyles[localNote.fontStyle]}`}/>
+           </div>
            
-            <footer className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur-sm border-t border-white/10 note-editor-toolbar z-10">
-                {/* Footer JSX is identical to previous version */}
-                <div className="flex items-center justify-start gap-1 flex-wrap">
+           <footer className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur-sm border-t border-white/10 note-editor-toolbar z-10">
+               <div className="flex items-center justify-start gap-1 flex-wrap">
                    <button title="Bold" onClick={() => executeCommand('bold')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('bold') ? 'active' : ''}`}><BoldIcon /></button>
                    <button title="Italic" onClick={() => executeCommand('italic')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('italic') ? 'active' : ''}`}><ItalicIcon /></button>
                    <button title="Underline" onClick={() => executeCommand('underline')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('underline') ? 'active' : ''}`}><UnderlineIcon /></button>
@@ -411,11 +402,13 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
                        </div>
                    </div>
                )}
-            </footer>
+           </footer>
         </div>
     );
 };
 
+
+// Mapping note colors to Tailwind classes
 const colorMap: Record<string, { bg: string; text: string; ring: string }> = {
     sky: { bg: 'bg-sky-500', text: 'text-sky-500', ring: 'ring-sky-500' },
     purple: { bg: 'bg-purple-500', text: 'text-purple-500', ring: 'ring-purple-500' },
@@ -426,25 +419,12 @@ const colorMap: Record<string, { bg: string; text: string; ring: string }> = {
 };
 const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
 
-const paperStyles: Record<string, string> = {
-    'paper-dark': 'bg-gray-800 text-gray-200',
-    'paper-white': 'bg-white text-gray-800',
-    'paper-yellow-lined': 'bg-yellow-100 text-gray-800 bg-repeat-y bg-[length:100%_2rem] bg-gradient-to-b from-transparent to-transparent 50%, from-blue-200 to-blue-200 50.5%',
-    'paper-grid': 'bg-white text-gray-800 bg-cover bg-[linear-gradient(to_right,rgba(128,128,128,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.1)_1px,transparent_1px)] bg-[size:1rem_1rem]',
-};
-
-const fontStyles: Record<string, string> = {
-    'font-sans': 'font-sans',
-    'font-serif': 'font-lora',
-    'font-mono': 'font-mono',
-};
-
 const stripHtml = (html: string) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     return doc.body.textContent?.replace(/&nbsp;/g, ' ').trim() || "";
 };
 
-const NoteCard: React.FC<{ note: Note; onSelect: (note: Note) => void; isSelected: boolean }> = React.memo(({ note, onSelect, isSelected }) => {
+const NoteCard: React.FC<{ note: Note; onSelect: (note: Note) => void; isSelected: boolean }> = ({ note, onSelect, isSelected }) => {
     return (
         <button
             onClick={() => onSelect(note)}
@@ -462,41 +442,73 @@ const NoteCard: React.FC<{ note: Note; onSelect: (note: Note) => void; isSelecte
             </div>
         </button>
     );
-});
+};
+
 
 export const Notepad: React.FC<NotepadProps> = (props) => {
-    const { notes, onSave, onUpdate, onDelete } = props;
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
+    const lastSavedNote = useRef<Note | null>(null);
+
+    const handleSelectNote = useCallback(async (noteToSelect: Note | null) => {
+        if (selectedNote && lastSavedNote.current && JSON.stringify(selectedNote) !== JSON.stringify(lastSavedNote.current)) {
+            await props.onUpdate(selectedNote);
+        }
+        
+        setSelectedNote(noteToSelect);
+        lastSavedNote.current = noteToSelect;
+    }, [selectedNote, props.onUpdate]);
     
-    const handleSelectNote = (note: Note | null) => {
-        setSelectedNote(note);
-    };
+    const handleUpdate = useCallback(async (updatedNote: Note) => {
+        await props.onUpdate(updatedNote);
+        lastSavedNote.current = updatedNote;
+    }, [props.onUpdate]);
 
     const handleAddNewNote = useCallback(async () => {
-        const newNote: Note = { id: crypto.randomUUID(), title: 'New Note', content: '<p></p>', category: 'General', tags: [], date: new Date().toISOString(), color: defaultColors[Math.floor(Math.random() * defaultColors.length)], paperStyle: 'paper-dark', fontStyle: 'font-sans', heroImage: null, dueDate: null, reminderDate: null, reminderFired: false, recordingIds: [], photoIds: [] };
-        await onSave(newNote);
+        const newNote: Note = { id: crypto.randomUUID(), title: 'New Note', content: '<p></p>', category: 'General', tags: [], date: new Date().toISOString(), color: defaultColors[Math.floor(Math.random() * defaultColors.length)], paperStyle: 'paper-dark', fontStyle: 'font-sans', heroImage: null, dueDate: null, reminderDate: null, reminderFired: false, recordingIds: [], photoIds: [], isLocked: false };
+        await props.onSave(newNote);
         handleSelectNote(newNote);
-    }, [onSave]);
+    }, [props.onSave, handleSelectNote]);
+
+    useEffect(() => {
+        if (selectedNote) {
+            const updatedNoteFromList = props.notes.find(n => n.id === selectedNote.id);
+            if (!updatedNoteFromList) {
+                setSelectedNote(null);
+            } else if (JSON.stringify(updatedNoteFromList) !== JSON.stringify(selectedNote)) {
+                if(new Date(updatedNoteFromList.date) > new Date(selectedNote.date)){
+                    setSelectedNote(updatedNoteFromList);
+                }
+            }
+        }
+    }, [props.notes, selectedNote]);
+
+    const handleDelete = async (id: string) => {
+        if (window.confirm("Are you sure you want to delete this note?")) {
+            await props.onDelete(id);
+            setSelectedNote(null);
+        }
+    };
     
-    const filteredNotes = useMemo(() => {
-        const sorted = [...notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+     const filteredNotes = useMemo(() => {
+        const sorted = [...props.notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         if (!debouncedSearchTerm) return sorted;
         return sorted.filter(note =>
             note.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             stripHtml(note.content).toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             note.tags.some(tag => tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
         );
-    }, [notes, debouncedSearchTerm]);
-
+    }, [props.notes, debouncedSearchTerm]);
+    
     return (
         <div className="flex-1 flex flex-col bg-transparent backdrop-blur-2xl">
             <div className="flex-grow flex overflow-hidden">
                 <aside className={`w-full md:w-1/3 md:max-w-sm flex flex-col border-r border-transparent md:border-[var(--theme-border)] ${selectedNote ? 'hidden md:flex' : 'flex'}`}>
                     <header className="p-4 flex-shrink-0 border-b border-[var(--theme-border)] flex items-center justify-between">
                          <div className="relative flex-grow">
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><SearchIcon /></div>
+                            {/* FIX: The SearchIcon component was not typed to accept props. The component has been fixed, and a className is now provided to ensure correct styling. */}
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><SearchIcon className="h-5 w-5 text-[var(--theme-text-secondary)]" /></div>
                             <input type="text" placeholder="Search notes..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-4 py-2"/>
                         </div>
                         <button onClick={handleAddNewNote} className="ml-2 p-2 bg-[var(--theme-green)] text-black rounded-full flex-shrink-0"><PlusIcon /></button>
@@ -504,7 +516,7 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                      <div className="flex-grow overflow-y-auto no-scrollbar p-2 space-y-2">
                         {filteredNotes.length > 0 ? (
                             filteredNotes.map(note => (
-                                <NoteCard key={note.id} note={note} onSelect={handleSelectNote} isSelected={selectedNote?.id === note.id} />
+                                <NoteCard key={note.id} note={note} onSelect={() => handleSelectNote(note)} isSelected={selectedNote?.id === note.id} />
                             ))
                         ) : (
                             <div className="text-center p-8 text-[var(--theme-text-secondary)]">
@@ -519,12 +531,11 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                 <main className={`flex-1 flex-col ${selectedNote ? 'flex' : 'hidden md:flex'}`}>
                      {selectedNote ? (
                         <NoteEditor
-                            key={selectedNote.id}
-                            note={selectedNote}
-                            onUpdate={onUpdate}
-                            onDelete={onDelete}
-                            onClose={() => handleSelectNote(null)}
                             {...props}
+                            note={selectedNote}
+                            onUpdate={handleUpdate}
+                            onDelete={handleDelete}
+                            onClose={() => handleSelectNote(null)}
                         />
                     ) : (
                         <div className="hidden md:flex w-full h-full items-center justify-center text-center text-[var(--theme-text-secondary)] p-8">

@@ -7,26 +7,24 @@ import { LiveWaveform } from './LiveWaveform';
 import { WaveformPlayer } from './WaveformPlayer';
 import { MicIcon } from './icons/MicIcon';
 import { TrashIcon } from './icons/TrashIcon';
-import { formatTime } from '../utils/formatters';
+import { formatTime, formatRelativeTime } from '../utils/formatters';
 import { SaveIcon } from './icons/SaveIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
-import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import { ChevronRightIcon } from './icons/ChevronRightIcon';
 import { Spinner } from './icons/Spinner';
 import { XIcon } from './icons/XIcon';
 import { TranscriptIcon } from './icons/TranscriptIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { PlusIcon } from './icons/PlusIcon';
-import { WaveformIcon } from './icons/WaveformIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import { PlayIcon } from './icons/PlayIcon';
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
+import { ChevronDownIcon } from './icons/ChevronDownIcon';
 
 
 interface RecordingManagerProps {
@@ -39,24 +37,13 @@ interface RecordingManagerProps {
     siteSettings: SiteSettings;
 }
 
-const SectionHeader: React.FC<{ icon: React.ReactNode; title: string; children?: React.ReactNode }> = ({ icon, title, children }) => (
-    <div className="flex items-center justify-between text-lg font-semibold text-[var(--theme-text-primary)] mb-2">
-        <div className="flex items-center gap-2">
-            <div className="w-6 h-6 text-[var(--theme-orange)]">{icon}</div>
-            <h3>{title}</h3>
-        </div>
-        <div>{children}</div>
-    </div>
-);
-
 const RecordingDetailView: React.FC<{
     recording: Recording;
-    onUpdate: (updatedRecording: Recording) => void;
+    onUpdate: (updatedRecording: Recording) => Promise<void>;
     onTranscribe: (recording: Recording) => void;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => void;
-    siteSettings: SiteSettings;
-}> = ({ recording, onUpdate, onTranscribe, photos, onSavePhoto, siteSettings }) => {
+}> = React.memo(({ recording, onUpdate, onTranscribe, photos, onSavePhoto }) => {
     const [localRecording, setLocalRecording] = useState(recording);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
@@ -88,56 +75,73 @@ const RecordingDetailView: React.FC<{
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
     };
+    
+     const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode; action?: React.ReactNode; }> = ({ icon, title, children, action }) => (
+        <div className="bg-black/20 p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-orange-400">{icon}</div>
+                    <h4 className="font-semibold text-white">{title}</h4>
+                </div>
+                {action}
+            </div>
+            {children}
+        </div>
+    );
 
     return (
         <>
             {isCameraOpen && <CameraCapture onClose={() => setIsCameraOpen(false)} onCapture={handleCapture} />}
-            <div className="p-4 md:p-6 space-y-6">
-                <p className="text-sm text-[var(--theme-text-secondary)] -mt-2">{new Date(localRecording.date).toLocaleString()}</p>
-                <div className="bg-black/20 p-4 rounded-lg"><WaveformPlayer audioBlob={localRecording.audioBlob} /></div>
-                <div>
-                    <SectionHeader icon={<TranscriptIcon />} title="Transcript">
-                        {localRecording.transcript && (
-                             <button onClick={handleCopyTranscript} className="text-sm font-semibold text-gray-400 hover:text-white flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-full">
-                                {isCopied ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy</>}
-                            </button>
-                        )}
-                    </SectionHeader>
+            <div className="p-4 space-y-4 bg-black/10">
+                <div className="bg-black/20 p-3 rounded-lg"><WaveformPlayer audioBlob={localRecording.audioBlob} /></div>
+                
+                <Section icon={<TranscriptIcon />} title="Transcript" action={
+                    localRecording.transcript && (
+                        <button onClick={handleCopyTranscript} className="text-xs font-semibold text-gray-400 hover:text-white flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full">
+                           {isCopied ? <><CheckIcon className="w-4 h-4"/> Copied</> : <><CopyIcon className="w-4 h-4"/> Copy</>}
+                       </button>
+                   )
+                }>
                     {localRecording.transcript ? (
-                        <textarea value={localRecording.transcript} onChange={(e) => handleFieldChange('transcript', e.target.value)} onBlur={handleSaveChanges} className="w-full h-40 bg-[var(--theme-bg)] p-3 rounded-md border border-[var(--theme-border)] resize-y" placeholder="Transcript appears here..." />
+                        <textarea value={localRecording.transcript} onChange={(e) => handleFieldChange('transcript', e.target.value)} onBlur={handleSaveChanges} className="w-full h-32 bg-[var(--theme-bg)] p-3 rounded-md border border-[var(--theme-border)] resize-y" placeholder="Transcript appears here..." />
                     ) : (
-                        <button onClick={() => onTranscribe(localRecording)} disabled={localRecording.isTranscribing} className="bg-[var(--theme-orange)] text-black font-bold py-2 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[150px]">
-                            {localRecording.isTranscribing ? <><Spinner className="h-4 w-4" /><span>Transcribing...</span></> : 'Transcribe Audio'}
+                        <button onClick={() => onTranscribe(localRecording)} disabled={localRecording.isTranscribing} className="bg-orange-500 text-black font-bold py-2 px-4 rounded-md hover:opacity-90 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[150px]">
+                            {localRecording.isTranscribing ? <><Spinner className="h-4 w-4" /><span>Transcribing...</span></> : 'Generate Transcript'}
                         </button>
                     )}
-                </div>
-                <div>
-                    <SectionHeader icon={<NotepadIcon />} title="Notes" />
-                    <textarea value={localRecording.notes} onChange={(e) => handleFieldChange('notes', e.target.value)} onBlur={handleSaveChanges} className="w-full h-32 bg-[var(--theme-bg)] p-3 rounded-md border border-[var(--theme-border)] resize-y" placeholder="Add your notes here..." />
-                </div>
-                <div>
-                    <SectionHeader icon={<PhotoIcon />} title="Linked Photos" />
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                </Section>
+                
+                <Section icon={<NotepadIcon />} title="Notes">
+                    <textarea value={localRecording.notes} onChange={(e) => handleFieldChange('notes', e.target.value)} onBlur={handleSaveChanges} className="w-full h-28 bg-[var(--theme-bg)] p-3 rounded-md border border-[var(--theme-border)] resize-y" placeholder="Add your notes here..." />
+                </Section>
+                
+                <Section icon={<PhotoIcon />} title="Linked Photos">
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                         {localRecording.photoIds.map(id => {
                             const photo = photos.find(p => p.id === id);
+                            // FIX: Added missing isSelected, isSelectionActive, and onToggleSelection props to PhotoThumbnail to satisfy its interface.
                             return photo ? <PhotoThumbnail key={id} photo={photo} onSelect={() => {}} onDelete={handleUnlinkPhoto} isSelected={false} isSelectionActive={false} onToggleSelection={() => {}} /> : null;
                         })}
                         <button onClick={() => setIsCameraOpen(true)} className="aspect-square border-2 border-dashed border-[var(--theme-border)] rounded-md flex items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]">
                             <CameraIcon className="h-6 w-6" />
                         </button>
                     </div>
-                </div>
+                </Section>
             </div>
         </>
     )
-};
+});
 
 export const RecordingManager: React.FC<RecordingManagerProps> = ({ recordings, onSave, onUpdate, onDelete, photos, onSavePhoto, siteSettings }) => {
-    const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const { isRecording, isPaused, recordingTime, audioBlob, startRecording, stopRecording, pauseRecording, resumeRecording, analyserNode, setAudioBlob } = useRecorder();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [showRecorder, setShowRecorder] = useState(false);
+
+    const handleSelectRecording = useCallback((id: string) => {
+        setSelectedId(prev => (prev === id ? null : id));
+    }, []);
 
     const handleSaveAndClose = useCallback(async () => {
         if (!audioBlob) return;
@@ -147,15 +151,17 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({ recordings, 
         setIsSaving(false);
         setShowRecorder(false);
         setAudioBlob(null);
-        setSelectedRecording(savedRecording);
+        setSelectedId(savedRecording.id);
     }, [audioBlob, onSave, setAudioBlob]);
 
     const handleDeleteRecording = useCallback(async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this recording?")) {
+        if (window.confirm("Are you sure you want to delete this recording? This action cannot be undone.")) {
             await onDelete(id);
-            setSelectedRecording(null);
+            if (selectedId === id) {
+                setSelectedId(null);
+            }
         }
-    }, [onDelete]);
+    }, [onDelete, selectedId]);
     
     const handleTranscribe = useCallback(async (recording: Recording) => {
         const recordingToUpdate = { ...recording, isTranscribing: true };
@@ -169,13 +175,6 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({ recordings, 
             onUpdate({ ...recording, isTranscribing: false });
         }
     }, [onUpdate, siteSettings]);
-    
-    useEffect(() => {
-        if(selectedRecording) {
-            const updatedRec = recordings.find(r => r.id === selectedRecording.id);
-            if(updatedRec) setSelectedRecording(updatedRec); else setSelectedRecording(null);
-        }
-    }, [recordings, selectedRecording]);
 
     const filteredRecordings = useMemo(() => {
         return recordings.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).filter(r => 
@@ -187,46 +186,61 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({ recordings, 
     
     return (
         <div className="flex flex-col flex-1 bg-transparent backdrop-blur-2xl overflow-hidden relative">
-            <div className="flex-grow flex relative overflow-hidden">
-                <aside className={`w-full lg:w-1/3 lg:max-w-sm h-full flex flex-col border-r-0 lg:border-r border-[var(--theme-border)] flex-shrink-0 ${selectedRecording ? 'hidden lg:flex' : 'flex'}`}>
-                    <div className="p-4 border-b border-[var(--theme-border)] flex-shrink-0">
-                        <div className="relative"><SearchIcon className="absolute inset-y-0 left-3" /><input type="text" placeholder="Search recordings..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-md pl-10 pr-4 py-2" /></div>
-                    </div>
-                    <div className="overflow-y-auto flex-grow pb-24 no-scrollbar">
-                        {filteredRecordings.length > 0 ? (
-                             <ul className="divide-y divide-[var(--theme-border)]">{filteredRecordings.map(rec => (
-                                <li key={rec.id}><button onClick={() => setSelectedRecording(rec)} className={`w-full text-left p-4 transition-colors flex justify-between items-center hover:bg-[var(--theme-card-bg)]/50`}><div className="flex items-center gap-4 min-w-0"><div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-[var(--theme-bg)] rounded-lg text-[var(--theme-orange)]"><WaveformIcon /></div><div className="min-w-0"><h3 className="font-semibold truncate">{rec.name}</h3><p className="text-sm text-[var(--theme-text-secondary)]">{new Date(rec.date).toLocaleDateString()}</p></div></div><ChevronRightIcon /></button></li>
-                            ))}</ul>
-                        ) : (<div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]"><MicIcon className="h-12 w-12 mb-4" /><h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">Your recordings will appear here</h3><p className="text-sm mt-1">Tap the plus button to capture your first voice note.</p></div>)}
-                    </div>
-                </aside>
-                
-                <main className={`hidden lg:flex flex-1 h-full flex-col bg-[var(--theme-card-bg)]`}>
-                    {selectedRecording ? (
-                        <><header className="p-4 border-b border-[var(--theme-border)] flex-shrink-0 flex items-center justify-between"><input type="text" value={selectedRecording.name} onChange={(e) => setSelectedRecording(p => p ? {...p, name: e.target.value} : null)} onBlur={() => onUpdate(selectedRecording)} className="text-lg lg:text-2xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-orange)] focus:outline-none w-full mr-4 truncate" /><button onClick={() => handleDeleteRecording(selectedRecording.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]"><TrashIcon /></button></header><div className="flex-1 overflow-y-auto"><RecordingDetailView recording={selectedRecording} onUpdate={onUpdate} onTranscribe={handleTranscribe} photos={photos} onSavePhoto={onSavePhoto} siteSettings={siteSettings} /></div></>
-                    ) : (<div className="hidden lg:flex w-full h-full items-center justify-center text-center text-[var(--theme-text-secondary)] p-8"><div><MicIcon className="h-12 w-12 mx-auto" /><p className="mt-4 text-lg">Select a recording to view details.</p></div></div>)}
-                </main>
+            <div className="p-4 border-b border-[var(--theme-border)] flex-shrink-0">
+                {/* FIX: The SearchIcon component was not typed to accept a className prop. The component has been fixed, and the necessary styling classes are now provided here to ensure correct rendering. */}
+                <div className="relative"><SearchIcon className="absolute inset-y-0 left-3 h-5 w-5 text-[var(--theme-text-secondary)]" /><input type="text" placeholder="Search recordings..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-md pl-10 pr-4 py-2" /></div>
+            </div>
+            <div className="flex-grow overflow-y-auto no-scrollbar pb-24 p-4 space-y-3">
+                {filteredRecordings.length > 0 ? (
+                    filteredRecordings.map(rec => {
+                        const isSelected = selectedId === rec.id;
+                        return (
+                            <article key={rec.id} className="bg-[var(--theme-card-bg)] rounded-xl border border-white/10 shadow-lg overflow-hidden transition-all duration-300">
+                                <header onClick={() => handleSelectRecording(rec.id)} className="p-4 flex justify-between items-center cursor-pointer hover:bg-white/5">
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-[var(--theme-bg)] rounded-lg text-orange-400"><MicIcon /></div>
+                                        <div className="min-w-0">
+                                            <input type="text" value={rec.name} onChange={(e) => onUpdate({...rec, name: e.target.value})} onClick={e => e.stopPropagation()} className="font-semibold truncate bg-transparent w-full focus:outline-none focus:border-b focus:border-orange-500" />
+                                            <p className="text-sm text-[var(--theme-text-secondary)]">{formatRelativeTime(rec.date)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {rec.transcript && <TranscriptIcon className="w-5 h-5 text-gray-400" />}
+                                        {rec.photoIds.length > 0 && <PhotoIcon className="w-5 h-5 text-gray-400" />}
+                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRecording(rec.id) }} className="p-1 text-gray-500 hover:text-red-500"><TrashIcon className="w-4 h-4"/></button>
+                                        <ChevronDownIcon className={`w-6 h-6 text-gray-400 transition-transform ${isSelected ? 'rotate-180' : ''}`} />
+                                    </div>
+                                </header>
+                                {isSelected && <RecordingDetailView recording={rec} onUpdate={onUpdate} onTranscribe={handleTranscribe} photos={photos} onSavePhoto={onSavePhoto} />}
+                            </article>
+                        )
+                    })
+                ) : (<div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]"><MicIcon className="h-12 w-12 mb-4" /><h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">Your recordings will appear here</h3><p className="text-sm mt-1">Tap the plus button to capture your first voice note.</p></div>)}
             </div>
 
-            {selectedRecording && (
-                <div className="fixed inset-0 bg-black/80 z-50 flex flex-col lg:hidden animate-modal-scale-in" onClick={() => setSelectedRecording(null)}>
-                    <div className="bg-[var(--theme-card-bg)] w-full h-full flex flex-col" onClick={e => e.stopPropagation()}>
-                        <header className="p-4 border-b border-[var(--theme-border)] flex-shrink-0 flex items-center justify-between">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <button onClick={() => setSelectedRecording(null)} className="p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white"><ChevronLeftIcon /></button>
-                                <input type="text" value={selectedRecording.name} onChange={(e) => setSelectedRecording(p => p ? {...p, name: e.target.value} : null)} onBlur={() => onUpdate(selectedRecording)} className="text-lg font-bold bg-transparent w-full truncate" />
+            <div className="fixed bottom-20 right-4 z-30 lg:bottom-4 flex flex-col items-end gap-4">
+                 {showRecorder && (
+                    <div className="p-4 bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-2xl w-80 animate-fade-in-down">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 h-16 bg-[var(--theme-bg)] rounded-md overflow-hidden">
+                                {isRecording || isPaused ? <LiveWaveform analyserNode={analyserNode} isPaused={isPaused} /> : audioBlob ? <WaveformPlayer audioBlob={audioBlob} /> : <div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Ready...</div>}
                             </div>
-                            <button onClick={() => handleDeleteRecording(selectedRecording.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]"><TrashIcon /></button>
-                        </header>
-                        <div className="flex-1 overflow-y-auto">
-                            <RecordingDetailView recording={selectedRecording} onUpdate={onUpdate} onTranscribe={handleTranscribe} photos={photos} onSavePhoto={onSavePhoto} siteSettings={siteSettings} />
+                            <div className="flex flex-col gap-2 items-center">
+                                <span className="font-mono text-lg text-center">{formatTime(recordingTime)}</span>
+                                {isRecording || isPaused ? (
+                                <div className="flex gap-2">
+                                    <button onClick={isPaused ? resumeRecording : pauseRecording} className="p-2 bg-amber-500 text-black rounded-full" title={isPaused ? 'Resume' : 'Pause'}>{isPaused ? <PlayIcon /> : <PauseIcon />}</button>
+                                    <button onClick={stopRecording} className="p-2 bg-red-500 text-white rounded-full" title="Stop"><div className="w-3 h-3 bg-white rounded-sm"></div></button>
+                                </div>
+                                ) : (
+                                <button onClick={handleSaveAndClose} disabled={!audioBlob || isSaving} className="bg-[var(--theme-orange)] text-black font-bold py-1 px-3 rounded-md flex items-center justify-center gap-1 text-sm disabled:bg-[var(--theme-border)]">
+                                    <SaveIcon /> {isSaving ? 'Saving...' : 'Save'}
+                                </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-            
-            <div className="fixed bottom-20 right-4 z-30 lg:bottom-4">
-                 {showRecorder && (<div className="p-4 bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-2xl w-80 mb-4 animate-fade-in-down"><div className="flex items-center gap-4"><div className="flex-1 h-16 bg-[var(--theme-bg)] rounded-md overflow-hidden">{isRecording || isPaused ? <LiveWaveform analyserNode={analyserNode} isPaused={isPaused} /> : audioBlob ? <WaveformPlayer audioBlob={audioBlob} /> : <div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Ready...</div>}</div><div className="flex flex-col gap-2 items-center"><span className="font-mono text-lg text-center">{formatTime(recordingTime)}</span>{isRecording || isPaused ? (<div className="flex gap-2"><button onClick={isPaused ? resumeRecording : pauseRecording} className="p-2 bg-amber-500 text-black rounded-full">{isPaused ? <PlayIcon /> : <PauseIcon />}</button><button onClick={stopRecording} className="p-2 bg-red-500 text-white rounded-full"><div className="w-3 h-3 bg-white rounded-sm"></div></button></div>) : (<button onClick={handleSaveAndClose} disabled={!audioBlob || isSaving} className="bg-[var(--theme-orange)] text-black font-bold py-1 px-3 rounded-md flex items-center justify-center gap-1 text-sm disabled:bg-[var(--theme-border)]"><SaveIcon /> {isSaving ? 'Saving...' : 'Save'}</button>)}</div></div></div>)}
+                 )}
                 <button onClick={() => { if(isRecording || isPaused) stopRecording(); else { setShowRecorder(true); startRecording(); } }} className={`${isRecording || isPaused ? 'bg-red-500' : 'bg-[var(--theme-orange)]'} text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg transform transition-all hover:scale-110 active:scale-95`}>
                     <PlusIcon className={`w-8 h-8 transition-transform duration-300 ${isRecording || isPaused ? 'rotate-45' : ''}`} />
                 </button>

@@ -219,6 +219,8 @@
         transform: translateY(-2px) scale(1.02);
         box-shadow: 0 0 0 3px var(--theme-orange), 0 0 20px var(--theme-orange);
     }
+    @keyframes tour-content-in { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-tour-content-in { animation: tour-content-in 0.4s ease-out forwards; }
     
     /* Notepad Editor Toolbar */
     .note-editor-toolbar {
@@ -291,17 +293,96 @@
     /* Recording Manager Mobile Modal */
     .recording-detail-modal-in { animation: slide-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     .recording-detail-modal-out { animation: slide-out-down 0.3s ease-in-out forwards; }
+    
+    /* New Note Settings Sidebar */
+    .note-settings-sidebar {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 320px;
+        background-color: #0d1117; /* A very dark blue/black */
+        border-left: 1px solid var(--theme-border);
+        z-index: 40;
+        display: flex;
+        flex-direction: column;
+        color: var(--theme-text-primary);
+        animation: slide-in-right 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+    .note-settings-sidebar-out {
+        animation: slide-out-right 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+    }
+    @keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes slide-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
+    .settings-sidebar-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--theme-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    .settings-sidebar-content {
+        padding: 1rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .settings-section {
+        background-color: rgba(31, 41, 55, 0.5); /* theme-card-bg with opacity */
+        border: 1px solid var(--theme-border);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    .settings-section-icon {
+        flex-shrink: 0;
+        width: 3rem; /* 48px */
+        height: 3rem; /* 48px */
+        color: var(--theme-text-secondary);
+    }
+    .settings-section-controls { flex-grow: 1; }
+    .settings-section-controls label {
+        font-size: 0.75rem; /* 12px */
+        font-weight: 600;
+        color: var(--theme-text-secondary);
+        text-transform: uppercase;
+        display: block;
+    }
+    .settings-input, .settings-select {
+        width: 100%;
+        background-color: var(--theme-bg);
+        border: 1px solid var(--theme-border);
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+        color: var(--theme-text-primary);
+        font-size: 0.875rem;
+    }
+    .settings-input:focus, .settings-select:focus {
+        outline: none;
+        border-color: var(--theme-orange);
+        box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.3);
+    }
+    .settings-color-palette { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .settings-color-swatch {
+        width: 1.75rem; height: 1.75rem; border-radius: 9999px; border: 2px solid transparent;
+        cursor: pointer; transition: transform 0.2s, border-color 0.2s;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .settings-color-swatch:hover { transform: scale(1.1); }
+    .settings-color-swatch.selected { border-color: white; }
 
-    /* Note Settings Modal */
-    .note-settings-modal-in { animation: slide-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    .note-settings-modal-out { animation: slide-out-down 0.3s ease-in-out forwards; }
-
+    @media (max-width: 767px) {
+        .note-settings-sidebar { width: 100%; border-left: none; }
+    }
 
     @media (min-width: 768px) {
         .creator-modal-animate-in { animation-name: flex-modal-scale-in; animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .creator-modal-animate-out { animation-name: flex-modal-scale-out; animation-timing-function: ease-in; }
-        .note-settings-modal-in { animation-name: flex-modal-scale-in; animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .note-settings-modal-out { animation-name: flex-modal-scale-out; animation-timing-function: ease-in; }
     }
   </style>
 <script type="importmap">
