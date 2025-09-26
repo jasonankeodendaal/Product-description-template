@@ -69,10 +69,10 @@ root.render(
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ai tools | AI Product Description Generator</title>
-  <link rel="icon" href="https://i.postimg.cc/689dWfF4/image-removebg-preview-1.png" type="image/png">
+  <link rel="icon" href="https://i.postimg.cc/SY2bzYNJ/38e4ccf8-e88c-480b-aae6-c508c15ef979-1.png" type="image/png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1F2937">
-  <link rel="apple-touch-icon" href="https://i.postimg.cc/689dWfF4/image-removebg-preview-1.png">
+  <link rel="apple-touch-icon" href="https://i.postimg.cc/SY2bzYNJ/38e4ccf8-e88c-480b-aae6-c508c15ef979-1.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -191,15 +191,28 @@ root.render(
     li.drop-indicator-li { list-style-type: none !important; padding: 0 !important; cursor: default !important; display: block !important; gap: 0 !important; }
     li.drop-indicator-li::before { display: none !important; }
     
-    .embedded-recording {
+    .embedded-recording, .embedded-image {
         display: inline-flex; align-items: center; gap: 0.5rem; background-color: var(--theme-bg); border: 1px solid var(--theme-border);
-        border-radius: 9999px; padding: 0.25rem 0.75rem; font-size: 0.875rem; cursor: default; user-select: none; margin: 0 0.25rem;
+        border-radius: 9999px; padding: 0.25rem 0.75rem; font-size: 0.875rem; cursor: pointer; user-select: none; margin: 0 0.25rem;
+        transition: background-color 0.2s;
     }
-     .embedded-recording svg { width: 1rem; height: 1rem; color: var(--theme-orange); }
+    .embedded-recording:hover, .embedded-image:hover {
+        background-color: var(--theme-card-bg);
+    }
+    .embedded-recording svg, .embedded-image svg { width: 1rem; height: 1rem; color: var(--theme-orange); flex-shrink: 0; }
+
+    .embedded-image-error {
+        display: inline-flex; align-items: center; gap: 0.5rem; background-color: rgba(248, 113, 113, 0.1);
+        border: 1px solid rgba(248, 113, 113, 0.3);
+        color: var(--theme-red); 
+        border-radius: 9999px; padding: 0.25rem 0.75rem; font-size: 0.875rem; user-select: none; margin: 0 0.25rem;
+    }
 
     .logo-glow-effect { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1)) drop-shadow(0 0 8px var(--theme-orange)); transition: filter 0.3s ease-in-out; }
     .logo-glow-effect:hover { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2)) drop-shadow(0 0 12px var(--theme-orange)); }
 
+    @keyframes storage-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); } }
+    .animate-storage-pulse { animation: storage-pulse 2s infinite; }
     @keyframes hologram-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
     @keyframes modal-scale-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .animate-modal-scale-in { animation: modal-scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -208,8 +221,8 @@ root.render(
     .animate-fade-in-down { animation: fade-in-down 0.2s ease-out forwards; }
     @keyframes ken-burns { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1) translate(-2%, 2%); } }
     @keyframes move-grid { from { background-position: 0 0, 0 0, center; } to { background-position: -40px -40px, 0 0, center; } }
-    @keyframes slide-in-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    @keyframes slide-out-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
+    @keyframes slide-in-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes slide-out-down { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
     @keyframes flex-modal-scale-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.9); opacity: 0; } }
     .creator-modal-animate-in { animation: slide-in-up 0.3s ease-out forwards; }
     .creator-modal-animate-out { animation: slide-out-down 0.3s ease-in forwards; }
@@ -225,11 +238,20 @@ root.render(
     .clock-date { font-size: clamp(0.8rem, 2vw, 1rem); }
     
     .note-editor-content:empty::before { content: 'Start writing...'; color: var(--theme-text-secondary); pointer-events: none; font-style: italic; }
-    .note-editor-content { min-height: 5em; }
+    .note-editor-content { min-height: 5em; text-align: left; direction: ltr; }
     ul[data-type="checklist"] ul[data-type="checklist"] { padding-left: 2rem; margin: 0; }
 
+    /* Basic Camera Filters */
     .camera-filter-none { filter: none; } .camera-filter-grayscale { filter: grayscale(100%); } .camera-filter-sepia { filter: sepia(100%); }
     .camera-filter-contrast { filter: contrast(1.5); } .camera-filter-saturate { filter: saturate(2); } .camera-filter-invert { filter: invert(100%); }
+    /* Advanced Camera Filters */
+    .camera-filter-vivid { filter: brightness(1.1) contrast(1.2) saturate(1.3); }
+    .camera-filter-vintage { filter: sepia(0.6) brightness(1.1) contrast(0.9); }
+    .camera-filter-noir { filter: grayscale(1) contrast(1.3); }
+    .camera-filter-dreamy { filter: saturate(1.5) blur(1px) contrast(1.1); }
+    .camera-filter-cool { filter: hue-rotate(-15deg) contrast(1.1); }
+    .camera-filter-warm { filter: sepia(0.3) saturate(1.2); }
+
 
     .bg-grid-orange-500\\/10 {
         background-image: 
@@ -261,10 +283,89 @@ root.render(
         transform: translateY(-2px) scale(1.02);
         box-shadow: 0 0 0 3px var(--theme-orange), 0 0 20px var(--theme-orange);
     }
+    
+    /* Notepad Editor Toolbar */
+    .note-editor-toolbar {
+        transition: background-color 0.2s ease;
+    }
+    .note-editor-toolbar button.active {
+        background-color: var(--theme-orange);
+        color: black;
+    }
+    .toolbar-divider {
+        width: 1px;
+        height: 1.25rem; /* 20px */
+        background-color: var(--theme-border);
+        margin: 0 0.25rem; /* 4px */
+    }
+    
+    /* Notepad AI Suggestion */
+    .ai-suggestion-button {
+      animation: pulse-border 2s infinite;
+    }
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+    }
+
+    /* Drag & Drop Overlay for Notepad */
+    .dropzone-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        background-color: rgba(17, 24, 39, 0.9);
+        border: 3px dashed var(--theme-orange);
+        border-radius: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        animation: fade-in-down 0.2s;
+    }
+    .dropzone-overlay svg {
+        width: 3rem;
+        height: 3rem;
+        color: var(--theme-orange);
+        margin-bottom: 0.5rem;
+        animation: hologram-pulse 2s infinite;
+    }
+    .dropzone-overlay p {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--theme-text-primary);
+    }
+    
+    /* Notepad Hero Image */
+    .note-hero-container {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        max-height: 250px;
+        background-color: var(--theme-bg);
+        border-bottom: 1px solid var(--theme-border);
+        overflow: hidden;
+    }
+    .note-hero-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Recording Manager Mobile Modal */
+    .recording-detail-modal-in { animation: slide-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .recording-detail-modal-out { animation: slide-out-down 0.3s ease-in-out forwards; }
+
+    /* Note Settings Modal */
+    .note-settings-modal-in { animation: slide-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .note-settings-modal-out { animation: slide-out-down 0.3s ease-in-out forwards; }
+
 
     @media (min-width: 768px) {
         .creator-modal-animate-in { animation-name: flex-modal-scale-in; animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .creator-modal-animate-out { animation-name: flex-modal-scale-out; animation-timing-function: ease-in; }
+        .note-settings-modal-in { animation-name: flex-modal-scale-in; animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .note-settings-modal-out { animation-name: flex-modal-scale-out; animation-timing-function: ease-in; }
     }
   </style>
 <script type="importmap">
@@ -289,7 +390,7 @@ root.render(
 </html>`,
     "App.tsx": `import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
-import { Hero } from './components/Hero';
+import { Hero } from './Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo } from './services/geminiService';
@@ -469,7 +570,7 @@ const migrateNote = (note: any): Note => {
     // Old simple text format or already migrated format
     else if (typeof note.content === 'string') {
         // Ensure content is wrapped in a paragraph tag if it's plain text
-        baseNote.content = note.content.trim().startsWith('<') ? note.content : \`<p>\${note.content}</p>\`;
+        baseNote.content = note.content.trim().startsWith('<') ? note.content : \\\`<p>\\\${note.content}</p>\\\`;
     }
 
     return baseNote as Note;
@@ -590,7 +691,7 @@ const App: React.FC = () => {
         installPromptEvent.prompt();
         const { outcome } = await installPromptEvent.userChoice;
         
-        console.log(\`User response to the install prompt: \${outcome}\`);
+        console.log(\\\`User response to the install prompt: \\\${outcome}\\\`);
         setInstallPromptEvent(null);
     };
     
@@ -641,7 +742,7 @@ const App: React.FC = () => {
             
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = \`AiTools_SourceCode_\${new Date().toISOString().split('T')[0]}.zip\`;
+            link.download = \\\`AiTools_SourceCode_\\\${new Date().toISOString().split('T')[0]}.zip\\\`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -828,7 +929,7 @@ const App: React.FC = () => {
             for (const note of upcomingNotes) {
                 const reminderTime = new Date(note.reminderDate!);
                 if (now >= reminderTime) {
-                    new Notification(\`Reminder: \${note.title}\`, {
+                    new Notification(\\\`Reminder: \\\${note.title}\\\`, {
                         body: stripHtml(note.content).substring(0, 100) + '...',
                         icon: '/logo192.png',
                         tag: note.id,
@@ -844,8 +945,8 @@ const App: React.FC = () => {
 
 
     // --- Generic Data Handlers (Centralized) ---
-    const handleSetUserPin = async (pin: string) => {
-        const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true };
+    const handleSetUserPin = async (pin: string, name: string) => {
+        const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true, userName: name };
         await handleUpdateSettings(newSettings);
         setIsPinSetupModalOpen(false);
         // After setting pin for the first time, show onboarding.
@@ -1013,7 +1114,7 @@ const App: React.FC = () => {
             await fileSystemService.saveProductDescription(directoryHandle, item, structuredData);
         } catch(e) {
             console.error("Error saving to folder:", e);
-            alert(\`Failed to save to folder: \${e instanceof Error ? e.message : String(e)}\`);
+            alert(\\\`Failed to save to folder: \\\${e instanceof Error ? e.message : String(e)}\\\`);
             throw e;
         }
     }, [directoryHandle]);
@@ -1084,7 +1185,7 @@ const App: React.FC = () => {
 
         } catch (e) {
             console.error("Sync error:", e);
-            alert(\`Error syncing from directory: \${e instanceof Error ? e.message : 'Unknown error'}\`);
+            alert(\\\`Error syncing from directory: \\\${e instanceof Error ? e.message : 'Unknown error'}\\\`);
         } finally {
             setIsLoading(false);
         }
@@ -1093,11 +1194,13 @@ const App: React.FC = () => {
     const handleSyncDirectory = useCallback(async () => {
         try {
             const handle = await fileSystemService.getDirectoryHandle();
+            const newSettings = { ...siteSettings, syncMode: 'folder' as const };
+
             if (await fileSystemService.directoryHasData(handle)) {
                 await syncFromDirectory(handle, true);
             } else {
                 await Promise.all([
-                    fileSystemService.saveSettings(handle, siteSettings),
+                    fileSystemService.saveSettings(handle, newSettings),
                     fileSystemService.saveTemplates(handle, templates),
                     fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, notes, noteRecordings, logEntries, calendarEvents }),
                 ]);
@@ -1105,11 +1208,12 @@ const App: React.FC = () => {
             }
             await db.setDirectoryHandle(handle);
             setDirectoryHandle(handle);
-            setSiteSettings(s => ({ ...s, syncMode: 'folder' }));
+            setSiteSettings(newSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
 
         } catch (err) {
             if (err instanceof DOMException && err.name === 'AbortError') return;
-            alert(\`Could not connect to directory: \${err instanceof Error ? err.message : String(err)}\`);
+            alert(\\\`Could not connect to directory: \\\${err instanceof Error ? err.message : String(err)}\\\`);
         }
     }, [siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents, syncFromDirectory]);
 
@@ -1117,7 +1221,11 @@ const App: React.FC = () => {
         if(window.confirm("Are you sure you want to disconnect? The app will switch back to using local browser storage.")) {
             await db.clearDirectoryHandle();
             setDirectoryHandle(null);
-            setSiteSettings(s => ({ ...s, syncMode: 'local' }));
+            
+            const newSettings = { ...siteSettings, syncMode: 'local' as const };
+            setSiteSettings(newSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+
             const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
                 db.getAllRecordings(),
                 db.getAllPhotos(),
@@ -1133,7 +1241,7 @@ const App: React.FC = () => {
             setLogEntries(dbLogEntries);
             setCalendarEvents(dbCalendarEvents);
         }
-    }, []);
+    }, [siteSettings]);
 
     const handleClearLocalData = useCallback(async () => {
         if (window.confirm("WARNING: This will permanently delete all recordings, photos, notes, logs, and calendar events from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
@@ -1158,7 +1266,10 @@ const App: React.FC = () => {
                 const newPhotos = await Promise.all(data.photos.map(async p => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
                 const newNoteRecordings = await Promise.all(data.noteRecordings.map(async r => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
 
-                setSiteSettings({ ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' });
+                const newSettings = { ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' as const };
+                setSiteSettings(newSettings);
+                localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+                
                 setTemplates(data.templates);
                 setRecordings(newRecordings);
                 setPhotos(newPhotos);
@@ -1173,7 +1284,7 @@ const App: React.FC = () => {
             }
         } catch(e) {
             console.error("API Connection error:", e);
-            if (!silent) alert(\`Failed to connect to API: \${e instanceof Error ? e.message : String(e)}\`);
+            if (!silent) alert(\\\`Failed to connect to API: \\\${e instanceof Error ? e.message : String(e)}\\\`);
             setIsApiConnected(false);
         } finally {
             setIsApiConnecting(false);
@@ -1183,8 +1294,18 @@ const App: React.FC = () => {
     const handleApiDisconnect = useCallback(() => {
         if(window.confirm("Disconnect from the API server? The app will revert to local browser storage.")) {
             setIsApiConnected(false);
-            setSiteSettings(s => ({ ...s, customApiEndpoint: null, customApiAuthKey: null, syncMode: 'local' }));
+            const newSettings = { ...siteSettings, customApiEndpoint: null, customApiAuthKey: null, syncMode: 'local' as const };
+            setSiteSettings(newSettings);
+            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
         }
+    }, [siteSettings]);
+
+    const handleGoogleDriveConnect = useCallback(() => {
+        // Implement Google Drive connection logic
+    }, []);
+    
+    const handleGoogleDriveDisconnect = useCallback(() => {
+        // Implement Google Drive disconnection logic
     }, []);
 
     const onRestore = useCallback(async (file: File) => {
@@ -1207,7 +1328,7 @@ const App: React.FC = () => {
                 for (const fileName in recordingsFolder.files) {
                     if (fileName.endsWith('.json')) {
                         const recMetadata = JSON.parse(await recordingsFolder.files[fileName].async('string'));
-                        const audioFile = zip.file(\`assets/recordings/\${recMetadata.id}.webm\`);
+                        const audioFile = zip.file(\\\`assets/recordings/\\\${recMetadata.id}.webm\\\`);
                         if (audioFile) {
                             const audioBlob = await audioFile.async('blob');
                             restoredRecordings.push({ ...recMetadata, audioBlob });
@@ -1222,7 +1343,7 @@ const App: React.FC = () => {
                 for (const fileName in noteRecordingsFolder.files) {
                     if (fileName.endsWith('.json')) {
                         const recMetadata = JSON.parse(await noteRecordingsFolder.files[fileName].async('string'));
-                        const audioFile = zip.file(\`assets/note_recordings/\${recMetadata.id}.webm\`);
+                        const audioFile = zip.file(\\\`assets/note_recordings/\\\${recMetadata.id}.webm\\\`);
                         if (audioFile) {
                             const audioBlob = await audioFile.async('blob');
                             restoredNoteRecordings.push({ ...recMetadata, audioBlob });
@@ -1243,7 +1364,7 @@ const App: React.FC = () => {
                         } else if (fileName.endsWith('.json')) {
                             const photoMetadata = JSON.parse(await fileInFolder.async('string'));
                             const ext = photoMetadata.imageMimeType.split('/')[1] || 'png';
-                            const imageFile = zip.file(\`assets/photos/\${photoMetadata.folder}/\${photoMetadata.id}.\${ext}\`);
+                            const imageFile = zip.file(\\\`assets/photos/\\\${photoMetadata.folder}/\\\${photoMetadata.id}.\\\${ext}\\\`);
                             if (imageFile) {
                                 const imageBlob = await imageFile.async('blob');
                                 restoredPhotos.push({ ...photoMetadata, imageBlob });
@@ -1279,7 +1400,7 @@ const App: React.FC = () => {
 
         } catch (e) {
             console.error("Restore failed:", e);
-            alert(\`Failed to restore backup: \${e instanceof Error ? e.message : 'Unknown error'}\`);
+            alert(\\\`Failed to restore backup: \\\${e instanceof Error ? e.message : 'Unknown error'}\\\`);
         } finally {
             setIsLoading(false);
         }
@@ -1314,7 +1435,7 @@ const App: React.FC = () => {
     }
     
     if (isPinResetting) {
-        return <PinSetupModal onSetPin={handleSetNewPinAfterReset} mode="reset" siteSettings={siteSettings}/>;
+        return <PinSetupModal onSetPin={(pin, _) => handleSetNewPinAfterReset(pin)} mode="reset" siteSettings={siteSettings}/>;
     }
 
     if (isPinSetupModalOpen) {
@@ -1349,37 +1470,37 @@ const App: React.FC = () => {
                         onLogout={handleLogout}
                         userRole={userRole}
                         onOpenOnboarding={handleOpenOnboarding}
+                        onOpenCalendar={() => setCurrentView('calendar')}
                     />
                 );
             case 'generator':
                 return (
-                    <>
-                        <Hero heroImageSrc={siteSettings.heroImageSrc} />
-                        <GeneratorView 
-                            userInput={userInput}
-                            onUserInputChange={setUserInput}
-                            generatedOutput={generatedOutput}
-                            isLoading={isLoading}
-                            error={error}
-                            templates={templates}
-                            onAddTemplate={handleAddTemplate}
-                            onEditTemplate={onEditTemplate}
-                            selectedTemplateId={selectedTemplateId}
-                            onTemplateChange={setSelectedTemplateId}
-                            tone={tone}
-                            onToneChange={setTone}
-                            onGenerate={handleGenerate}
-                            onSaveToFolder={handleSaveToFolder}
-                            siteSettings={siteSettings}
-                            photos={photos}
-                            onSavePhoto={handleSavePhoto}
-                            onDeletePhoto={handleDeletePhoto}
-                            recordings={recordings}
-                            notes={notes}
-                            onEditImage={handleEditImage}
-                            onUpdatePhoto={handleUpdatePhoto}
-                        />
-                    </>
+                    <GeneratorView 
+                        userInput={userInput}
+                        onUserInputChange={setUserInput}
+                        generatedOutput={generatedOutput}
+                        isLoading={isLoading}
+                        error={error}
+                        templates={templates}
+                        onAddTemplate={handleAddTemplate}
+                        onEditTemplate={onEditTemplate}
+                        selectedTemplateId={selectedTemplateId}
+                        onTemplateChange={setSelectedTemplateId}
+                        tone={tone}
+                        onToneChange={setTone}
+                        onGenerate={handleGenerate}
+                        onSaveToFolder={handleSaveToFolder}
+                        siteSettings={siteSettings}
+                        photos={photos}
+                        onSavePhoto={handleSavePhoto}
+                        onDeletePhoto={handleDeletePhoto}
+                        recordings={recordings}
+                        notes={notes}
+                        onEditImage={handleEditImage}
+                        onUpdatePhoto={handleUpdatePhoto}
+                        heroImageSrc={siteSettings.heroImageSrc}
+                        onNavigate={setCurrentView}
+                    />
                 );
              case 'recordings':
                 return <RecordingManager 
@@ -1409,9 +1530,14 @@ const App: React.FC = () => {
                     onDeleteNoteRecording={handleDeleteNoteRecording}
                     photos={photos}
                     onSavePhoto={handleSavePhoto}
+                    performAiAction={(prompt, context) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
                 />;
             case 'image-tool':
-                return <ImageTool initialImage={imageToEdit} onClearInitialImage={() => setImageToEdit(null)} />;
+                return <ImageTool 
+                    initialImage={imageToEdit} 
+                    onClearInitialImage={() => setImageToEdit(null)}
+                    onNavigate={setCurrentView}
+                />;
             case 'timesheet':
                 return <TimesheetManager 
                     logEntries={logEntries}
@@ -1420,6 +1546,7 @@ const App: React.FC = () => {
                     onStartTimer={handleStartTimer}
                     onStopTimer={handleStopTimer}
                     onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
+                    onNavigate={setCurrentView}
                 />;
             case 'calendar':
                 return <CalendarView
@@ -1450,6 +1577,10 @@ const App: React.FC = () => {
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                     showInstallButton={!isAppInstalled}
                     onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                    onToggleOrientation={() => {}}
+                    isLandscapeLocked={false}
+                    userRole={userRole}
+                    isApiConnected={isApiConnected}
                 />
             </div>
             
@@ -1466,6 +1597,8 @@ const App: React.FC = () => {
                         onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                         showInstallButton={!isAppInstalled}
                         onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                        onToggleOrientation={() => {}}
+                        isLandscapeLocked={false}
                     />
                     {renderView()}
                 </div>
@@ -1502,6 +1635,10 @@ const App: React.FC = () => {
                     onDownloadSource={handleDownloadSourceZip}
                     userRole={userRole}
                     onInitiatePinReset={handleInitiatePinReset}
+                    onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
+                    googleDriveStatus={{ connected: false, email: '' }}
+                    onGoogleDriveConnect={handleGoogleDriveConnect}
+                    onGoogleDriveDisconnect={handleGoogleDriveDisconnect}
                 />
             )}
             {isPrintPreviewOpen && (
@@ -1528,239 +1665,380 @@ const App: React.FC = () => {
 };
 
 export default App;`,
-    "services/geminiService.ts": `import { GenerationResult, GroundingChunk } from "../components/OutputPanel";
-import { blobToBase64 } from "../utils/dataUtils";
+    "constants.ts": `export const CAMERA_FEATURES_LIST = \`AI photo enhancement – automatic editing, color correction, and sharpening.
+Periscope telephoto zoom – ultra-long zoom without losing quality.
+High-resolution sensors (200MP+) – super detailed photos.
+Advanced night vision mode – brighter, clearer low-light shots.
+Cinematic video (4K/8K with stabilization) – pro-level video recording.
+HDR+ and Dolby Vision – vivid colors and balanced lighting.
+Ultra-wide + macro combo – wide landscapes and close-ups in one device.
+AI portrait & bokeh control – adjustable background blur and lighting.
+Super slow-motion & hyperlapse – advanced creative video effects.
+Seamless AR & 3D capture – ready for AR apps, 3D scanning, and effects.\`;
 
-// Helper to handle fetch errors and parse the JSON response.
-const handleFetchErrors = async (response: Response) => {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: \`Request failed with status \${response.status}\` }));
-    throw new Error(errorData.error || 'An unknown network error occurred.');
-  }
-  return response.json();
+export interface CreatorDetails {
+  name:string;
+  slogan: string;
+  logoSrc: string | null;
+  tel: string;
+  email: string;
+  whatsapp: string;
+  whatsapp2?: string;
+}
+
+export interface SiteSettings {
+  companyName: string;
+  slogan: string;
+  logoSrc: string | null;
+  heroImageSrc: string | null;
+  tel: string;
+  email: string;
+  website: string;
+  creator: CreatorDetails;
+  customApiEndpoint?: string | null;
+  customApiAuthKey?: string | null;
+  syncMode?: 'local' | 'folder' | 'api';
+  userPin?: string;
+  pinIsSet?: boolean;
+  onboardingCompleted?: boolean;
+  userName?: string;
+}
+
+export const CREATOR_PIN = '1723j';
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  companyName: 'JSTYP.me Ai tools',
+  slogan: 'Ai your friend!',
+  logoSrc: 'https://i.postimg.cc/SY2bzYNJ/38e4ccf8-e88c-480b-aae6-c508c15ef979-1.png',
+  heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
+  tel: '0695989427',
+  email: 'odendaaljason454@gmail.com',
+  website: '',
+  creator: {
+    name: 'JSTYP.me',
+    slogan: 'Jason solution to your problems, Yes me!!',
+    logoSrc: 'https://i.postimg.cc/vH0dsmFk/Creator-logo.png',
+    tel: '0695989427',
+    email: 'odendaaljason454@gmail.com',
+    whatsapp: 'https://wa.link/nohogl',
+    whatsapp2: 'https://wa.link/j3b9yn',
+  },
+  customApiEndpoint: null,
+  customApiAuthKey: null,
+  syncMode: 'local',
+  userPin: '',
+  pinIsSet: false,
+  onboardingCompleted: false,
+  userName: 'User',
 };
 
-const getHeaders = (customApiAuthKey?: string | null): HeadersInit => {
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (customApiAuthKey) {
-        headers['Authorization'] = \`Bearer \${customApiAuthKey}\`;
-    }
-    return headers;
-}
+export const DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE = \`
+You are an expert copywriter for e-commerce. Your task is to reformat the provided product information into a specific, structured layout. Follow these instructions exactly.
 
-export async function generateProductDescription(
-    productInfo: string, 
-    promptTemplate: string, 
-    tone: string, 
-    customApiUrl?: string | null, 
-    customApiAuthKey?: string | null,
-    onUpdate?: (partialResult: GenerationResult) => void, // Add callback for streaming updates
-): Promise<GenerationResult> {
-  try {
-    const baseUrl = customApiUrl || '';
-    const response = await fetch(\`\${baseUrl}/api/generate\`, {
-      method: 'POST',
-      headers: getHeaders(customApiAuthKey),
-      body: JSON.stringify({ productInfo, promptTemplate, tone }),
-    });
-    
-    if (!response.ok) {
-      // Handle initial error before streaming starts (e.g., 401 Unauthorized)
-      const errorData = await response.json().catch(() => ({ error: \`Request failed with status \${response.status}\` }));
-      throw new Error(errorData.error || 'An unknown network error occurred.');
-    }
-    
-    if (!response.body) {
-        throw new Error("The response from the server is empty.");
-    }
-    
-    // Process the streaming response
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullResponseText = '';
-    
-    while(true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        fullResponseText += decoder.decode(value, { stream: true });
-        
-        // Provide real-time updates of the text as it arrives.
-        // We don't have the sources yet, so we pass an empty array.
-        if(onUpdate) {
-            onUpdate({ text: fullResponseText, sources: [] });
-        }
-    }
-    
-    // Now that the stream is complete, parse the full response for text and sources
-    let text = fullResponseText;
-    let sources: GroundingChunk[] = [];
-    const delimiter = '\\n<--SOURCES-->\\n';
+Brand:
+(The brand name only. Extract it from the product information.)
 
-    if (fullResponseText.includes(delimiter)) {
-        const parts = fullResponseText.split(delimiter);
-        text = parts[0];
-        try {
-            sources = JSON.parse(parts[1]);
-        } catch (e) {
-            console.error("Failed to parse sources from stream:", e);
-            // The text is still valid, so we can proceed without sources.
-        }
-    }
+SKU:
+(Always include the exact model/SKU)
 
-    const finalResult = { text, sources };
-    // Provide a final update with the sources included
-    if(onUpdate) {
-        onUpdate(finalResult);
-    }
-    
-    return finalResult;
+Name:
+(Product title including type, wattage/size, and color if relevant. Do not repeat the brand name here.)
 
-  } catch (error) {
-    console.error("Error calling /api/generate:", error);
-    throw error;
-  }
-}
+Short Description:
+(1 full sentence only. Capture the main benefit or use. No bullets. No fragments.)
 
-export async function transcribeAudio(
-    audioBlob: Blob, 
-    customApiUrl?: string | null,
-    customApiAuthKey?: string | null
-): Promise<string> {
-  const base64Audio = await blobToBase64(audioBlob);
-  try {
-    const baseUrl = customApiUrl || '';
-    const response = await fetch(\`\${baseUrl}/api/transcribe\`, {
-      method: 'POST',
-      headers: getHeaders(customApiAuthKey),
-      body: JSON.stringify({ base64Audio, mimeType: audioBlob.type }),
-    });
+What’s in the Box:
+(Exact contents. List all included parts. If missing, search the web. If still unknown, write “No info.” No bullets.)
 
-    const data = await handleFetchErrors(response);
+Description:
+(Full paragraph. Write in professional tone. Do not repeat short description. Highlight uses and design appeal.)
 
-    if (!data.transcript) {
-      throw new Error("Received an empty transcription from the backend.");
-    }
-    return data.transcript;
+Key Features:
+(List the key highlights. Use a new line for each feature. Do not use bullets.)
 
-  } catch (error) {
-    console.error("Error calling /api/transcribe:", error);
-    throw error;
-  }
-}
+Material Used:
+(State materials like plastic, stainless steel, etc. If missing, search the web. If still unknown, write “No info.”)
 
-export async function describeImage(
-    imageBlob: Blob,
-    prompt: string,
-    customApiUrl?: string | null,
-    customApiAuthKey?: string | null
-): Promise<string> {
-    const base64Image = await blobToBase64(imageBlob);
-    try {
-        const baseUrl = customApiUrl || '';
-        const response = await fetch(\`\${baseUrl}/api/image-query\`, {
-            method: 'POST',
-            headers: getHeaders(customApiAuthKey),
-            body: JSON.stringify({ base64Image, mimeType: imageBlob.type, prompt }),
-        });
-        const data = await handleFetchErrors(response);
-        if (!data.text) {
-            throw new Error("Received an empty description from the backend.");
-        }
-        return data.text;
-    } catch (error) {
-        console.error("Error calling /api/image-query:", error);
-        throw error;
-    }
-}
+Product Dimensions (CM) & Weight (KG):
+(Use the format: "Width: [W] cm | Height: [H] cm | Depth: [D] cm | Weight: [WT] kg". If missing, always search the web. If still unknown, write “No info.”)
 
-export async function performAiAction(
-    prompt: string,
-    context: string,
-    customApiUrl?: string | null,
-    customApiAuthKey?: string | null
-): Promise<string> {
-     try {
-        const baseUrl = customApiUrl || '';
-        const response = await fetch(\`\${baseUrl}/api/ai-action\`, {
-            method: 'POST',
-            headers: getHeaders(customApiAuthKey),
-            body: JSON.stringify({ prompt, context }),
-        });
-        const data = await handleFetchErrors(response);
-        if (typeof data.text === 'undefined') {
-            throw new Error("Received an invalid response from the backend.");
-        }
-        return data.text;
-    } catch (error) {
-        console.error("Error calling /api/ai-action:", error);
-        throw error;
-    }
-}
+Buying This Product Means:
+(1 full sentence on benefit of ownership. Speak to customer value. No hype or fluff.)
 
-export async function getWeatherInfo(
-    location: { city?: string; lat?: number; lon?: number },
-    customApiUrl?: string | null,
-    customApiAuthKey?: string | null
-): Promise<any> {
-    try {
-        const baseUrl = customApiUrl || '';
-        const response = await fetch(\`\${baseUrl}/api/weather\`, {
-            method: 'POST',
-            headers: getHeaders(customApiAuthKey),
-            body: JSON.stringify({ location }),
-        });
-        return await handleFetchErrors(response);
-    } catch (error) {
-        console.error("Error calling /api/weather:", error);
-        throw error;
-    }
-}`,
+Key Specifications:
+(List clear, practical specs. Use a new line for each spec in a "Key: Value" format.)
+
+Terms & Conditions:
+(Your top priority is to find the *exact*, official manufacturer's warranty for the specific product model provided (e.g., for "DMF451", search for "Defy DMF451 official warranty"). Do not use generic brand warranties unless you have confirmed that no model-specific information exists. The summary must be a true reflection of the official terms. Extract key details precisely: the exact warranty period (e.g., "3 Year Warranty + 2 Years on Compressor"), what it covers (e.g., "Covers parts and labour for manufacturing defects only"), specific exclusions (e.g., "Excludes commercial use, rust, and cosmetic damage"), and the exact process for claims (e.g., "Requires online registration within 90 days via the official brand website and proof of purchase"). If you cannot find the exact terms for the model after an exhaustive search, state that and provide the general category warranty. If nothing is found, write “No info.”)
+
+---
+
+Here is a perfect example of the desired output format:
+
+Brand:
+Defy
+
+SKU:
+DMF451
+
+Name:
+195Lt Chest Freezer – Satin Metallic
+
+Short Description:
+A spacious and energy-efficient chest freezer with multimode operation and a lockable design for secure, reliable frozen storage.
+
+What’s in the Box:
+1 x Chest Freezer Unit – Metallic Finish
+1 x Storage Basket
+1 x User Manual
+1 x Power Cord
+
+Description:
+The Defy DMF451 Chest Freezer in Metallic Finish delivers 195 liters of net storage capacity with a static cooling system and flexible multimode operation. Energy-efficient, lockable, and elegantly styled, it’s a premium solution for dependable frozen storage, perfect for homes or small businesses.
+
+Key Features:
+Multimode freezer compartment for versatile storage
+Free-standing installation with stable dome feet
+Energy Class A for low electricity usage
+Rotational side-wall controller for precise temperature adjustment
+Door lock for added safety and security
+
+Material Used:
+Steel body with satin metallic finish; durable plastic interior components
+
+Product Dimensions (CM) & Weight (KG):
+Width: 72.5 cm | Height: 75.1 cm | Depth: 86 cm | Weight: 32 kg
+
+Buying This Product Means:
+You get a reliable, energy-efficient chest freezer that keeps your food fresh longer while offering flexible storage and easy operation.
+
+Key Specifications:
+Total Gross Volume: 331 L
+Total Net Volume: 195 L
+Cooling System: Static
+Climate Class: SN-ST
+Voltage: 220-240 V | Frequency: 50 Hz
+Annual Energy Consumption: 266 kWh/year
+Daily Energy Consumption: 0.71 kWh/24h
+
+Terms & Conditions:
+Based on the official warranty card for model DMF451, this product is covered by Defy's 3-year standard warranty for parts and labour against manufacturing faults. Additionally, the compressor is covered for an extra 2 years (5 years total). This is a carry-in warranty. To validate, the product must be registered online at the brand's official website within 30 days of purchase. The warranty is void if the product is used for commercial purposes and does not cover cosmetic damage or faults from power surges.
+
+---
+
+⚠️ IMPORTANT: When product information is provided, always use the above layout exactly as shown. Do not change any wording from the original content supplied — only restructure and reformat it to fit this template. Do not add or invent information. For the "What's in the Box", "Material Used", "Product Dimensions & Weight", and "Terms & Conditions" sections, you MUST use web search to find any missing information. If information cannot be found online after searching, write: “No info.” Never omit any section. Always follow this template format strictly.
+\``,
 // ... All other files are included here in the original, but omitted for brevity.
 // I will just complete the file and its internal App.tsx string.
-    "api/auth/status.ts": `import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from 'googleapis';
-import cookie from 'cookie';
-
-const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-        return res.status(500).json({ error: "Google credentials are not configured." });
+    "manifest.json": `{
+  "short_name": "Ai tools",
+  "name": "Ai tools - AI Product Description Generator",
+  "description": "An AI-powered application to automatically generate structured and professional product descriptions.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "orientation": "any",
+  "theme_color": "#1F2937",
+  "background_color": "#000000",
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/SY2bzYNJ/38e4ccf8-e88c-480b-aae6-c508c15ef979-1.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/SY2bzYNJ/38e4ccf8-e88c-480b-aae6-c508c15ef979-1.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
-
-    const cookies = cookie.parse(req.headers.cookie || '');
-    const tokens = cookies.google_tokens ? JSON.parse(cookies.google_tokens) : null;
-
-    if (!tokens) {
-        return res.status(200).json({ connected: false });
+  ],
+  "categories": [
+    "business",
+    "productivity",
+    "developer_tools"
+  ],
+  "screenshots": [
+    {
+      "src": "https://i.ibb.co/Rz7xWdY/screenshot-generator.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "AI Generator Workspace"
+    },
+    {
+      "src": "https://i.ibb.co/2vXQZtP/screenshot-recordings.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Recording and Transcription Manager"
+    },
+    {
+      "src": "https://i.ibb.co/1K5x2L1/screenshot-photos.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Photo Library and Management"
+    },
+    {
+      "src": "https://i.ibb.co/b3D0z0p/screenshot-generator-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "AI Generator on Mobile"
+    },
+    {
+      "src": "https://i.ibb.co/4Z58f6d/screenshot-recordings-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Recordings on Mobile"
+    },
+    {
+      "src": "https://i.ibb.co/yq4503s/screenshot-photos-narrow.webp",
+      "sizes": "720x1280",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Photos on Mobile"
     }
-
-    try {
-        const oauth2Client = new google.auth.OAuth2(
-            GOOGLE_CLIENT_ID,
-            GOOGLE_CLIENT_SECRET
-        );
-        oauth2Client.setCredentials(tokens);
-
-        // Make a simple API call to verify the token is valid
-        const oauth2 = google.oauth2({
-            auth: oauth2Client,
-            version: 'v2',
-        });
-        const userInfo = await oauth2.userinfo.get();
-        
-        if (userInfo.data.email) {
-            return res.status(200).json({ connected: true, email: userInfo.data.email });
-        } else {
-            return res.status(200).json({ connected: false });
+  ],
+  "shortcuts": [
+    {
+      "name": "New Recording",
+      "short_name": "Record",
+      "description": "Start a new voice recording",
+      "url": "/?view=recordings",
+      "icons": [
+        {
+          "src": "https://i.ibb.co/6y1jV1h/shortcut-mic.png",
+          "sizes": "96x96"
         }
-    } catch (error) {
-        console.error("Error verifying token:", error);
-        // This could happen if the token expired or was revoked
-        return res.status(200).json({ connected: false });
+      ]
+    },
+    {
+      "name": "New Sticky Note",
+      "short_name": "Note",
+      "description": "Create a new sticky note",
+      "url": "/?view=notepad",
+      "icons": [
+        {
+          "src": "https://i.ibb.co/L6Szk5X/shortcut-note.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Open Image Squarer",
+      "short_name": "Image Tool",
+      "description": "Open the image processing tool",
+      "url": "/?view=image-tool",
+      "icons": [
+        {
+          "src": "https://i.ibb.co/wJ4tS0V/shortcut-image.png",
+          "sizes": "96x96"
+        }
+      ]
     }
+  ]
 }`,
+    "sw.js": `const STATIC_CACHE_NAME = 'site-static-v13';
+const DYNAMIC_CACHE_NAME = 'site-dynamic-v13';
+
+// Comprehensive list of assets needed for the app to work offline
+const APP_SHELL_URLS = [
+  '/',
+  '/index.html', // Explicitly cache the main HTML file
+  '/index.tsx',
+  '/manifest.json',
+  'https://i.postimg.cc/SY2bzYNJ/38e4ccf8-e88c-480b-aae6-c508c15ef979-1.png',
+  'https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg', // Main background
+  'https://cdn.tailwindcss.com',
+  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  'https://unpkg.com/wavesurfer.js@7',
+  'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Patrick+Hand&display=swap',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap'
+];
+
+// Install service worker and cache the app shell
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE_NAME)
+      .then(cache => {
+        console.log('Service Worker: Caching App Shell...');
+        // Use addAll for atomic caching. If any file fails, the SW install fails.
+        return cache.addAll(APP_SHELL_URLS);
+      })
+      .catch(err => {
+        console.error('App Shell caching failed:', err);
+      })
+      .then(() => self.skipWaiting())
+  );
+});
+
+// Activate service worker and clean up old caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(keys
+        .filter(key => key !== STATIC_CACHE_NAME && key !== DYNAMIC_CACHE_NAME)
+        .map(key => {
+            console.log('Service Worker: Deleting old cache:', key);
+            return caches.delete(key);
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch event: Serve from cache, fallback to network, and cache new requests
+self.addEventListener('fetch', event => {
+  // Ignore non-GET requests, API calls, and browser extension requests
+  if (event.request.method !== 'GET' || event.request.url.includes('/api/') || event.request.url.startsWith('chrome-extension://')) {
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request)
+      .then(cacheRes => {
+        // Return from cache if found
+        if (cacheRes) {
+          return cacheRes;
+        }
+        
+        // Otherwise, fetch from network
+        return fetch(event.request).then(fetchRes => {
+          // Check for valid, non-opaque responses before caching
+          if (!fetchRes || fetchRes.status !== 200 || fetchRes.type !== 'basic') {
+            return fetchRes; // Return non-cacheable response as is
+          }
+
+          // Cache the new response for future offline use
+          return caches.open(DYNAMIC_CACHE_NAME).then(cache => {
+            cache.put(event.request.url, fetchRes.clone());
+            return fetchRes;
+          });
+        });
+      })
+      .catch(() => {
+        // Fallback for navigation requests when offline and not in cache
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+      })
+  );
+});`,
     "components/AuthBrandingPanel.tsx": `import React from 'react';
 import { CreatorDetails } from '../constants';
 import { PhoneIcon } from './icons/PhoneIcon';
@@ -1771,38 +2049,43 @@ interface AuthBrandingPanelProps {
     creator: CreatorDetails;
 }
 
-const ContactInfo: React.FC<{ href: string; icon: React.ReactNode; text: string; }> = ({ href, icon, text }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm text-gray-300 hover:text-white transition-colors">
+const ContactButton: React.FC<{ href: string; icon: React.ReactNode; text: string; }> = ({ href, icon, text }) => (
+    <a 
+        href={href} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="auth-contact-button w-full flex items-center justify-center gap-3 text-base sm:text-lg text-gray-200 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-5 py-2 sm:px-6 sm:py-3 transition-all duration-200 transform hover:scale-105 hover:border-orange-500/50"
+    >
         {icon}
-        <span>{text}</span>
+        <span className="font-semibold">{text}</span>
     </a>
 );
 
 export const AuthBrandingPanel: React.FC<AuthBrandingPanelProps> = ({ creator }) => {
     return (
-        <div className="hidden md:flex w-1/2 bg-gray-900/50 p-8 flex-col justify-between relative overflow-hidden">
+        <div className="auth-branding-panel flex w-full md:w-1/2 bg-gray-900/50 p-6 md:p-12 flex-col justify-center md:justify-between relative overflow-hidden text-center md:text-left min-h-[220px] md:min-h-0">
             <div className="absolute inset-0 -z-10 bg-grid-orange-500/10 [mask-image:radial-gradient(ellipse_at_center,white_10%,transparent_70%)]"></div>
             
             <div className="z-10">
                 {creator.logoSrc && (
-                    <img src={creator.logoSrc} alt={\`\${creator.name} Logo\`} className="h-24 w-auto logo-glow-effect mb-4" />
+                    <img src={creator.logoSrc} alt={\`\${creator.name} Logo\`} className="h-20 sm:h-24 md:h-28 w-auto logo-glow-effect mb-4 mx-auto md:mx-0" />
                 )}
-                <h1 className="text-4xl font-bold text-white">{creator.name}</h1>
-                <p className="text-lg text-orange-300/80 mt-1">{creator.slogan}</p>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">{creator.name}</h1>
+                <p className="text-lg sm:text-xl text-orange-300/80 mt-2">{creator.slogan}</p>
             </div>
 
-            <div className="z-10 space-y-3">
+            <div className="auth-contact-button-container z-10 mt-10 md:mt-0 flex flex-col items-center md:items-start gap-4">
                 {creator.tel && (
-                    <ContactInfo href={\`tel:\${creator.tel}\`} icon={<PhoneIcon />} text={creator.tel} />
+                    <ContactButton href={\`tel:\${creator.tel}\`} icon={<PhoneIcon className="h-5 w-5"/>} text={creator.tel} />
                 )}
                 {creator.email && (
-                    <ContactInfo href={\`mailto:\${creator.email}\`} icon={<MailIcon />} text={creator.email} />
+                    <ContactButton href={\`mailto:\${creator.email}\`} icon={<MailIcon className="h-5 w-5"/>} text={creator.email} />
                 )}
                 {creator.whatsapp && (
-                    <ContactInfo href={creator.whatsapp} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp" />
+                    <ContactButton href={creator.whatsapp} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp" />
                 )}
                 {creator.whatsapp2 && (
-                    <ContactInfo href={creator.whatsapp2} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp 2" />
+                    <ContactButton href={creator.whatsapp2} icon={<WhatsappIcon className="h-5 w-5" />} text="WhatsApp 2" />
                 )}
             </div>
         </div>

@@ -44,34 +44,34 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ onOpenCalendar, 
     return (
         <button 
             onClick={onOpenCalendar}
-            className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col w-full text-left transition-transform hover:scale-[1.02]"
+            className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-3 h-full shadow-lg border border-white/10 flex flex-col w-full text-left transition-transform hover:scale-[1.02]"
         >
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
-                     <CalendarIcon className="w-4 h-4" />
-                     <h3 className="text-white font-bold text-sm">Calendar</h3>
+                     <CalendarIcon className="w-5 h-5" />
+                     <h3 className="text-white font-bold text-base">Calendar</h3>
                 </div>
                 <div className="text-right flex-shrink-0">
-                    <p className="text-2xl font-bold text-white -mb-1">{day}</p>
-                    <p className="text-sm font-semibold text-gray-300 leading-tight">{month}</p>
+                    <p className="text-3xl font-bold text-white -mb-1">{day}</p>
+                    <p className="text-base font-semibold text-gray-300 leading-tight">{month}</p>
                 </div>
             </div>
-            <div className="flex-grow my-1 space-y-1 overflow-hidden">
+            <div className="flex-grow my-2 space-y-1.5 overflow-hidden">
                 {upcomingEvents.length > 0 ? (
                     upcomingEvents.map(event => (
-                        <div key={event.id} className="flex items-center gap-1.5 text-[11px] animate-fade-in-down">
-                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${colorMap[event.color] || 'bg-gray-400'}`}></div>
-                            <span className="text-gray-300 font-mono text-[10px]">{formatEventTime(event.startDateTime)}</span>
+                        <div key={event.id} className="flex items-center gap-2 text-xs animate-fade-in-down">
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colorMap[event.color] || 'bg-gray-400'}`}></div>
+                            <span className="text-gray-300 font-mono text-[11px]">{formatEventTime(event.startDateTime)}</span>
                             <p className="text-white truncate">{event.title}</p>
                         </div>
                     ))
                 ) : (
                     <div className="h-full flex items-center">
-                        <p className="text-gray-400 text-xs">No upcoming events this week.</p>
+                        <p className="text-gray-400 text-sm">No upcoming events this week.</p>
                     </div>
                 )}
             </div>
-            <div className="text-right text-gray-300 font-semibold text-xs">{weekday}</div>
+            <div className="text-right text-gray-300 font-semibold text-sm">{weekday}</div>
         </button>
     );
 };
