@@ -203,7 +203,7 @@ export const ImageTool: React.FC<ImageToolProps> = ({ initialImage, onClearIniti
                     <ChevronLeftIcon />
                     Back to Home
                 </button>
-                <h1 className="text-3xl font-bold text-[var(--theme-green)]">HQ Image Squarer</h1>
+                <h1 className="text-3xl font-bold text-[var(--theme-orange)]">HQ Image Squarer</h1>
                 <p className="text-[var(--theme-text-secondary)] mt-2">Create broadcast-quality, perfectly square images. Upload multiple photos and download them all in a zip.</p>
             </header>
             
@@ -215,7 +215,7 @@ export const ImageTool: React.FC<ImageToolProps> = ({ initialImage, onClearIniti
                             <h2 className="text-xl font-semibold mb-4 text-center">Upload Image(s)</h2>
                              <input ref={fileInputRef} type="file" id="image-upload" className="sr-only" onChange={handleFileChange} accept="image/*" multiple />
                              <div className="flex-grow flex border-2 border-dashed border-[var(--theme-border)] rounded-md cursor-pointer hover:bg-[var(--theme-bg)] transition-all" onClick={() => fileInputRef.current?.click()}>
-                                <div className={`w-full flex flex-col items-center justify-center p-8 transition-colors ${isDragging ? 'bg-[var(--theme-green)]/10' : ''}`}>
+                                <div className={`w-full flex flex-col items-center justify-center p-8 transition-colors ${isDragging ? 'bg-[var(--theme-orange)]/10' : ''}`}>
                                     <UploadIcon />
                                     <span className="mt-2 text-sm font-semibold">Click to upload or drag & drop</span>
                                     <span className="text-xs text-[var(--theme-text-secondary)]">Batch processing is supported</span>
@@ -237,7 +237,7 @@ export const ImageTool: React.FC<ImageToolProps> = ({ initialImage, onClearIniti
                                         <div key={item.id} className="relative group aspect-square">
                                             <button 
                                                 onClick={() => setSelectedImageId(item.id)}
-                                                className={`w-full h-full rounded-md overflow-hidden transition-all ${selectedImageId === item.id ? 'ring-2 ring-[var(--theme-green)] ring-offset-2 ring-offset-[var(--theme-card-bg)]' : ''}`}
+                                                className={`w-full h-full rounded-md overflow-hidden transition-all ${selectedImageId === item.id ? 'ring-2 ring-[var(--theme-orange)] ring-offset-2 ring-offset-[var(--theme-card-bg)]' : ''}`}
                                             >
                                                 <img src={item.imageElement.src} alt={item.file.name} className="w-full h-full object-cover"/>
                                             </button>
@@ -259,8 +259,8 @@ export const ImageTool: React.FC<ImageToolProps> = ({ initialImage, onClearIniti
                                                 onClick={() => setOutputSize(size)}
                                                 className={`py-3 px-2 rounded-md font-semibold text-center transition-all border-2 ${
                                                     outputSize === size 
-                                                        ? 'bg-[var(--theme-green)] text-black border-[var(--theme-green)]' 
-                                                        : 'bg-transparent border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-green)]/50 hover:text-white'
+                                                        ? 'bg-[var(--theme-orange)] text-black border-[var(--theme-orange)]' 
+                                                        : 'bg-transparent border-[var(--theme-border)] text-[var(--theme-text-secondary)] hover:border-[var(--theme-orange)]/50 hover:text-white'
                                                 }`}
                                             >
                                                 {size} x {size} px
@@ -271,7 +271,7 @@ export const ImageTool: React.FC<ImageToolProps> = ({ initialImage, onClearIniti
                                 <button
                                     onClick={handleDownloadZip}
                                     disabled={isZipping}
-                                    className="w-full flex items-center justify-center gap-2 bg-[var(--theme-green)] text-black font-bold py-3 px-4 rounded-md hover:opacity-90 transition-colors disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed"
+                                    className="w-full flex items-center justify-center gap-2 bg-[var(--theme-orange)] text-black font-bold py-3 px-4 rounded-md hover:opacity-90 transition-colors disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed"
                                 >
                                     {isZipping ? <Spinner /> : <DownloadIcon />}
                                     {isZipping ? `Processing... (${zipProgress}%)` : `Download All as .zip`}

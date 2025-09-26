@@ -5,6 +5,7 @@ import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { ImageIcon } from './icons/ImageIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
 
 interface BottomNavBarProps {
   currentView: View;
@@ -21,7 +22,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
         { view: 'recordings', label: 'Recordings', icon: RecordingIcon },
         { view: 'notepad', label: 'Notepad', icon: NotepadIcon },
         { view: 'photos', label: 'Photos', icon: PhotoIcon },
-        { view: 'image-tool', label: 'Image Tool', icon: ImageIcon }
+        { view: 'calendar', label: 'Calendar', icon: CalendarIcon }
     ], []);
 
     const activeIndex = useMemo(() => navItems.findIndex(item => item.view === currentView), [currentView, navItems]);
@@ -52,7 +53,6 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
             const topMargin = 16;
             const navHeight = 64;
 
-            // FIX: Define startX and endX for the SVG path calculation.
             const startX = center - scoopWidth / 2;
             const endX = center + scoopWidth / 2;
 

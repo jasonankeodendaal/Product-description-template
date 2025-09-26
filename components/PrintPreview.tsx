@@ -131,7 +131,7 @@ export const PrintPreview: React.FC<PrintPreviewProps> = ({ logEntries, onClose,
                 </button>
                 <button
                     onClick={handlePrint}
-                    className="bg-[var(--theme-green)] text-black font-bold py-2 px-4 rounded-md flex items-center gap-2 hover:opacity-90 transition-opacity"
+                    className="bg-[var(--theme-orange)] text-black font-bold py-2 px-4 rounded-md flex items-center gap-2 hover:opacity-90 transition-opacity"
                 >
                     <PrintIcon /> Print
                 </button>

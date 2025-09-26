@@ -230,7 +230,6 @@ const App: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
     const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     
     // Timer State
     const [activeTimer, setActiveTimer] = useState<{ startTime: number; task: string } | null>(null);
@@ -1098,7 +1097,7 @@ const App: React.FC = () => {
                         onLogout={handleLogout}
                         userRole={userRole}
                         onOpenOnboarding={handleOpenOnboarding}
-                        onOpenCalendar={() => setIsCalendarOpen(true)}
+                        onOpenCalendar={() => setCurrentView('calendar')}
                     />
                 );
             case 'generator':
@@ -1175,6 +1174,17 @@ const App: React.FC = () => {
                     onStopTimer={handleStopTimer}
                     onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
                     onNavigate={setCurrentView}
+                />;
+            case 'calendar':
+                 return <CalendarView
+                    onClose={() => setCurrentView('home')}
+                    events={calendarEvents}
+                    onSaveEvent={handleSaveCalendarEvent}
+                    onDeleteEvent={handleDeleteCalendarEvent}
+                    photos={photos}
+                    onSavePhoto={handleSavePhoto}
+                    recordings={recordings}
+                    onSaveRecording={handleSaveRecording}
                 />;
             default:
                 return null;
@@ -1257,22 +1267,6 @@ const App: React.FC = () => {
                     onGoogleDriveConnect={handleGoogleDriveConnect}
                     onGoogleDriveDisconnect={handleGoogleDriveDisconnect}
                 />
-            )}
-            {isCalendarOpen && (
-                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-300" aria-modal="true" role="dialog">
-                    <div className="bg-[var(--theme-dark-bg)] w-full h-full md:max-w-6xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in relative">
-                        <CalendarView
-                            onClose={() => setIsCalendarOpen(false)}
-                            events={calendarEvents}
-                            onSaveEvent={handleSaveCalendarEvent}
-                            onDeleteEvent={handleDeleteCalendarEvent}
-                            photos={photos}
-                            onSavePhoto={handleSavePhoto}
-                            recordings={recordings}
-                            onSaveRecording={handleSaveRecording}
-                        />
-                    </div>
-                </div>
             )}
             {isPrintPreviewOpen && (
                 <PrintPreview 

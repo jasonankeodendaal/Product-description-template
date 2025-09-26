@@ -81,12 +81,12 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        style={{ backgroundColor: 'var(--theme-green)' }}
+        style={{ backgroundColor: 'var(--theme-orange)' }}
         className="relative hover:opacity-90 text-black rounded-full p-4 shadow-lg transition-transform transform hover:scale-110 flex items-center justify-center"
         aria-label={`Open download queue with ${queue.length} items`}
       >
         <DownloadIcon />
-        <span className="absolute -top-1 -right-1 bg-[var(--theme-green)] text-black text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-[var(--theme-bg)]">
+        <span className="absolute -top-1 -right-1 bg-[var(--theme-orange)] text-black text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-[var(--theme-bg)]">
             {queue.length}
         </span>
       </button>
@@ -96,7 +96,7 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
           <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-lg shadow-xl border border-[var(--theme-border)] flex flex-col max-h-[90vh]">
             <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
                 <div>
-                    <h2 className="text-lg font-bold text-[var(--theme-green)]">Download Queue ({queue.length})</h2>
+                    <h2 className="text-lg font-bold text-[var(--theme-orange)]">Download Queue ({queue.length})</h2>
                     <p className="text-sm text-[var(--theme-text-secondary)]">Review items before downloading.</p>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]" aria-label="Close">
@@ -131,7 +131,7 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
                  <button 
                     onClick={handleDownloadZip} 
                     disabled={isZipping}
-                    style={{ backgroundColor: 'var(--theme-green)' }}
+                    style={{ backgroundColor: 'var(--theme-orange)' }}
                     className="text-black font-bold py-2 px-6 rounded-md hover:opacity-90 transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)]"
                 >
                      {isZipping ? (

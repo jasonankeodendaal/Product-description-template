@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
@@ -9,6 +7,7 @@ import { BellIcon } from './icons/BellIcon';
 import { PlusIcon } from './icons/PlusIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { HamburgerIcon } from './icons/HamburgerIcon';
+import { ChevronRightIcon } from './icons/ChevronRightIcon';
 
 interface CalendarViewProps {
     events: CalendarEvent[];
@@ -97,13 +96,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
         <div className="flex-1 flex flex-col bg-gray-900 text-white font-inter animate-fade-in-down overflow-hidden">
              {/* Header */}
             <header className="p-4 flex justify-between items-center flex-shrink-0">
-                <div className="w-10"></div>
+                <button 
+                    onClick={onClose}
+                    className="flex items-center gap-2 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] font-semibold transition-colors"
+                >
+                    <ChevronLeftIcon />
+                    <span className="hidden sm:inline">Back to Home</span>
+                </button>
                 <div className="flex items-center gap-4">
                     <button onClick={() => changeMonth(-1)} className="p-2 text-gray-400 hover:text-white"><ChevronLeftIcon /></button>
-                    <h2 className="text-2xl font-bold text-green-400 w-40 text-center">{viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}</h2>
+                    <h2 className="text-2xl font-bold text-orange-400 w-40 text-center">{viewDate.toLocaleString('default', { month: 'long' })} {viewDate.getFullYear()}</h2>
                     <button onClick={() => changeMonth(1)} className="p-2 text-gray-400 hover:text-white"><ChevronRightIcon /></button>
                 </div>
-                <button onClick={onClose} className="p-2 text-gray-400 hover:text-white"><XIcon /></button>
+                 <div className="w-10 h-10"></div> {/* Spacer */}
             </header>
 
             {/* Calendar Grid */}
@@ -124,13 +129,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
                                 <button
                                     onClick={() => setSelectedDay(date)}
                                     className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors duration-200
-                                        ${isSelected ? 'bg-green-400 text-black' : ''}
-                                        ${!isSelected && isToday ? 'bg-green-400/20 text-green-400' : ''}
-                                        ${!isSelected && dayHasEvents ? 'bg-red-500 text-white' : ''}
+                                        ${isSelected ? 'bg-orange-400 text-black' : ''}
+                                        ${!isSelected && isToday ? 'bg-orange-400/20 text-orange-400' : ''}
+                                        ${dayHasEvents ? 'relative' : ''}
                                         ${!isSelected && !isToday && !dayHasEvents ? 'text-gray-300 hover:bg-gray-700' : ''}
                                     `}
                                 >
                                     {date.getDate()}
+                                    {dayHasEvents && !isSelected && <div className="absolute bottom-1 w-1.5 h-1.5 bg-red-500 rounded-full"></div>}
                                 </button>
                             </div>
                         );
@@ -163,7 +169,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
                 </div>
                 <button
                     onClick={() => openEditorForNewEvent(selectedDay)}
-                    className="absolute bottom-6 right-6 bg-green-500 text-black rounded-full w-14 h-14 flex items-center justify-center shadow-lg transform transition-transform hover:scale-110"
+                    className="absolute bottom-6 right-6 bg-orange-500 text-black rounded-full w-14 h-14 flex items-center justify-center shadow-lg transform transition-transform hover:scale-110"
                 >
                     <PlusIcon />
                 </button>
@@ -184,10 +190,3 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
         </div>
     );
 };
-
-// ChevronRightIcon component
-const ChevronRightIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-        <polyline points="9 18 15 12 9 6"></polyline>
-    </svg>
-);

@@ -75,6 +75,18 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const [timer, setTimer] = useState<0 | 3 | 5>(0);
   const [isGridOn, setIsGridOn] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsInitialized(true), 10);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(onClose, 350);
+  }, [onClose]);
 
   useEffect(() => { if (stream && videoRef.current) { videoRef.current.srcObject = stream; setZoom(capabilities.zoom?.min || 1); } }, [stream, capabilities.zoom]);
   useEffect(() => { if (capabilities.torch) { applyAdvancedConstraint([{ torch: flashMode === 'on' } as any]); } }, [flashMode, capabilities.torch, applyAdvancedConstraint]);
@@ -129,7 +141,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const handleSave = () => { if(previewDataUrl) { onCapture(previewDataUrl); } }
 
   return (
-    <div className="fixed inset-0 bg-black z-[60] flex flex-col items-center justify-center font-inter" aria-modal="true" role="dialog">
+    <div className={`camera-drawer-container ${isInitialized ? (isClosing ? 'camera-drawer-out' : 'camera-drawer-in') : 'camera-drawer-initial'}`} aria-modal="true" role="dialog">
+      <div className="camera-drawer-content font-inter">
         <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ aspectRatio: ASPECT_RATIOS[aspectRatio as keyof typeof ASPECT_RATIOS] }}>
              {error ? ( <div className="p-8 text-center text-rose-400">{error}</div>
             ) : previewDataUrl ? ( <img src={previewDataUrl} alt="Capture preview" className="w-full h-full object-contain animate-fade-in-down" />
@@ -141,14 +154,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             {countdown !== null && countdown > 0 && ( <div className="absolute inset-0 flex items-center justify-center bg-black/50"><span className="text-9xl font-bold text-white drop-shadow-lg animate-ping">{countdown}</span></div> )}
         </div>
         
-        <button onClick={onClose} className="absolute top-4 left-4 bg-black/40 text-white rounded-full p-2.5 z-20"><XIcon /></button>
+        <button onClick={handleClose} className="absolute top-4 left-4 bg-black/40 text-white rounded-full p-2.5 z-20"><XIcon /></button>
         {capabilities.zoom && !previewDataUrl && ( <input type="range" min={capabilities.zoom.min} max={Math.min(capabilities.zoom.max, 10)} step={capabilities.zoom.step} value={zoom} onChange={(e) => handleZoomChange(Number(e.target.value))} className="zoom-slider absolute right-4 top-1/2 -translate-y-1/2 h-2/5 z-10" /> )}
 
         {isControlsOpen && !previewDataUrl &&
             <CameraControlsPanel
                 flashMode={flashMode} onFlashToggle={() => setFlashMode(p => p === 'on' ? 'off' : 'on')} hasFlash={!!capabilities.torch}
-                // FIX: Corrected a type mismatch. The 'setTimer' function's type is more complex than what the prop expected.
-                // Wrapping it in a lambda `(t) => setTimer(t)` ensures the types align correctly.
                 timer={timer} onTimerChange={(t) => setTimer(t as 0 | 3 | 5)}
                 isGridOn={isGridOn} onGridToggle={() => setIsGridOn(p => !p)}
                 aspectRatio={aspectRatio} onAspectRatioChange={setAspectRatio}
@@ -180,6 +191,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
         </div>
         <canvas ref={canvasRef} className="hidden"></canvas>
+      </div>
     </div>
   );
 };

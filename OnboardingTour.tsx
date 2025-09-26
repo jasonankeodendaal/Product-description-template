@@ -220,7 +220,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
     const progressPercentage = ((currentStep + 1) / tourSteps.length) * 100;
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4" aria-modal="true" role="dialog">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-lg z-[100] flex items-center justify-center p-4 font-inter" aria-modal="true" role="dialog">
             <div className="bg-slate-900/50 backdrop-blur-2xl w-full max-w-2xl rounded-2xl shadow-2xl border border-orange-500/20 relative animate-modal-scale-in flex flex-col overflow-hidden">
                 
                 <div className="w-full bg-slate-800/50 h-2.5">

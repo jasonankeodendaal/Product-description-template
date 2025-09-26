@@ -127,7 +127,7 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                             onChange={(e) => setTaskDescription(e.target.value)}
                             disabled={!!activeTimer}
                             placeholder="What are you working on?"
-                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-md p-3 font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--theme-green)]"
+                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-md p-3 font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--theme-orange)]"
                         />
                          {activeTimer ? (
                             <div className="flex gap-4">
@@ -137,7 +137,7 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                              <button 
                                 onClick={() => onStartTimer(taskDescription || 'Untitled Task')} 
                                 disabled={!taskDescription.trim()}
-                                className="w-full py-3 bg-[var(--theme-green)] text-black font-bold rounded-md uppercase tracking-wider disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                                className="w-full py-3 bg-[var(--theme-orange)] text-black font-bold rounded-md uppercase tracking-wider disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                             >
                                 Start
                             </button>
@@ -160,9 +160,9 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                     <div className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
                         <h3 className="text-lg font-semibold">Activity Log</h3>
                         <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
-                             <button onClick={() => setFilter('all')} className={`px-3 py-1 text-sm rounded-md ${filter === 'all' ? 'bg-[var(--theme-green)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>All</button>
-                             <button onClick={() => setFilter('manual')} className={`px-3 py-1 text-sm rounded-md ${filter === 'manual' ? 'bg-[var(--theme-green)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Manual</button>
-                             <button onClick={() => setFilter('auto')} className={`px-3 py-1 text-sm rounded-md ${filter === 'auto' ? 'bg-[var(--theme-green)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Automatic</button>
+                             <button onClick={() => setFilter('all')} className={`px-3 py-1 text-sm rounded-md ${filter === 'all' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>All</button>
+                             <button onClick={() => setFilter('manual')} className={`px-3 py-1 text-sm rounded-md ${filter === 'manual' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Manual</button>
+                             <button onClick={() => setFilter('auto')} className={`px-3 py-1 text-sm rounded-md ${filter === 'auto' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Automatic</button>
                         </div>
                     </div>
                     <div className="flex-grow overflow-y-auto">

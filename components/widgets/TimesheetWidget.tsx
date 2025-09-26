@@ -71,7 +71,7 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, on
                 <button
                     onClick={() => onSaveLogEntry('Clock In')}
                     disabled={isClockedIn}
-                    className="flex items-center justify-center gap-1 p-1 bg-emerald-600/50 hover:bg-emerald-600/80 text-white rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-1 p-1 bg-orange-600/50 hover:bg-orange-600/80 text-white rounded-lg transition-colors disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
                     <ClockInIcon />
                     <span className="font-semibold text-xs">Clock In</span>

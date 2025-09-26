@@ -76,7 +76,7 @@ export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSe
     return (
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col justify-between">
             <div className="flex items-center gap-2">
-                <div className="text-emerald-400 w-5 h-5 animate-pulse-slow">{syncInfo.icon}</div>
+                <div className="text-orange-400 w-5 h-5 animate-pulse-slow">{syncInfo.icon}</div>
                 <div>
                     <h3 className="text-white font-bold text-xs">{syncInfo.text}</h3>
                 </div>

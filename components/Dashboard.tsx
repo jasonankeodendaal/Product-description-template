@@ -96,17 +96,17 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
             return (
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <DashboardTile title="Data Management" icon={<DataManagementToolIcon />} onClick={() => setDashboardView('data')} colorClass="bg-sky-500" delay={50} />
-                        <DashboardTile title="Site Settings" icon={<SettingsToolIcon />} onClick={() => setDashboardView('settings')} colorClass="bg-emerald-500" delay={100} />
+                        <DashboardTile title="Data Management" icon={<DataManagementToolIcon />} onClick={() => setDashboardView('data')} colorClass="bg-orange-500" delay={50} />
+                        <DashboardTile title="Site Settings" icon={<SettingsToolIcon />} onClick={() => setDashboardView('settings')} colorClass="bg-orange-600" delay={100} />
                         <DashboardTile title="About This App" icon={<AboutToolIcon />} onClick={() => setDashboardView('about')} colorClass="bg-amber-500" delay={150} />
                     </div>
                     {userRole === 'creator' && (
                         <div>
                             <h3 className="text-xl font-bold text-[var(--theme-orange)] mb-3 pl-2">Creator Zone</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                <DashboardTile title="Creator Info" icon={<CreatorToolIcon />} onClick={onOpenCreatorInfo} colorClass="bg-pink-500" delay={200} />
-                                <DashboardTile title="Setup Guide" icon={<SetupToolIcon />} onClick={() => setDashboardView('setup')} colorClass="bg-purple-500" delay={250} />
-                                <DashboardTile title="App Publishing" icon={<PublishToolIcon />} onClick={() => setDashboardView('publishing')} colorClass="bg-cyan-500" delay={300} />
+                                <DashboardTile title="Creator Info" icon={<CreatorToolIcon />} onClick={onOpenCreatorInfo} colorClass="bg-red-500" delay={200} />
+                                <DashboardTile title="Setup Guide" icon={<SetupToolIcon />} onClick={() => setDashboardView('setup')} colorClass="bg-orange-700" delay={250} />
+                                <DashboardTile title="App Publishing" icon={<PublishToolIcon />} onClick={() => setDashboardView('publishing')} colorClass="bg-amber-600" delay={300} />
                             </div>
                         </div>
                     )}

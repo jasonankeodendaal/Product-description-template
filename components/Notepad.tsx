@@ -356,7 +356,7 @@ const NoteEditor: React.FC<{
            <header className="p-2 border-b border-[var(--theme-border)] flex items-center justify-between flex-shrink-0">
                <div className="flex items-center gap-2 flex-grow min-w-0">
                    <button onClick={onClose} className="p-2 text-[var(--theme-text-secondary)]"><ChevronLeftIcon /></button>
-                   <input type="text" value={localNote.title} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-green)] focus:outline-none w-full truncate" />
+                   <input type="text" value={localNote.title} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-orange)] focus:outline-none w-full truncate" />
                </div>
                <div className="flex items-center gap-2 flex-shrink-0">
                     {isDirty && (
@@ -376,18 +376,19 @@ const NoteEditor: React.FC<{
            
            <footer className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur-sm border-t border-white/10 note-editor-toolbar z-10">
                <div className="flex items-center justify-start gap-1 flex-wrap">
-                   <button title="Bold" onClick={() => executeCommand('bold')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('bold') ? 'active' : ''}`}><BoldIcon /></button>
-                   <button title="Italic" onClick={() => executeCommand('italic')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('italic') ? 'active' : ''}`}><ItalicIcon /></button>
-                   <button title="Underline" onClick={() => executeCommand('underline')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('underline') ? 'active' : ''}`}><UnderlineIcon /></button>
-                   <button title="Strikethrough" onClick={() => executeCommand('strikeThrough')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('strikeThrough') ? 'active' : ''}`}><StrikethroughIcon /></button>
+                   <button title="Bold" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('bold')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('bold') ? 'active' : ''}`}><BoldIcon /></button>
+                   <button title="Italic" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('italic')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('italic') ? 'active' : ''}`}><ItalicIcon /></button>
+                   <button title="Underline" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('underline')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('underline') ? 'active' : ''}`}><UnderlineIcon /></button>
+                   <button title="Strikethrough" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('strikeThrough')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('strikeThrough') ? 'active' : ''}`}><StrikethroughIcon /></button>
                    <div className="toolbar-divider"></div>
-                   <button title="Bulleted List" onClick={() => executeCommand('insertUnorderedList')} className="p-2 hover:bg-slate-700 rounded"><ListIcon /></button>
-                   <button title="Checklist" onClick={handleChecklist} className="p-2 hover:bg-slate-700 rounded"><ChecklistIcon /></button>
+                   <button title="Bulleted List" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('insertUnorderedList')} className="p-2 hover:bg-slate-700 rounded"><ListIcon /></button>
+                   <button title="Checklist" onMouseDown={(e) => e.preventDefault()} onClick={handleChecklist} className="p-2 hover:bg-slate-700 rounded"><ChecklistIcon /></button>
                    <div className="toolbar-divider"></div>
                    <input type="file" ref={fileInputRef} className="sr-only" accept="image/*" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} />
                    <button title="Attach Image" onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-slate-700 rounded"><ImageIcon /></button>
                    <button title="Scan Document" onClick={() => { setCameraMode('document'); setIsCameraOpen(true); }} className="p-2 hover:bg-slate-700 rounded"><ScanIcon /></button>
                    <button title="Record Audio Clip" onClick={() => setIsRecordingPanelOpen(p => !p)} className={`p-2 hover:bg-slate-700 rounded ${isRecordingPanelOpen ? 'active' : ''}`}><MicIcon /></button>
+                   <button title="Note Settings" onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-slate-700 rounded"><SettingsIcon /></button>
                </div>
                {isRecordingPanelOpen && (
                    <div className="p-2 bg-black/30 rounded mt-2">
@@ -430,7 +431,7 @@ const NoteCard: React.FC<{ note: Note; onSelect: (note: Note) => void; isSelecte
             onClick={() => onSelect(note)}
             className={`w-full text-left p-3 rounded-lg border-2 transition-all duration-200 ${
                 isSelected
-                    ? `bg-[var(--theme-card-bg)] border-[var(--theme-green)]`
+                    ? `bg-[var(--theme-card-bg)] border-[var(--theme-orange)]`
                     : `bg-[var(--theme-bg)]/50 border-transparent hover:bg-[var(--theme-card-bg)]/80 hover:border-[var(--theme-border)]`
             }`}
         >
@@ -507,11 +508,10 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                 <aside className={`w-full md:w-1/3 md:max-w-sm flex flex-col border-r border-transparent md:border-[var(--theme-border)] ${selectedNote ? 'hidden md:flex' : 'flex'}`}>
                     <header className="p-4 flex-shrink-0 border-b border-[var(--theme-border)] flex items-center justify-between">
                          <div className="relative flex-grow">
-                            {/* FIX: The SearchIcon component was not typed to accept props. The component has been fixed, and a className is now provided to ensure correct styling. */}
                             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><SearchIcon className="h-5 w-5 text-[var(--theme-text-secondary)]" /></div>
                             <input type="text" placeholder="Search notes..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-4 py-2"/>
                         </div>
-                        <button onClick={handleAddNewNote} className="ml-2 p-2 bg-[var(--theme-green)] text-black rounded-full flex-shrink-0"><PlusIcon /></button>
+                        <button onClick={handleAddNewNote} className="ml-2 p-2 bg-[var(--theme-orange)] text-black rounded-full flex-shrink-0"><PlusIcon /></button>
                     </header>
                      <div className="flex-grow overflow-y-auto no-scrollbar p-2 space-y-2">
                         {filteredNotes.length > 0 ? (

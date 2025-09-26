@@ -12,7 +12,7 @@ import { Spinner } from './icons/Spinner';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { XIcon } from './icons/XIcon';
-import { CloudIcon } from './icons/CloudIcon';
+import { CheckIcon } from './icons/CheckIcon';
 
 interface PhotoManagerProps {
     photos: Photo[];
@@ -184,30 +184,35 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
             }}/>}
             {selectedPhoto && <PhotoDetailModal photo={selectedPhoto} onUpdate={onUpdate} onDelete={onDelete} onClose={() => setSelectedPhoto(null)} />}
            
-            <header className="photo-manager-header flex-shrink-0">
-                 <div className="relative flex-grow">
-                    {/* FIX: The SearchIcon component was not typed to accept props. The component has been fixed, and a className is now provided to ensure correct styling. */}
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><SearchIcon className="h-5 w-5 text-[var(--theme-text-secondary)]" /></div>
-                    <input type="text" placeholder="Search photos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="photo-search-input"/>
+            <header className="photo-manager-header">
+                <div className="relative flex-grow">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <SearchIcon className="h-5 w-5 text-[var(--theme-text-secondary)]" />
+                    </div>
+                    <input 
+                        type="text" 
+                        placeholder="Search photos..." 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                        className="photo-search-input"
+                    />
                 </div>
-                <div className="flex items-center gap-2">
-                    <label className="photo-action-btn cursor-pointer">
-                        <input type="file" className="sr-only" onChange={(e) => handleFileUpload(e.target.files)} multiple accept="image/*" disabled={isUploading} />
-                        {isUploading ? <Spinner className="h-5 w-5" /> : <CloudIcon isConnected={false} />} {isUploading ? `${uploadCount}` : 'Upload'}
-                    </label>
-                    <button onClick={() => setIsCameraOpen(true)} className="photo-action-btn active">
-                        <CameraIcon /> Capture
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <button 
+                        onClick={() => { setSelectionMode(p => !p); setSelectedIds(new Set()); }} 
+                        className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${selectionMode ? 'bg-orange-500/20 text-orange-400' : 'bg-white/10 text-white/80'}`}
+                    >
+                        {selectionMode ? 'Cancel' : 'Select'}
                     </button>
                 </div>
-                <button onClick={() => { setSelectionMode(p => !p); setSelectedIds(new Set()); }} className="photo-select-btn">{selectionMode ? 'Cancel' : 'Select'}</button>
             </header>
             
-            <main className="flex-grow overflow-y-auto no-scrollbar pb-24 lg:pb-2">
+            <main className="flex-grow overflow-y-auto no-scrollbar pb-36 lg:pb-2">
                 {allVisiblePhotoIds.length === 0 && !isUploading ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-4 text-[var(--theme-text-secondary)]">
-                        <PhotoIcon className="h-16 w-16 mb-4 opacity-30" />
+                    <div className="empty-library-container">
+                        <PhotoIcon className="empty-library-icon" />
                         <h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">Your photo library is empty</h3>
-                        <p className="text-sm mt-1">Use the buttons above to upload or capture your first photo.</p>
+                        <p className="text-sm mt-1">Use the camera or upload buttons to add your first photo.</p>
                     </div>
                 ) : (
                     Object.entries(photosByFolder).map(([folder, folderPhotos]) => (
@@ -222,14 +227,32 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
                 )}
             </main>
 
+            {/* Main Action FABs */}
+            {!selectionMode && (
+                <div className="fixed bottom-24 lg:bottom-6 right-4 z-30 flex flex-col items-end gap-3">
+                    <label className="bg-sky-500 text-white rounded-full p-4 shadow-lg cursor-pointer hover:bg-sky-600 transition-colors">
+                        <input type="file" className="sr-only" onChange={(e) => handleFileUpload(e.target.files)} multiple accept="image/*" disabled={isUploading} />
+                        {isUploading ? <Spinner className="h-6 w-6" /> : <UploadIcon />}
+                    </label>
+                    <button onClick={() => setIsCameraOpen(true)} className="bg-orange-500 text-black rounded-full p-4 shadow-lg hover:bg-orange-600 transition-colors">
+                        <CameraIcon />
+                    </button>
+                </div>
+            )}
+            
+            {/* Selection Action Bar */}
             {selectionMode && (
-                <div className="fixed bottom-0 left-0 right-0 z-30 bg-slate-800/80 backdrop-blur-md p-3 flex items-center justify-center gap-4 animate-fade-in-down border-t border-white/10">
+                <div className="fixed bottom-24 lg:bottom-0 left-0 right-0 z-50 bg-slate-800/80 backdrop-blur-md p-3 flex items-center justify-center gap-4 animate-fade-in-down border-t border-white/10">
                     <button onClick={handleToggleSelectAll} className="flex items-center gap-2 text-sm font-semibold text-white">
-                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${allSelected ? 'bg-green-500 border-green-400' : 'border-white/50'}`}>{allSelected && <XIcon />}</div>
-                        {selectedIds.size} selected
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${allSelected ? 'bg-green-500 border-green-400' : 'border-white/50'}`}>
+                            {allSelected && <CheckIcon className="w-4 h-4 text-black" />}
+                        </div>
+                        <span>{selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}</span>
                     </button>
                     <div className="w-px h-6 bg-white/20"></div>
-                    <button onClick={handleDeleteSelected} disabled={selectedIds.size === 0} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 disabled:opacity-50"><TrashIcon /> Delete Selected</button>
+                    <button onClick={handleDeleteSelected} disabled={selectedIds.size === 0} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 disabled:opacity-50">
+                        <TrashIcon /> Delete
+                    </button>
                 </div>
             )}
         </div>

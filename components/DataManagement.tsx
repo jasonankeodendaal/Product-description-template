@@ -277,7 +277,7 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                                 </div>
                             </div>
                             <div className="flex justify-end pt-4 border-t border-white/10">
-                                <button onClick={handleApiSettingsSave} className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg text-sm">Save Settings</button>
+                                <button onClick={handleApiSettingsSave} className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-lg text-sm">Save Settings</button>
                             </div>
                         </div>
                     </SectionCard>
