@@ -1,5 +1,5 @@
-const STATIC_CACHE_NAME = 'site-static-v14';
-const DYNAMIC_CACHE_NAME = 'site-dynamic-v14';
+const STATIC_CACHE_NAME = 'site-static-v21';
+const DYNAMIC_CACHE_NAME = 'site-dynamic-v21';
 
 // Comprehensive list of assets needed for the app to work offline
 const APP_SHELL_URLS = [
@@ -7,7 +7,7 @@ const APP_SHELL_URLS = [
   '/index.html', // Explicitly cache the main HTML file
   '/index.tsx',
   '/manifest.json',
-  'https://i.postimg.cc/jCTZNwWk/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png',
+  'https://i.postimg.cc/jCTZNwWk/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png', // New icon URL
   'https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg', // Main background
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',

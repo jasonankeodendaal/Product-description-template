@@ -217,15 +217,65 @@
     .camera-drawer-initial .camera-drawer-content { transform: translateY(100%); }
 
     .shutter-button {
-      background-color: white; width: 5rem; height: 5rem; border-radius: 9999px;
+      background-color: white; width: 4.5rem; height: 4.5rem; border-radius: 9999px;
       box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .shutter-button:active { transform: scale(0.9); }
-    .zoom-slider { -webkit-appearance: none; appearance: none; background: transparent; writing-mode: vertical-lr; direction: rtl; }
-    .zoom-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 1.25rem; height: 1.25rem; background: white; border-radius: 9999px; cursor: pointer; }
-    .zoom-slider::-moz-range-thumb { width: 1.25rem; height: 1.25rem; background: white; border-radius: 9999px; cursor: pointer; }
-    .zoom-slider::-webkit-slider-runnable-track { width: 4px; height: 100%; background: rgba(255,255,255,0.3); border-radius: 2px; }
-    .zoom-slider::-moz-range-track { width: 4px; height: 100%; background: rgba(255,255,255,0.3); border-radius: 2px; }
+    
+    .camera-advanced-controls {
+      position: absolute;
+      bottom: 10rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 3rem);
+      max-width: 280px;
+      background-color: rgba(20, 20, 20, 0.6);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      padding: 1rem;
+      z-index: 20;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .camera-advanced-controls .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .camera-advanced-controls .control-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .camera-advanced-controls .control-item svg {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+    .camera-advanced-controls .exposure-control {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+     .camera-advanced-controls .exposure-control input[type=range] {
+        -webkit-appearance: none; appearance: none;
+        width: 100%; height: 4px; background: rgba(255,255,255,0.3);
+        border-radius: 2px;
+    }
+    .camera-advanced-controls .exposure-control input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none; appearance: none;
+        width: 1rem; height: 1rem;
+        background: #F97316;
+        border-radius: 9999px; cursor: pointer;
+        border: 2px solid white;
+    }
 
     @keyframes pulse-slow { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
     .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
@@ -310,26 +360,37 @@
     .recording-detail-modal-in { animation: slide-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     .recording-detail-modal-out { animation: slide-out-down 0.3s ease-in-out forwards; }
     
-    /* New Note Settings Sidebar */
+    /* --- Redesigned Note Settings Panel --- */
+    /* Mobile-first: Bottom Sheet */
+    .note-settings-panel-container {
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        display: flex;
+        align-items: flex-end; /* Aligns to bottom */
+        justify-content: center;
+        background-color: rgba(0,0,0,0.7);
+        backdrop-filter: blur(4px);
+        animation: modal-scale-in 0.3s forwards;
+    }
+    .note-settings-panel-container.note-settings-panel-out {
+        animation: flex-modal-scale-out 0.3s forwards;
+    }
     .note-settings-sidebar {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: 320px;
-        background-color: #0d1117; /* A very dark blue/black */
-        border-left: 1px solid var(--theme-border);
-        z-index: 40;
+        background-color: #161b22; /* Darker background from screenshot */
+        border-top: 1px solid var(--theme-border);
+        width: 100%;
+        max-height: 85vh;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
         display: flex;
         flex-direction: column;
-        color: var(--theme-text-primary);
-        animation: slide-in-right 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        animation: slide-in-up 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     }
-    .note-settings-sidebar-out {
-        animation: slide-out-right 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+    .note-settings-panel-out .note-settings-sidebar {
+        animation-name: slide-out-down;
     }
-    @keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
-    @keyframes slide-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
+
     .settings-sidebar-header {
         padding: 1rem;
         border-bottom: 1px solid var(--theme-border);
@@ -343,38 +404,41 @@
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.5rem;
     }
     .settings-section {
-        background-color: rgba(31, 41, 55, 0.5); /* theme-card-bg with opacity */
-        border: 1px solid var(--theme-border);
-        border-radius: 0.5rem;
-        padding: 1rem;
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--theme-border);
     }
-    .settings-section-icon {
-        flex-shrink: 0;
-        width: 3rem; /* 48px */
-        height: 3rem; /* 48px */
+    .settings-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    .settings-section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    .settings-section-header svg {
+        width: 1.25rem;
+        height: 1.25rem;
         color: var(--theme-text-secondary);
     }
-    .settings-section-controls { flex-grow: 1; }
-    .settings-section-controls label {
-        font-size: 0.75rem; /* 12px */
-        font-weight: 600;
+    .settings-section-header label {
+        font-size: 0.75rem;
+        font-weight: 700;
         color: var(--theme-text-secondary);
         text-transform: uppercase;
-        display: block;
+        letter-spacing: 0.05em;
     }
+
     .settings-input, .settings-select {
         width: 100%;
         background-color: var(--theme-bg);
         border: 1px solid var(--theme-border);
         border-radius: 0.375rem;
-        padding: 0.5rem;
-        margin-top: 0.5rem;
+        padding: 0.75rem;
         color: var(--theme-text-primary);
         font-size: 0.875rem;
     }
@@ -383,14 +447,26 @@
         border-color: var(--theme-orange);
         box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.3);
     }
-    .settings-color-palette { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+
+    .settings-section-controls label { /* For sub-labels like "AA FONT STYLE" */
+        display: block;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--theme-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .settings-color-palette { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
     .settings-color-swatch {
-        width: 1.75rem; height: 1.75rem; border-radius: 9999px; border: 2px solid transparent;
+        width: 2rem; height: 2rem; border-radius: 9999px; border: 2px solid transparent;
         cursor: pointer; transition: transform 0.2s, border-color 0.2s;
         display: flex; align-items: center; justify-content: center;
     }
     .settings-color-swatch:hover { transform: scale(1.1); }
-    .settings-color-swatch.selected { border-color: white; }
+    .settings-color-swatch.selected { border-color: white; box-shadow: 0 0 0 2px black; }
 
     /* Photo Manager Styles */
     .photo-manager-header {
@@ -443,14 +519,55 @@
         margin-bottom: 1rem;
     }
 
-    @media (max-width: 767px) {
-        .note-settings-sidebar { width: 100%; border-left: none; }
+    /* New Creator Info Contact Styles */
+    .creator-contact-item {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem; /* 24px */
+    }
+    .creator-contact-item svg {
+      width: 2.5rem; /* 40px */
+      height: 2.5rem; /* 40px */
+      color: white;
+      flex-shrink: 0;
+    }
+    .creator-contact-item span {
+      color: var(--theme-orange);
+      font-size: 1.25rem; /* 20px */
+      font-weight: 600;
     }
 
+
+    /* Desktop: Sidebar */
     @media (min-width: 768px) {
+        .note-settings-panel-container {
+            justify-content: flex-end; /* Aligns to right */
+            align-items: stretch;
+            background: none;
+            backdrop-filter: none;
+            pointer-events: none; /* Let clicks pass through overlay */
+        }
+        .note-settings-sidebar {
+            pointer-events: auto; /* Capture clicks inside */
+            width: 380px; /* Wider sidebar */
+            max-height: none;
+            border-left: 1px solid var(--theme-border);
+            border-top: none;
+            border-radius: 0;
+            animation-name: slide-in-right;
+            animation-duration: 0.35s;
+            animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+            animation-fill-mode: forwards;
+        }
+        .note-settings-panel-out .note-settings-sidebar {
+            animation-name: slide-out-right;
+        }
+
         .creator-modal-animate-in { animation-name: flex-modal-scale-in; animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .creator-modal-animate-out { animation-name: flex-modal-scale-out; animation-timing-function: ease-in; }
     }
+    @keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes slide-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
   </style>
 <script type="importmap">
 {

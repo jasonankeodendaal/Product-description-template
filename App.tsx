@@ -20,9 +20,7 @@ import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
 import { ManualInstallModal } from './components/ManualInstallModal';
 import { UpdateToast } from './components/UpdateToast';
-import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { MobileHeader } from './components/MobileHeader';
-import { projectFiles } from './utils/sourceCode';
 import { Home } from './components/Home';
 import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
@@ -230,6 +228,7 @@ const App: React.FC = () => {
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
     const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
+    const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
     
     // Timer State
     const [activeTimer, setActiveTimer] = useState<{ startTime: number; task: string } | null>(null);
@@ -241,7 +240,6 @@ const App: React.FC = () => {
         () => window.matchMedia('(display-mode: standalone)').matches
     );
     const [isManualInstallModalOpen, setIsManualInstallModalOpen] = useState(false);
-    const [isInstallOptionsModalOpen, setIsInstallOptionsModalOpen] = useState(false);
     
     // App Update State
     const [showUpdateToast, setShowUpdateToast] = useState(false);
@@ -299,76 +297,21 @@ const App: React.FC = () => {
             window.removeEventListener('sw-updated', handleSwUpdate);
         };
     }, []);
-
-    const handleBrowserInstall = async () => {
-        if (!installPromptEvent) return;
-        
-        installPromptEvent.prompt();
-        const { outcome } = await installPromptEvent.userChoice;
-        
-        console.log(`User response to the install prompt: ${outcome}`);
-        setInstallPromptEvent(null);
-    };
     
-    const handlePwaInstall = () => {
-        setIsInstallOptionsModalOpen(false);
-        // If the install prompt is available, show it.
+    const handlePwaInstall = async () => {
         if (installPromptEvent) {
-            handleBrowserInstall();
+            installPromptEvent.prompt();
+            const { outcome } = await installPromptEvent.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            setInstallPromptEvent(null); // The prompt can only be used once.
         } else {
-            // Otherwise, show instructions on how to install manually.
+            // If the prompt isn't available, show instructions on how to install manually.
             setIsManualInstallModalOpen(true);
         }
     };
     
-    const handleDownloadSourceZip = async () => {
-        setIsInstallOptionsModalOpen(false); // Close modal first
-        setIsLoading(true);
-        setLoadingMessage('Packaging source code...');
-        try {
-            if (typeof JSZip === 'undefined') {
-                alert("Error: JSZip library is not loaded. Cannot create .zip file.");
-                throw new Error("JSZip not loaded");
-            }
-            const zip = new JSZip();
-
-            // Helper to create folders recursively
-            const getFolder = (path: string): any => {
-                let folder = zip;
-                const parts = path.split('/');
-                for (const part of parts) {
-                    if (part) {
-                        folder = folder.folder(part)!;
-                    }
-                }
-                return folder;
-            };
-            
-            for (const [fullPath, content] of Object.entries(projectFiles)) {
-                const pathParts = fullPath.split('/');
-                const fileName = pathParts.pop()!;
-                const folderPath = pathParts.join('/');
-                
-                const folder = getFolder(folderPath);
-                folder.file(fileName, content);
-            }
-            
-            const blob = await zip.generateAsync({ type: 'blob' });
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `AiTools_SourceCode_${new Date().toISOString().split('T')[0]}.zip`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-
-        } catch (e) {
-            console.error("Failed to create zip:", e);
-            alert("An error occurred while packaging the source code. Please check the console for details.");
-        } finally {
-            setIsLoading(false);
-        }
+    const handleDownloadSource = () => {
+        window.open('https://github.com/jasonankeodendaal/Product-description-template.git', '_blank');
     };
 
 
@@ -657,6 +600,12 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveNoteRecordingToDirectory(directoryHandle, rec);
     }, [directoryHandle]);
     
+    const handleUpdateNoteRecording = useCallback(async (rec: NoteRecording) => {
+        setNoteRecordings(prev => prev.map(r => r.id === rec.id ? rec : r));
+        await db.saveNoteRecording(rec);
+        if (directoryHandle) await fileSystemService.saveNoteRecordingToDirectory(directoryHandle, rec);
+    }, [directoryHandle]);
+
     const handleDeleteNoteRecording = useCallback(async (id: string) => {
         setNoteRecordings(prev => prev.filter(r => r.id !== id));
         await db.deleteNoteRecording(id);
@@ -1097,7 +1046,7 @@ const App: React.FC = () => {
                         onLogout={handleLogout}
                         userRole={userRole}
                         onOpenOnboarding={handleOpenOnboarding}
-                        onOpenCalendar={() => setCurrentView('calendar')}
+                        onOpenCalendar={() => setIsCalendarModalOpen(true)}
                     />
                 );
             case 'generator':
@@ -1154,9 +1103,11 @@ const App: React.FC = () => {
                     onDelete={handleDeleteNote}
                     noteRecordings={noteRecordings}
                     onSaveNoteRecording={handleSaveNoteRecording}
+                    onUpdateNoteRecording={handleUpdateNoteRecording}
                     onDeleteNoteRecording={handleDeleteNoteRecording}
                     photos={photos}
                     onSavePhoto={handleSavePhoto}
+                    onUpdatePhoto={handleUpdatePhoto}
                     performAiAction={(prompt, context) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
                 />;
             case 'image-tool':
@@ -1176,16 +1127,8 @@ const App: React.FC = () => {
                     onNavigate={setCurrentView}
                 />;
             case 'calendar':
-                 return <CalendarView
-                    onClose={() => setCurrentView('home')}
-                    events={calendarEvents}
-                    onSaveEvent={handleSaveCalendarEvent}
-                    onDeleteEvent={handleDeleteCalendarEvent}
-                    photos={photos}
-                    onSavePhoto={handleSavePhoto}
-                    recordings={recordings}
-                    onSaveRecording={handleSaveRecording}
-                />;
+                // This view is now handled by a modal, so this case is effectively unused.
+                return null;
             default:
                 return null;
         }
@@ -1203,7 +1146,7 @@ const App: React.FC = () => {
                     onOpenInfo={() => setIsInfoModalOpen(true)}
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                     showInstallButton={!isAppInstalled}
-                    onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                    onInstallClick={handlePwaInstall}
                     onToggleOrientation={() => {}}
                     isLandscapeLocked={false}
                     userRole={userRole}
@@ -1223,7 +1166,7 @@ const App: React.FC = () => {
                         onOpenInfo={() => setIsInfoModalOpen(true)}
                         onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                         showInstallButton={!isAppInstalled}
-                        onInstallClick={() => setIsInstallOptionsModalOpen(true)}
+                        onInstallClick={handlePwaInstall}
                         onToggleOrientation={() => {}}
                         isLandscapeLocked={false}
                     />
@@ -1259,7 +1202,7 @@ const App: React.FC = () => {
                     onApiDisconnect={handleApiDisconnect}
                     isApiConnecting={isApiConnecting}
                     isApiConnected={isApiConnected}
-                    onDownloadSource={handleDownloadSourceZip}
+                    onDownloadSource={handleDownloadSource}
                     userRole={userRole}
                     onInitiatePinReset={handleInitiatePinReset}
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
@@ -1275,17 +1218,25 @@ const App: React.FC = () => {
                     siteSettings={siteSettings}
                 />
             )}
+             {isCalendarModalOpen && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 md:p-4" onClick={() => setIsCalendarModalOpen(false)}>
+                    <div className="bg-[var(--theme-dark-bg)] w-full h-full md:max-w-4xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in" onClick={e => e.stopPropagation()}>
+                        <CalendarView
+                            onClose={() => setIsCalendarModalOpen(false)}
+                            events={calendarEvents}
+                            onSaveEvent={handleSaveCalendarEvent}
+                            onDeleteEvent={handleDeleteCalendarEvent}
+                            photos={photos}
+                            onSavePhoto={handleSavePhoto}
+                            recordings={recordings}
+                            onSaveRecording={handleSaveRecording}
+                        />
+                    </div>
+                </div>
+            )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
             {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
             {isManualInstallModalOpen && <ManualInstallModal onClose={() => setIsManualInstallModalOpen(false)} />}
-            {isInstallOptionsModalOpen && (
-                <InstallOptionsModal 
-                    onClose={() => setIsInstallOptionsModalOpen(false)}
-                    onPwaInstall={handlePwaInstall}
-                    onDownloadSource={handleDownloadSourceZip}
-                    siteSettings={siteSettings}
-                />
-            )}
             {showUpdateToast && <UpdateToast onUpdate={() => window.location.reload()} />}
         </div>
     );

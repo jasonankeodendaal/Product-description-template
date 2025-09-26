@@ -41,14 +41,16 @@ interface NotepadProps {
     onDelete: (id: string) => Promise<void>;
     noteRecordings: NoteRecording[];
     onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
+    onUpdateNoteRecording: (rec: NoteRecording) => Promise<void>;
     onDeleteNoteRecording: (id: string) => Promise<void>;
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
+    onUpdatePhoto: (photo: Photo) => Promise<void>;
     performAiAction: (prompt: string, context: string) => Promise<any>;
 }
 
 // --- NoteSettingsSidebar Component (New) ---
-const NoteSettingsSidebar: React.FC<{
+const NoteSettingsPanel: React.FC<{
     note: Note;
     onNoteChange: (updater: (note: Note) => Note) => void;
     onClose: () => void;
@@ -58,41 +60,45 @@ const NoteSettingsSidebar: React.FC<{
         sky: '#38bdf8', purple: '#a855f7', emerald: '#10b981',
         amber: '#f59e0b', pink: '#ec4899', cyan: '#22d3ee',
     };
-    const paperStyles: Record<string, string> = {
-        'paper-dark': 'Dark', 'paper-grid': 'Grid',
-    };
-    const fontStyles: Record<string, string> = {
-        'font-sans': 'Sans', 'font-serif': 'Serif', 'font-mono': 'Mono',
-    };
+    const paperStyles: Record<string, string> = { 'paper-dark': 'Dark', 'paper-grid': 'Grid' };
+    const fontStyles: Record<string, string> = { 'font-sans': 'Sans', 'font-serif': 'Serif', 'font-mono': 'Mono' };
 
     return (
-        <div className={`note-settings-sidebar ${isClosing ? 'note-settings-sidebar-out' : ''}`}>
-            <header className="settings-sidebar-header">
-                <h3 className="text-lg font-bold">Note Settings</h3>
-                <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><XIcon /></button>
-            </header>
-            <div className="settings-sidebar-content">
-                {/* Due Date Section */}
-                <div className="settings-section">
-                    <BellIcon className="settings-section-icon" />
-                    <div className="settings-section-controls">
-                        <label htmlFor="due-date">Due Date</label>
-                        <input id="due-date" type="datetime-local" value={note.dueDate ? note.dueDate.slice(0, 16) : ''} onChange={e => onNoteChange(n => ({...n, dueDate: e.target.value || null, reminderDate: e.target.value || null, reminderFired: false }))} className="settings-input" />
+        <div 
+            className={`note-settings-panel-container ${isClosing ? 'note-settings-panel-out' : ''}`}
+            onClick={onClose}
+        >
+            <div 
+                className="note-settings-sidebar"
+                onClick={e => e.stopPropagation()}
+            >
+                <header className="settings-sidebar-header">
+                    <h3 className="text-lg font-bold">Note Settings</h3>
+                    <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><XIcon /></button>
+                </header>
+                <div className="settings-sidebar-content">
+                    <div className="settings-section">
+                        <div className="settings-section-header">
+                            <BellIcon />
+                            <label>Due Date</label>
+                        </div>
+                        <input type="datetime-local" value={note.dueDate ? note.dueDate.slice(0, 16) : ''} onChange={e => onNoteChange(n => ({...n, dueDate: e.target.value || null, reminderDate: e.target.value || null, reminderFired: false }))} className="settings-input" />
                     </div>
-                </div>
 
-                {/* Paper & Font Section */}
-                <div className="settings-section">
-                     <NotepadIcon className="settings-section-icon" />
-                    <div className="settings-section-controls">
-                        <label htmlFor="paper-style">Paper Style</label>
-                        <select id="paper-style" value={note.paperStyle} onChange={e => onNoteChange(n => ({ ...n, paperStyle: e.target.value }))} className="settings-select">
+                    <div className="settings-section">
+                        <div className="settings-section-header">
+                             <NotepadIcon />
+                             <label>Paper Style</label>
+                        </div>
+                        <select value={note.paperStyle} onChange={e => onNoteChange(n => ({ ...n, paperStyle: e.target.value }))} className="settings-select">
                             {Object.entries(paperStyles).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
                         </select>
-                        <label htmlFor="font-style" className="mt-4">Aa Font Style</label>
-                        <select id="font-style" value={note.fontStyle} onChange={e => onNoteChange(n => ({ ...n, fontStyle: e.target.value }))} className="settings-select">
-                            {Object.entries(fontStyles).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
-                        </select>
+                        <div className="settings-section-controls">
+                            <label>Aa Font Style</label>
+                            <select value={note.fontStyle} onChange={e => onNoteChange(n => ({ ...n, fontStyle: e.target.value }))} className="settings-select">
+                                {Object.entries(fontStyles).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
+                            </select>
+                        </div>
                         <div className="settings-color-palette">
                             {Object.entries(solidColorMap).map(([name, color]) => (
                                 <button key={name} type="button" onClick={() => onNoteChange(n => ({...n, color:name}))} className={`settings-color-swatch ${note.color === name ? 'selected' : ''}`} style={{ backgroundColor: color }}>
@@ -101,16 +107,16 @@ const NoteSettingsSidebar: React.FC<{
                             ))}
                         </div>
                     </div>
-                </div>
 
-                {/* Security Section */}
-                <div className="settings-section">
-                    <LockIcon className="settings-section-icon" />
-                    <div className="settings-section-controls w-full">
-                        <label>Security</label>
-                        <button onClick={() => onNoteChange(n => ({...n, isLocked: !n.isLocked}))} className="w-full flex items-center justify-center gap-2 p-2 mt-2 rounded-md bg-gray-800 hover:bg-gray-700 border border-gray-600">
-                            {note.isLocked ? <UnlockIcon /> : <LockIcon />}
-                            <span className="font-semibold">{note.isLocked ? 'Unlock Note' : 'Lock Note'}</span>
+                    <div className="settings-section">
+                         <div className="settings-section-header">
+                            <LockIcon />
+                            <label>Security</label>
+                        </div>
+                        <p className="text-sm text-gray-400 -mt-2 mb-4">Lock this note to require a PIN to view its content.</p>
+                        <button onClick={() => onNoteChange(n => ({...n, isLocked: !n.isLocked}))} className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-md bg-gray-800 hover:bg-gray-700 border border-gray-600">
+                            {note.isLocked ? <UnlockIcon className="w-4 h-4"/> : <LockIcon className="w-4 h-4"/>}
+                            <span className="font-semibold text-sm">{note.isLocked ? 'Unlock Note' : 'Lock Note'}</span>
                         </button>
                     </div>
                 </div>
@@ -143,15 +149,7 @@ const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo
 );
 
 
-const NoteEditor: React.FC<{
-    note: Note;
-    onUpdate: (note: Note) => Promise<void>;
-    onDelete: (id: string) => void;
-    onClose: () => void;
-    onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
-    onSavePhoto: (photo: Photo) => Promise<void>;
-    performAiAction: (prompt: string, context: string) => Promise<any>;
-}> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onSavePhoto, performAiAction }) => {
+const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note; onClose: () => void; }> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos }) => {
     const [localNote, setLocalNote] = useState(note);
     const [isDirty, setIsDirty] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -216,6 +214,91 @@ const NoteEditor: React.FC<{
             updateLocalNote(prev => ({ ...prev, content: contentRef.current!.innerHTML, date: new Date().toISOString() }));
         }
     }, []);
+
+     useEffect(() => {
+        const editor = contentRef.current;
+        if (!editor) return;
+    
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+    
+            const li = target.closest<HTMLLIElement>('ul[data-type="checklist"] > li');
+            if (li) {
+                const liRect = li.getBoundingClientRect();
+                if (e.clientX < liRect.left + 32) {
+                    e.preventDefault();
+                    const isChecked = li.dataset.checked === 'true';
+                    li.dataset.checked = isChecked ? 'false' : 'true';
+                    handleContentChange();
+                    return;
+                }
+            }
+            
+            const embeddedRecording = target.closest<HTMLSpanElement>('.embedded-recording[data-recording-id]');
+            if (embeddedRecording) {
+                e.preventDefault();
+                const recordingId = embeddedRecording.dataset.recordingId;
+                const recording = noteRecordings.find(r => r.id === recordingId);
+                if (recording) setPlayingRecording(recording);
+                return;
+            }
+    
+            const embeddedImage = target.closest<HTMLSpanElement>('.embedded-image[data-photo-id]');
+            if (embeddedImage) {
+                e.preventDefault();
+                const photoId = embeddedImage.dataset.photoId;
+                const photo = photos.find(p => p.id === photoId);
+                if (photo) setViewingPhoto(photo);
+            }
+        };
+        
+        const handleDoubleClick = async (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const embeddedItem = target.closest<HTMLSpanElement>('.embedded-recording[data-recording-id], .embedded-image[data-photo-id]');
+            
+            if (embeddedItem) {
+                e.preventDefault();
+                
+                const recordingId = embeddedItem.dataset.recordingId;
+                const photoId = embeddedItem.dataset.photoId;
+                
+                if (recordingId) {
+                    const recording = noteRecordings.find(r => r.id === recordingId);
+                    if (!recording) return;
+
+                    const newName = prompt("Enter new name for recording:", recording.name);
+                    if (newName && newName.trim() && newName.trim() !== recording.name) {
+                        const updatedRecording = { ...recording, name: newName.trim() };
+                        await onUpdateNoteRecording(updatedRecording); 
+                        
+                        const icon = embeddedItem.querySelector('svg')?.outerHTML || '';
+                        embeddedItem.innerHTML = `${icon} ${newName.trim()}`;
+                        handleContentChange();
+                    }
+                } else if (photoId) {
+                    const photo = photos.find(p => p.id === photoId);
+                    if (!photo) return;
+
+                    const newName = prompt("Enter new name for image/scan:", photo.name);
+                    if (newName && newName.trim() && newName.trim() !== photo.name) {
+                        const updatedPhoto = { ...photo, name: newName.trim() };
+                        await onUpdatePhoto(updatedPhoto);
+
+                        const icon = embeddedItem.querySelector('svg')?.outerHTML || '';
+                        embeddedItem.innerHTML = `${icon} ${newName.trim()}`;
+                        handleContentChange();
+                    }
+                }
+            }
+        };
+    
+        editor.addEventListener('click', handleClick);
+        editor.addEventListener('dblclick', handleDoubleClick);
+        return () => {
+            editor.removeEventListener('click', handleClick);
+            editor.removeEventListener('dblclick', handleDoubleClick);
+        };
+    }, [noteRecordings, photos, handleContentChange, onUpdateNoteRecording, onUpdatePhoto]);
 
     const executeCommand = (command: string) => {
         document.execCommand(command, false);
@@ -337,7 +420,7 @@ const NoteEditor: React.FC<{
     return (
         <div className="h-full flex flex-col bg-[var(--theme-card-bg)] relative overflow-hidden">
            {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} mode={cameraMode} />}
-           {isSettingsOpen && <NoteSettingsSidebar note={localNote} onNoteChange={updateLocalNote} onClose={handleCloseSettings} isClosing={isSettingsClosing} />}
+           {isSettingsOpen && <NoteSettingsPanel note={localNote} onNoteChange={updateLocalNote} onClose={handleCloseSettings} isClosing={isSettingsClosing} />}
            {playingRecording && <AudioPlayerModal recording={playingRecording} onClose={() => setPlayingRecording(null)}/>}
            {viewingPhoto && <PhotoViewerModal photo={viewingPhoto} onClose={() => setViewingPhoto(null)}/>}
            
@@ -486,7 +569,7 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
     }, [props.notes, selectedNote]);
 
     const handleDelete = async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this note?")) {
+        if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
             await props.onDelete(id);
             setSelectedNote(null);
         }

@@ -67,7 +67,7 @@ export const Home: React.FC<HomeProps> = (props) => {
                         <StorageDetailsWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} />
                     </HomeTile>
                     <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '100ms' }}>
-                        <CalendarWidget onOpenCalendar={() => props.onNavigate('calendar')} events={props.calendarEvents} />
+                        <CalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
                     </HomeTile>
                     <HomeTile className="col-span-1 row-span-2" style={{ animationDelay: '150ms' }}>
                         <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />

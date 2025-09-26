@@ -1,24 +1,7 @@
 import React from 'react';
 
 export const MailIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {...props}>
-        <defs>
-            <linearGradient id="mailRealisticBg" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#F5F5F5"/>
-                <stop offset="100%" stopColor="#E0E0E0"/>
-            </linearGradient>
-            <linearGradient id="mailRealisticFlap" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#FFFFFF"/>
-                <stop offset="100%" stopColor="#F5F5F5"/>
-            </linearGradient>
-            <filter id="mailShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.15"/>
-            </filter>
-        </defs>
-        <g filter="url(#mailShadow)">
-            <path d="M22 8.44v9.56c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V8.44l10 6.25L22 8.44z" fill="url(#mailRealisticBg)"/>
-            <path d="M22 6.44l-10 6.25L2 6.44a2 2 0 0 1 1.7-.94h16.6c.6 0 1.1.4 1.1 1z" fill="url(#mailRealisticFlap)"/>
-            <path d="M21.1 4H2.9C2.4 4 2 4.4 2 5v1.44l10 6.25L22 6.44V5c0-.6-.4-1-1-1z" fill="#000000" fillOpacity="0.05"/>
-        </g>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" {...props}>
+        <path d="M48 64C21.5 64 0 85.5 0 112V400c0 26.5 21.5 48 48 48H464c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48H48zM0 112C0 100.9 8.9 92 20 92H492c11.1 0 20 8.9 20 20v24L267.3 273.6c-20.5 14.3-48.2 14.3-68.7 0L0 136V112zM48 400V169.8l192.6 134.8c34.3 24 79.5 24 113.8 0L464 169.8V400H48z"/>
     </svg>
 );

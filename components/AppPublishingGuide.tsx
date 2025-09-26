@@ -67,10 +67,10 @@ export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownlo
             <div>
                 <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 1: Deploying Your Web App to Vercel</h3>
                  <div className="space-y-6">
-                    <Step num="1" title="Download Your App's Source Code">
-                        <p>The first step is to get a complete copy of the application's code. Click the button below to download a `.zip` file containing everything you need.</p>
+                    <Step num="1" title="Get Your App's Source Code">
+                        <p>The first step is to get a complete copy of the application's code from the official GitHub repository. Click the button below to visit the repository where you can download it as a .zip or clone it.</p>
                         <button onClick={onDownloadSource} className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2">
-                            <DownloadIcon /> Download Source Code (.zip)
+                            <DownloadIcon /> Go to GitHub Repository
                         </button>
                     </Step>
                     

@@ -5,7 +5,6 @@ import { PhotoIcon } from './icons/PhotoIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { ImageIcon } from './icons/ImageIcon';
-import { CalendarIcon } from './icons/CalendarIcon';
 
 interface BottomNavBarProps {
   currentView: View;
@@ -22,7 +21,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
         { view: 'recordings', label: 'Recordings', icon: RecordingIcon },
         { view: 'notepad', label: 'Notepad', icon: NotepadIcon },
         { view: 'photos', label: 'Photos', icon: PhotoIcon },
-        { view: 'calendar', label: 'Calendar', icon: CalendarIcon }
+        { view: 'image-tool', label: 'Image Tool', icon: ImageIcon }
     ], []);
 
     const activeIndex = useMemo(() => navItems.findIndex(item => item.view === currentView), [currentView, navItems]);

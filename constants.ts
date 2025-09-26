@@ -49,8 +49,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   website: '',
   creator: {
     name: 'JSTYP.me',
-    slogan: 'Jason solution to your problems, Yes me!!',
-    logoSrc: 'https://i.postimg.cc/vH0dsmFk/Creator-logo.png',
+    slogan: 'Ai your friend!',
+    logoSrc: 'https://i.postimg.cc/6y4PVtQf/Creator-logo.png',
     tel: '0695989427',
     email: 'odendaaljason454@gmail.com',
     whatsapp: 'https://wa.link/nohogl',
