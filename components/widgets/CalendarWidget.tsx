@@ -52,8 +52,8 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ onOpenCalendar, 
                      <h3 className="text-white font-bold text-base">Calendar</h3>
                 </div>
                 <div className="text-right flex-shrink-0">
-                    <p className="text-3xl font-bold text-white -mb-1">{day}</p>
-                    <p className="text-base font-semibold text-gray-300 leading-tight">{month}</p>
+                    <p className="text-2xl md:text-3xl font-bold text-white -mb-1">{day}</p>
+                    <p className="text-sm md:text-base font-semibold text-gray-300 leading-tight">{month}</p>
                 </div>
             </div>
             <div className="flex-grow my-2 space-y-1.5 overflow-hidden">

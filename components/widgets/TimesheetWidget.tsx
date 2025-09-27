@@ -64,7 +64,7 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, on
                  <button onClick={() => onNavigate('timesheet')} className="text-xs font-semibold text-gray-300 hover:text-white hover:underline">View Log →</button>
             </div>
              <div className="text-center my-0.5">
-                <p className="text-2xl font-bold text-white tracking-tighter">{workedHours}</p>
+                <p className="text-xl md:text-2xl font-bold text-white tracking-tighter">{workedHours}</p>
                 <p className="text-xs text-gray-400 font-semibold">Today's Hours</p>
             </div>
             <div className="grid grid-cols-2 gap-1.5 my-0.5">

@@ -89,7 +89,7 @@ export const StorageDetailsWidget: React.FC<{ storageUsage: StorageUsage, siteSe
                     <>
                          <div className="w-full h-full flex flex-col justify-center items-center">
                              <div className="text-center">
-                                <span className="font-bold text-white text-3xl animate-pulse-slow"><AnimatedValue value={total} /></span>
+                                <span className="font-bold text-white text-2xl md:text-3xl animate-pulse-slow"><AnimatedValue value={total} /></span>
                                 <p className="text-gray-400 text-sm"> Total Used</p>
                             </div>
                             <div className="w-full space-y-0.5 overflow-y-auto no-scrollbar mt-2 px-1">

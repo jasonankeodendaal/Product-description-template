@@ -126,7 +126,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
                     <div className="flex items-center gap-1">
                         <div className="w-10 h-10 text-white">{<WeatherIcon icon={weather.icon} />}</div>
                         <div>
-                            <p className="text-3xl font-bold text-white">{Math.round(weather.temperatureCelsius)}°C</p>
+                            <p className="text-2xl md:text-3xl font-bold text-white">{Math.round(weather.temperatureCelsius)}°C</p>
                             <p className="text-gray-300 font-semibold text-xs -mt-1">{weather.condition}</p>
                         </div>
                     </div>
