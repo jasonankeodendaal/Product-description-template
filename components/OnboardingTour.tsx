@@ -76,6 +76,12 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
             onFinish();
         }
     };
+    
+    const handleBack = () => {
+        if (currentStep > 0) {
+            setCurrentStep(prev => prev - 1);
+        }
+    };
 
     const progressPercentage = ((currentStep + 1) / tourSteps.length) * 100;
 
@@ -102,12 +108,22 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
                 </div>
 
                 <div className="p-6 bg-black/30 border-t border-orange-500/10 flex items-center justify-between">
-                    <button
-                        onClick={onFinish}
-                        className="text-sm font-semibold text-slate-400 hover:text-white transition-colors"
-                    >
-                        Skip Tour
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={onFinish}
+                            className="text-sm font-semibold text-slate-400 hover:text-white transition-colors"
+                        >
+                            Skip Tour
+                        </button>
+                        {currentStep > 0 && (
+                            <button
+                                onClick={handleBack}
+                                className="text-sm font-semibold text-slate-400 hover:text-white transition-colors"
+                            >
+                                Back
+                            </button>
+                        )}
+                    </div>
                     <button
                         onClick={handleNext}
                         className="bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-8 rounded-full transition-colors transform hover:scale-105"

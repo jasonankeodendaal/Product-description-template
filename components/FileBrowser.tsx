@@ -319,7 +319,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
             try {
                 let currentDir = directoryHandle;
                 for (const part of currentPath) { currentDir = await currentDir.getDirectoryHandle(part); }
-                for (const file of Array.from(e.target.files)) {
+                // FIX: Iterate directly over e.target.files (a FileList) to resolve a type inference issue where the loop variable was considered 'unknown'.
+                for (const file of e.target.files) {
                     const fileHandle = await currentDir.getFileHandle(file.name, { create: true });
                     const writable = await fileHandle.createWritable();
                     await writable.write(file);

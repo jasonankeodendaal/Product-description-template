@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN, GITHUB_APK_URL } from './constants';
@@ -319,6 +319,68 @@ const App: React.FC = () => {
         };
     }, []);
     
+    const manifestBlobUrlRef = useRef<string | null>(null);
+
+    // Effect to dynamically update PWA icons and manifest when the site logo changes.
+    useEffect(() => {
+        // This function will handle the dynamic update.
+        const updatePwaIcons = async (logoUrl: string) => {
+            // Update standard link tags for favicons
+            const faviconLink = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+            if (faviconLink) faviconLink.href = logoUrl;
+
+            const appleTouchIconLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
+            if (appleTouchIconLink) appleTouchIconLink.href = logoUrl;
+            
+            // Dynamically create and apply a new manifest
+            try {
+                // Fetch the original manifest to use as a template
+                const response = await fetch('/manifest.json');
+                if (!response.ok) {
+                    console.error('Failed to fetch manifest.json to update icons.');
+                    return;
+                }
+                const manifestData = await response.json();
+
+                // Update all icon `src` properties to the new logo URL
+                if (manifestData.icons && Array.isArray(manifestData.icons)) {
+                    manifestData.icons.forEach((icon: any) => {
+                        icon.src = logoUrl;
+                    });
+                }
+
+                // Create a blob from the modified manifest and generate a URL for it
+                const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+                const newManifestUrl = URL.createObjectURL(manifestBlob);
+                
+                // Before applying the new URL, revoke the old one to prevent memory leaks
+                if (manifestBlobUrlRef.current) {
+                    URL.revokeObjectURL(manifestBlobUrlRef.current);
+                }
+                manifestBlobUrlRef.current = newManifestUrl;
+
+                // Find the manifest link tag in the document's head and update its href
+                const manifestLink = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
+                if (manifestLink) {
+                    manifestLink.href = newManifestUrl;
+                }
+            } catch (err) {
+                console.error("Error dynamically updating manifest.json:", err);
+            }
+        };
+
+        if (siteSettings.logoSrc) {
+            updatePwaIcons(siteSettings.logoSrc);
+        }
+        
+        // Cleanup function for when the App component unmounts
+        return () => {
+            if (manifestBlobUrlRef.current) {
+                URL.revokeObjectURL(manifestBlobUrlRef.current);
+            }
+        };
+    }, [siteSettings.logoSrc]);
+
     const handleInstallClick = async () => {
         // If the PWA install prompt is available, show it directly. This is the ideal flow.
         if (installPromptEvent) {
