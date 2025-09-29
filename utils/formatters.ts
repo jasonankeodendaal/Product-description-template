@@ -39,6 +39,18 @@ export const formatIsoToDate = (isoString?: string): string => {
     return `${year}-${month}-${day}`;
 };
 
+export const formatIsoToReadableDateTime = (isoString?: string): string => {
+    if (!isoString) return '--';
+    const date = new Date(isoString);
+    return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
 export const formatRelativeTime = (isoString: string): string => {
     const now = new Date();
     const past = new Date(isoString);

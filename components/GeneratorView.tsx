@@ -14,8 +14,8 @@ interface GeneratorViewProps {
     isLoading: boolean;
     error: string | null;
     templates: Template[];
-    onAddTemplate: (name: string, prompt: string) => void;
-    onEditTemplate: (id: string, newName: string, newPrompt: string) => void;
+    onAddTemplate: (name: string, prompt: string, category: string) => void;
+    onEditTemplate: (id: string, newName: string, newPrompt: string, newCategory: string) => void;
     selectedTemplateId: string;
     onTemplateChange: (id: string) => void;
     tone: string;

@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Photo, Video, View } from '../App';
-import { SiteSettings } from '../constants';
 import { fileSystemService } from '../services/fileSystemService';
 import { buildFileTree, FileTreeNode } from '../utils/fileTree';
-// FIX: ChevronLeftIcon is in its own file.
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { FolderIcon } from './icons/FolderIcon';
@@ -12,15 +10,24 @@ import { VideoIcon } from './icons/VideoIcon';
 import { FileTextIcon } from './icons/FileTextIcon';
 import { Spinner } from './icons/Spinner';
 import { XIcon } from './icons/XIcon';
-import { dataURLtoBlob } from '../utils/dataUtils';
+import { formatIsoToReadableDateTime } from '../utils/formatters';
 import { generateVideoThumbnail } from '../utils/videoUtils';
 
 interface FileBrowserProps {
     photos: Photo[];
     videos: Video[];
     directoryHandle: FileSystemDirectoryHandle | null;
-    syncMode?: SiteSettings['syncMode'];
+    syncMode?: 'local' | 'folder' | 'api';
     onNavigate: (view: View) => void;
+}
+
+interface DisplayItem {
+    name: string;
+    kind: 'directory' | 'file';
+    type: string;
+    date: string;
+    id?: string;
+    fileKind?: 'photo' | 'video' | 'text' | 'json';
 }
 
 const FilePreviewModal: React.FC<{
@@ -41,7 +48,7 @@ const FilePreviewModal: React.FC<{
     const renderContent = () => {
         if (typeof content === 'string') {
             const isJson = fileName.endsWith('.json');
-            return <pre className="whitespace-pre-wrap text-sm">{isJson ? JSON.stringify(JSON.parse(content), null, 2) : content}</pre>;
+            return <pre className="whitespace-pre-wrap text-sm p-4 bg-black/20 rounded-md">{isJson ? JSON.stringify(JSON.parse(content), null, 2) : content}</pre>;
         }
         if (objectUrl) {
             if (content.type.startsWith('image/')) {
@@ -69,25 +76,93 @@ const FilePreviewModal: React.FC<{
     );
 };
 
-const FileItem: React.FC<{ name: string; kind: string; onClick: () => void }> = ({ name, kind, onClick }) => {
-    const getIcon = () => {
-        if (kind === 'directory') return <FolderIcon className="w-8 h-8 text-amber-400" />;
-        if (name.match(/\.(jpg|jpeg|png|webp)$/i)) return <PhotoIcon className="w-8 h-8 text-purple-400" />;
-        if (name.match(/\.(mp4|webm|mov)$/i)) return <VideoIcon className="w-8 h-8 text-pink-400" />;
-        if (name.endsWith('.txt') || name.endsWith('.json')) return <FileTextIcon className="w-8 h-8 text-sky-400" />;
-        return <FileTextIcon className="w-8 h-8 text-gray-400" />;
-    };
+const getFileType = (name: string, kind: 'directory' | 'file'): string => {
+    if (kind === 'directory') return 'Folder';
+    const ext = name.split('.').pop()?.toLowerCase();
+    switch (ext) {
+        case 'jpg':
+        case 'jpeg': return 'JPEG Image';
+        case 'png': return 'PNG Image';
+        case 'webp': return 'WebP Image';
+        case 'mp4': return 'MP4 Video';
+        case 'webm': return 'WebM Video';
+        case 'mov': return 'QuickTime Video';
+        case 'json': return 'JSON File';
+        case 'txt': return 'Text Document';
+        default: return 'File';
+    }
+};
+
+const FileItemCard: React.FC<{ 
+    item: DisplayItem; 
+    onClick: () => void;
+    syncMode?: 'local' | 'folder' | 'api';
+    photos: Photo[];
+    videos: Video[];
+}> = ({ item, onClick, syncMode, photos, videos }) => {
+    const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const generateThumb = async () => {
+            if (syncMode !== 'folder' && item.id) {
+                if (item.fileKind === 'photo') {
+                    const photo = photos.find(p => p.id === item.id);
+                    if (photo && isMounted) setThumbUrl(URL.createObjectURL(photo.imageBlob));
+                } else if (item.fileKind === 'video') {
+                    const video = videos.find(v => v.id === item.id);
+                    if (video) {
+                        try {
+                            const url = await generateVideoThumbnail(video.videoBlob);
+                            if(isMounted) setThumbUrl(url);
+                        } catch (e) {
+                            console.warn("Could not generate video thumbnail for grid view:", e);
+                        }
+                    }
+                }
+            }
+        };
+        generateThumb();
+
+        return () => { 
+            isMounted = false;
+            if (thumbUrl) URL.revokeObjectURL(thumbUrl);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [item.id, item.fileKind, syncMode]);
+
+    const Icon = useMemo(() => {
+        const iconClass = "w-12 h-12 text-gray-400";
+        if (item.kind === 'directory') return <FolderIcon className={`${iconClass} text-amber-400`} />;
+        if (item.type.includes('Image')) return <PhotoIcon className={`${iconClass} text-purple-400`} />;
+        if (item.type.includes('Video')) return <VideoIcon className={`${iconClass} text-pink-400`} />;
+        if (item.type.includes('JSON') || item.type.includes('Text')) return <FileTextIcon className={`${iconClass} text-sky-400`} />;
+        return <FileTextIcon className={iconClass} />;
+    }, [item.kind, item.type]);
+
     return (
-        <button onClick={onClick} className="w-full text-left p-3 rounded-lg flex flex-col items-center justify-center gap-2 bg-white/5 hover:bg-white/10 transition-colors">
-            {getIcon()}
-            <p className="text-xs font-semibold text-center text-gray-300 break-all line-clamp-2">{name}</p>
+        <button 
+            onClick={onClick} 
+            className="group aspect-[4/5] bg-[var(--theme-card-bg)] rounded-lg overflow-hidden border border-[var(--theme-border)]/50 flex flex-col text-left transition-all duration-200 hover:border-[var(--theme-orange)]/50 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--theme-orange)]"
+        >
+            <div className="flex-grow w-full bg-black/20 flex items-center justify-center overflow-hidden">
+                {thumbUrl ? (
+                     <img src={thumbUrl} alt={item.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                ) : (
+                    <div className="transition-transform duration-300 group-hover:scale-110">{Icon}</div>
+                )}
+            </div>
+            <div className="flex-shrink-0 p-3 bg-white/5">
+                <p className="text-sm font-semibold text-white truncate">{item.name}</p>
+                <p className="text-xs text-gray-400">{item.type}</p>
+            </div>
         </button>
     );
 };
 
 export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, directoryHandle, syncMode, onNavigate }) => {
     const [currentPath, setCurrentPath] = useState<string[]>(['Generated_Content']);
-    const [items, setItems] = useState<{ name: string; kind: 'file' | 'directory' }[]>([]);
+    const [items, setItems] = useState<DisplayItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [previewFile, setPreviewFile] = useState<{ name: string; content: string | Blob } | null>(null);
 
@@ -102,44 +177,30 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
         setCurrentPath(path);
     };
 
-    const handleItemClick = (item: { name: string; kind: 'file' | 'directory' }) => {
+    const handleItemClick = (item: DisplayItem) => {
         const newPath = [...currentPath, item.name];
         if (item.kind === 'directory') {
             navigateTo(newPath);
         } else {
-            handleFilePreview(newPath.join('/'));
+            handleFilePreview(newPath.join('/'), item);
         }
     };
 
-    const handleFilePreview = async (fullPath: string) => {
+    const handleFilePreview = async (fullPath: string, item: DisplayItem) => {
         setIsLoading(true);
         try {
-            let content;
+            let content: string | Blob | undefined;
+            const fileName = fullPath.split('/').pop()!;
             if (syncMode === 'folder' && directoryHandle) {
-                // For folder mode, we need to read from the root.
-                const relativePath = fullPath.split('/').slice(1).join('/'); // Remove 'Generated_Content' from path
+                const relativePath = fullPath.split('/').slice(1).join('/');
                 content = await fileSystemService.readFileContentByPath(directoryHandle, relativePath);
-            } else {
-                // For local mode, find the item and get its blob
-                const pathParts = fullPath.split('/');
-                const fileName = pathParts.pop();
-                const parentPath = pathParts.join('/');
-                const parentNode = findNodeByPath(virtualFileTree, parentPath);
-                const fileNode = parentNode?.children?.find(c => c.name === fileName);
-
-                if (fileNode?.kind === 'photo') {
-                    content = photos.find(p => p.id === fileNode.id)?.imageBlob;
-                } else if (fileNode?.kind === 'video') {
-                    content = videos.find(v => v.id === fileNode.id)?.videoBlob;
-                } else {
-                    // For virtual .txt and .json files, we cannot fetch content
-                    alert("Preview for virtual description/details files is not available in browser storage mode.");
-                    setIsLoading(false);
-                    return;
-                }
+            } else if (item.id) {
+                if (item.fileKind === 'photo') content = photos.find(p => p.id === item.id)?.imageBlob;
+                else if (item.fileKind === 'video') content = videos.find(v => v.id === item.id)?.videoBlob;
             }
-            if (content) {
-                setPreviewFile({ name: fullPath.split('/').pop()!, content });
+            if(content) setPreviewFile({ name: fileName, content });
+            else if (item.fileKind === 'text' || item.fileKind === 'json') {
+                alert("Preview for virtual description/details files is not yet supported in this mode.");
             }
         } catch (error) {
             alert(`Could not load file: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -151,8 +212,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
         if (!root) return null;
         const parts = path.split('/').filter(p => p);
         let currentNode = root;
-        for (const part of parts) {
-            if (part === root.name && parts.length === 1 && currentNode.name === part) return currentNode;
+        if (parts[0] !== root.name) return null;
+        for (const part of parts.slice(1)) {
             const nextNode = currentNode.children?.find(c => c.name === part);
             if (!nextNode) return null;
             currentNode = nextNode;
@@ -160,26 +221,48 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
         return currentNode;
     };
 
-
     useEffect(() => {
         const loadItems = async () => {
             setIsLoading(true);
+            let displayItems: DisplayItem[] = [];
+            
             if (syncMode === 'folder' && directoryHandle) {
-                const relativePath = currentPath.slice(1).join('/'); // Remove 'Generated_Content'
+                const relativePath = currentPath.slice(1).join('/');
                 const dirItems = await fileSystemService.listDirectoryContents(directoryHandle, relativePath);
-                setItems(dirItems);
+                
+                // Filter out the internal metadata JSON files
+                const isUuidJson = (name: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\.json$/.test(name);
+                
+                displayItems = dirItems
+                    .filter(item => !isUuidJson(item.name))
+                    .map(item => ({
+                        ...item,
+                        type: getFileType(item.name, item.kind),
+                        date: '--' // Date is not available from File System Access API listing
+                    }));
             } else if (virtualFileTree) {
                 const node = findNodeByPath(virtualFileTree, currentPath.join('/'));
-                const dirItems = node?.children?.map(child => ({
+                displayItems = node?.children?.map(child => ({
                     name: child.name,
-                    kind: child.type as 'file' | 'directory',
+                    kind: child.type === 'directory' ? 'directory' : 'file',
+                    type: getFileType(child.name, child.type === 'directory' ? 'directory' : 'file'),
+                    date: formatIsoToReadableDateTime(child.date),
+                    id: child.id,
+                    fileKind: child.kind
                 })) || [];
-                setItems(dirItems);
             }
+
+            displayItems.sort((a,b) => {
+                if (a.kind === 'directory' && b.kind !== 'directory') return -1;
+                if (a.kind !== 'directory' && b.kind === 'directory') return 1;
+                return a.name.localeCompare(b.name);
+            });
+            
+            setItems(displayItems);
             setIsLoading(false);
         };
         loadItems();
-    }, [currentPath, syncMode, directoryHandle, virtualFileTree]);
+    }, [currentPath, syncMode, directoryHandle, virtualFileTree, photos, videos]);
 
     return (
         <div className="flex-1 flex flex-col bg-[var(--theme-bg)] backdrop-blur-2xl text-[var(--theme-text-primary)] font-inter">
@@ -210,11 +293,20 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
             </div>
 
             <main className="flex-1 overflow-y-auto p-4">
-                {isLoading ? (
+                 {isLoading ? (
                     <div className="h-full flex items-center justify-center"><Spinner className="w-8 h-8 text-orange-400" /></div>
                 ) : items.length > 0 ? (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 gap-4">
-                        {items.map(item => <FileItem key={item.name} name={item.name} kind={item.kind} onClick={() => handleItemClick(item)} />)}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+                        {items.map(item => (
+                            <FileItemCard 
+                                key={item.name} 
+                                item={item} 
+                                onClick={() => handleItemClick(item)} 
+                                syncMode={syncMode}
+                                photos={photos}
+                                videos={videos}
+                            />
+                        ))}
                     </div>
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500">

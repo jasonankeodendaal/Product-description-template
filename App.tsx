@@ -53,6 +53,7 @@ export interface Template {
   id: string;
   name: string;
   prompt: string;
+  category?: string;
 }
 
 export interface ParsedProductData {
@@ -398,7 +399,7 @@ const App: React.FC = () => {
                 const storedTemplates = localStorage.getItem('templates');
                 let initialTemplates = storedTemplates ? JSON.parse(storedTemplates) : [];
                  if (initialTemplates.length === 0) {
-                    initialTemplates.push({ id: 'default-product-desc', name: 'Default E-commerce Product Description', prompt: DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE });
+                    initialTemplates.push({ id: 'default-product-desc', name: 'Default E-commerce Product Description', prompt: DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, category: 'E-commerce' });
                 }
                 setTemplates(initialTemplates);
                 setSelectedTemplateId(initialTemplates[0]?.id || '');
@@ -755,16 +756,16 @@ const App: React.FC = () => {
         setIsOnboardingOpen(true);
     };
 
-    const handleAddTemplate = useCallback(async (name: string, prompt: string) => {
-        const newTemplate: Template = { id: crypto.randomUUID(), name, prompt };
+    const handleAddTemplate = useCallback(async (name: string, prompt: string, category: string) => {
+        const newTemplate: Template = { id: crypto.randomUUID(), name, prompt, category };
         const updatedTemplates = [...templates, newTemplate];
         setTemplates(updatedTemplates);
         localStorage.setItem('templates', JSON.stringify(updatedTemplates));
         if(directoryHandle) await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);
     }, [templates, directoryHandle]);
 
-    const onEditTemplate = useCallback(async (id: string, newName: string, newPrompt: string) => {
-        const updatedTemplates = templates.map(t => t.id === id ? { ...t, name: newName, prompt: newPrompt } : t);
+    const onEditTemplate = useCallback(async (id: string, newName: string, newPrompt: string, newCategory: string) => {
+        const updatedTemplates = templates.map(t => t.id === id ? { ...t, name: newName, prompt: newPrompt, category: newCategory } : t);
         setTemplates(updatedTemplates);
         localStorage.setItem('templates', JSON.stringify(updatedTemplates));
         if(directoryHandle) await fileSystemService.saveTemplates(directoryHandle, updatedTemplates);

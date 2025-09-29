@@ -141,8 +141,10 @@ const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo:
     const metadata: Omit<Photo, 'imageBlob'> = { ...photo };
     delete (metadata as any).imageBlob;
     const ext = photo.imageMimeType.split('/')[1] || 'png';
+    // Metadata file is named with the unique ID
     await writeFile(productDir, `${photo.id}.json`, JSON.stringify(metadata, null, 2));
-    await writeFile(productDir, `${photo.id}.${ext}`, photo.imageBlob);
+    // Actual image file is named with the user-friendly name (e.g., SKU_1.jpg)
+    await writeFile(productDir, `${photo.name}.${ext}`, photo.imageBlob);
 };
 
 const deletePhotoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
@@ -151,7 +153,7 @@ const deletePhotoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, ph
         if (!productDir) return; // Folder doesn't exist, so nothing to delete.
         const ext = photo.imageMimeType.split('/')[1] || 'png';
         try { await productDir.removeEntry(`${photo.id}.json`); } catch(e) {}
-        try { await productDir.removeEntry(`${photo.id}.${ext}`); } catch(e) {}
+        try { await productDir.removeEntry(`${photo.name}.${ext}`); } catch(e) {}
     } catch (e) { /* Parent dirs might not exist, ignore */ }
 };
 
@@ -161,7 +163,7 @@ const saveVideoToDirectory = async (dirHandle: FileSystemDirectoryHandle, video:
     delete (metadata as any).videoBlob;
     const ext = video.videoMimeType.split('/')[1] || 'mp4';
     await writeFile(productDir, `${video.id}.json`, JSON.stringify(metadata, null, 2));
-    await writeFile(productDir, `${video.id}.${ext}`, video.videoBlob);
+    await writeFile(productDir, `${video.name}.${ext}`, video.videoBlob);
 };
 
 const deleteVideoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, video: Video) => {
@@ -170,7 +172,7 @@ const deleteVideoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, vi
         if (!productDir) return;
         const ext = video.videoMimeType.split('/')[1] || 'mp4';
         try { await productDir.removeEntry(`${video.id}.json`); } catch(e) {}
-        try { await productDir.removeEntry(`${video.id}.${ext}`); } catch(e) {}
+        try { await productDir.removeEntry(`${video.name}.${ext}`); } catch(e) {}
     } catch(e) {}
 };
 
@@ -192,7 +194,8 @@ const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Pr
                         const metadata = JSON.parse(text);
                         if (metadata.id && metadata.folder && metadata.date) {
                             const ext = metadata.imageMimeType?.split('/')[1] || 'png';
-                            const imageHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
+                            // Use the name from metadata to find the corresponding image file
+                            const imageHandle = await dir.getFileHandle(`${metadata.name}.${ext}`);
                             const imageBlob = await imageHandle.getFile();
                             photos.push({ ...metadata, imageBlob });
                         }
@@ -225,7 +228,7 @@ const loadVideosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Pr
                         const metadata = JSON.parse(text);
                         if (metadata.id && metadata.folder && metadata.date) {
                             const ext = metadata.videoMimeType?.split('/')[1] || 'mp4';
-                            const videoHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
+                            const videoHandle = await dir.getFileHandle(`${metadata.name}.${ext}`);
                             const videoBlob = await videoHandle.getFile();
                             videos.push({ ...metadata, videoBlob });
                         }

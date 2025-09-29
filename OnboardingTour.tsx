@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { RocketIcon } from './components/icons/RocketIcon';
 
 interface OnboardingTourProps {
     onFinish: () => void;
@@ -118,6 +117,49 @@ const AnimatedNotepadIcon = () => (
     </svg>
 );
 
+const AnimatedFileBrowserIcon = () => (
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <style>{`
+            @keyframes folder-flap-open { 0%, 100% { transform: rotateX(0deg); } 50% { transform: rotateX(-30deg); } }
+            @keyframes file-fly-out-1 { 0% { transform: translate(0, 0) scale(0); opacity: 0; } 50% { transform: translate(-30px, -40px) scale(1); opacity: 1; } 100% { transform: translate(-40px, -60px) scale(1); opacity: 0; } }
+            @keyframes file-fly-out-2 { 0% { transform: translate(0, 0) scale(0); opacity: 0; } 50% { transform: translate(30px, -40px) scale(1); opacity: 1; } 100% { transform: translate(40px, -60px) scale(1); opacity: 0; } }
+            .folder-flap { animation: folder-flap-open 3s ease-in-out infinite; transform-origin: bottom center; }
+            .file-1 { animation: file-fly-out-1 3s ease-in-out infinite 0.2s; }
+            .file-2 { animation: file-fly-out-2 3s ease-in-out infinite 0.4s; }
+        `}</style>
+        <path d="M 40 140 L 40 70 L 90 70 L 110 90 L 160 90 L 160 140 Z" fill="#60A5FA" />
+        <g className="file-1">
+            <rect x="90" y="80" width="20" height="25" rx="2" fill="#38BDF8" />
+        </g>
+        <g className="file-2">
+            <rect x="90" y="80" width="20" height="25" rx="2" fill="#A855F7" />
+        </g>
+        <path className="folder-flap" d="M 40 80 L 40 70 L 90 70 L 110 90 L 160 90 L 160 80 L 105 80 L 90 65 L 40 65 Z" fill="#93C5FD" />
+    </svg>
+);
+
+const AnimatedTimesheetIcon = () => (
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <style>{`
+            @keyframes clock-hand-spin { from { transform: rotate(0deg); } to { transform: rotate(720deg); } }
+            @keyframes bar-grow-anim { 0% { height: 5; } 50% { height: 30; } 100% { height: 15; } }
+            .clock-hand { animation: clock-hand-spin 4s linear infinite; transform-origin: center; }
+            .chart-bar { animation: bar-grow-anim 4s ease-in-out infinite; }
+        `}</style>
+        <path d="M 50 150 L 150 150 L 150 140 L 50 140 Z" fill="#475569" />
+        <g transform="translate(0 140)">
+            <rect x="60" y="-30" width="20" height="30" fill="#34D399" className="chart-bar" style={{ animationDelay: '0s' }} />
+            <rect x="90" y="-50" width="20" height="50" fill="#EF4444" className="chart-bar" style={{ animationDelay: '0.5s' }} />
+            <rect x="120" y="-40" width="20" height="40" fill="#60A5FA" className="chart-bar" style={{ animationDelay: '1s' }} />
+        </g>
+        <circle cx="100" cy="80" r="40" fill="#1F2937" stroke="#94A3B8" strokeWidth="4" />
+        <g className="clock-hand">
+            <path d="M 100 80 L 100 50" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" />
+            <path d="M 100 80 L 120 80" stroke="#FBBF24" strokeWidth="4" strokeLinecap="round" />
+        </g>
+    </svg>
+);
+
 const AnimatedDashboardIcon = () => (
     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
         <style>{`
@@ -162,38 +204,112 @@ const AnimatedRocketIcon = () => (
 const tourSteps = [
     {
         icon: <div className="text-5xl animate-bounce" style={{ animationDuration: '1.5s' }}>👋</div>,
-        title: "Welcome to Your AI Workspace!",
-        content: "This brief tour will introduce you to the powerful, integrated tools designed to streamline your creative process from idea to final product."
+        title: "Welcome to Your Unified Workspace!",
+        content: (
+            <div className="space-y-3">
+                <p>This isn't just another app—it's a complete, offline-first suite designed to bring your entire creative process into one cohesive workspace.</p>
+                <p className="font-semibold text-orange-300">Let's explore how you can go from scattered ideas to a polished final product, all in one place.</p>
+            </div>
+        )
     },
     {
         icon: <AnimatedAiEngineIcon />,
-        title: "Meet Your AI Content Engine",
-        content: "This is your creative powerhouse. Paste raw product info, scattered notes, or even transcribed audio. The AI, powered by Google's Gemini, will intelligently reformat it into a professional description."
+        title: "From Raw Data to Perfect Copy",
+        content: (
+             <div className="space-y-4">
+                <p>Paste raw product data, messy notes, or transcribed audio into the <strong className="text-white">Generator</strong>. Our AI, powered by Google's Gemini, will intelligently restructure it into a professional description.</p>
+                <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li><strong className="text-white">Web-Powered Accuracy:</strong> The AI uses Google Search to find and fill in missing details like dimensions or warranty info, ensuring your content is always complete and accurate.</li>
+                </ul>
+            </div>
+        )
     },
     {
         icon: <AnimatedBrandingIcon />,
-        title: "Your Brand, Your Voice",
-        content: "Define your own output structure with custom templates. The AI strictly adheres to your format and selected tone of voice for consistent, brand-aligned results every time."
+        title: "Total Control Over Tone & Structure",
+        content: (
+            <div className="space-y-4">
+                <p>Maintain perfect brand consistency effortlessly. You have complete control over the AI's output.</p>
+                 <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li><strong className="text-white">Custom Templates:</strong> Build unlimited templates with your own unique sections. The AI follows your structure to the letter.</li>
+                    <li><strong className="text-white">Tone of Voice Control:</strong> Instantly switch between Professional, Casual, or Persuasive tones to match any product or audience.</li>
+                </ul>
+            </div>
+        )
     },
     {
         icon: <AnimatedRecordingIcon />,
-        title: "Capture Ideas Instantly",
-        content: "Never lose a thought. Record voice notes on the fly and get accurate text transcripts with a single click. You can even attach reference photos for complete context."
+        title: "From Voice Memos to Actionable Text",
+        content: (
+            <div className="space-y-4">
+                <p>Inspiration strikes anywhere. Use the <strong className="text-white">Recorder</strong> to capture voice notes on the fly. With a single click, get a fast, accurate text transcript.</p>
+                 <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li>Use this text directly in the Generator or add it to your notes. Link photos for complete context during site visits or client meetings.</li>
+                </ul>
+            </div>
+        )
     },
     {
         icon: <AnimatedVisualHubIcon />,
-        title: "Your Central Visual Hub",
-        content: "Manage all your project photos in one place. Upload, capture, and organize images into folders. Use the integrated Image Tool to create perfect, broadcast-quality square images."
+        title: "Unify Your Visual Assets",
+        content: (
+            <div className="space-y-4">
+                <p>The <strong className="text-white">Photo Library</strong> is your central hub for all project images and videos. Upload, capture, and organize assets into smart folders that automatically link to your content.</p>
+                <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li>Need a perfect product shot? The <strong className="text-white">Image Tool</strong> creates broadcast-quality, squared images ready for any e-commerce platform.</li>
+                </ul>
+            </div>
+        )
     },
     {
         icon: <AnimatedNotepadIcon />,
-        title: "More Than Just Notes",
-        content: "A rich-text editor that's also a productivity tool. Draft ideas, manage tasks with interactive checklists, attach audio memos, and set reminders to stay on track."
+        title: "The Multimedia Notepad",
+        content: (
+            <div className="space-y-4">
+                <p>This is far more than a simple text editor. The <strong className="text-white">Notepad</strong> is a multimedia workspace for brainstorming, planning, and drafting.</p>
+                 <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li>Format text, create drag-and-drop checklists, and <strong className="text-white">embed audio recordings or scanned documents</strong> directly into your notes.</li>
+                    <li>Add a hero image, set due dates, and even lock sensitive notes with your PIN.</li>
+                </ul>
+            </div>
+        )
+    },
+    {
+        icon: <AnimatedFileBrowserIcon />,
+        title: "Navigate Your Content, Natively",
+        content: (
+             <div className="space-y-4">
+                <p>No need to leave the app to find your saved work. The new <strong className="text-white">File Browser</strong> provides a direct window into your `Generated_Content` folder.</p>
+                 <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li>Navigate your brands and products, preview descriptions, and view all linked images and videos with the same structure as your local files.</li>
+                </ul>
+            </div>
+        )
+    },
+     {
+        icon: <AnimatedTimesheetIcon />,
+        title: "Track Your Productivity",
+        content: (
+             <div className="space-y-4">
+                <p>Understand where your time goes. The <strong className="text-white">Timesheet</strong> automatically logs key activities like creating a note or adding a photo.</p>
+                 <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li>Start a manual timer for specific tasks, view daily and weekly summaries of your work, and export professional PDF reports.</li>
+                </ul>
+            </div>
+        )
     },
     {
         icon: <AnimatedDashboardIcon />,
-        title: "Your Command Center",
-        content: "The Dashboard is where you manage everything. Update your branding, create full data backups, and choose your preferred data sync mode—all from one place."
+        title: "You're in Complete Control",
+        content: (
+            <div className="space-y-4">
+                <p>This app is built on data sovereignty: your data is yours, period. The <strong className="text-white">Dashboard</strong> is your command center.</p>
+                 <ul className="space-y-2 list-disc list-inside text-slate-400">
+                    <li>Create full backups of your entire workspace in a single `.zip` file.</li>
+                    <li>Choose your sync mode: private browser storage, a local PC folder, or a cloud service. You decide.</li>
+                </ul>
+            </div>
+        )
     },
     {
         icon: (
@@ -201,8 +317,13 @@ const tourSteps = [
                 <AnimatedRocketIcon />
             </div>
         ),
-        title: "You're Ready for Takeoff!",
-        content: "That's the tour! We hope these tools remove friction and empower you to focus on what you do best: creating."
+        title: "You're All Set!",
+        content: (
+            <div className="space-y-3">
+                <p>You now have a powerful, integrated suite of tools at your fingertips. Eliminate distractions, streamline your process, and unlock a new level of productivity.</p>
+                <p className="font-semibold text-orange-300">Let's get creating!</p>
+            </div>
+        )
     }
 ];
 
@@ -236,7 +357,9 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onFinish }) => {
                             {tourSteps[currentStep].icon}
                         </div>
                         <h2 className="text-4xl font-bold text-white leading-tight">{tourSteps[currentStep].title}</h2>
-                        <p className="text-slate-300 mt-4 text-lg max-w-prose">{tourSteps[currentStep].content}</p>
+                        <div className="text-slate-300 mt-4 text-lg max-w-prose">
+                            {tourSteps[currentStep].content}
+                        </div>
                     </div>
                 </div>
 
