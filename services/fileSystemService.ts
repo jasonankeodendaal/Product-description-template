@@ -137,58 +137,64 @@ const getNestedDirectory = async (root: FileSystemDirectoryHandle, path: string)
 
 
 const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
-    const photosDir = await getOrCreateDirectory(dirHandle, 'photos');
-    const folderDir = await getOrCreateNestedDirectory(photosDir, photo.folder || '_uncategorized');
+    // The photo.folder property is expected to be 'brand/sku'
+    const productDir = await getOrCreateNestedDirectory(dirHandle, photo.folder || '_uncategorized');
     
     const metadata: Omit<Photo, 'imageBlob'> = { ...photo };
     delete (metadata as any).imageBlob;
     
     const ext = photo.imageMimeType.split('/')[1] || 'png';
-    await writeFile(folderDir, `${photo.id}.json`, JSON.stringify(metadata, null, 2));
-    await writeFile(folderDir, `${photo.id}.${ext}`, photo.imageBlob);
+    await writeFile(productDir, `${photo.id}.json`, JSON.stringify(metadata, null, 2));
+    await writeFile(productDir, `${photo.id}.${ext}`, photo.imageBlob);
 };
 
 const deletePhotoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
     try {
-        const photosDir = await dirHandle.getDirectoryHandle('photos');
-        const folderDir = await getNestedDirectory(photosDir, photo.folder || '_uncategorized');
+        const productDir = await getNestedDirectory(dirHandle, photo.folder || '_uncategorized');
         
-        if (!folderDir) return; // Folder doesn't exist, so nothing to delete.
+        if (!productDir) return; // Folder doesn't exist, so nothing to delete.
 
         const ext = photo.imageMimeType.split('/')[1] || 'png';
-        try { await folderDir.removeEntry(`${photo.id}.json`); } catch(e) {}
-        try { await folderDir.removeEntry(`${photo.id}.${ext}`); } catch(e) {}
-    } catch (e) { /* 'photos' dir might not exist, ignore */ }
+        try { await productDir.removeEntry(`${photo.id}.json`); } catch(e) {}
+        try { await productDir.removeEntry(`${photo.id}.${ext}`); } catch(e) {}
+    } catch (e) { /* Parent dirs might not exist, ignore */ }
 };
 
 const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Photo[]> => {
     const photos: Photo[] = [];
-    try {
-        const photosDir = await dirHandle.getDirectoryHandle('photos');
-        
-        const processDirectory = async (dir: FileSystemDirectoryHandle) => {
-            for await (const entry of dir.values()) {
-                if (entry.kind === 'directory') {
+    const reservedDirs = ['recordings', 'notes', 'logs', 'note_recordings', 'calendar_events'];
+
+    const processDirectory = async (dir: FileSystemDirectoryHandle) => {
+        for await (const entry of dir.values()) {
+            if (entry.kind === 'directory') {
+                if (!reservedDirs.includes(entry.name)) {
                     await processDirectory(entry as FileSystemDirectoryHandle);
-                } else if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-                    try {
-                        const jsonFile = await (entry as FileSystemFileHandle).getFile();
-                        const metadata = JSON.parse(await jsonFile.text());
-                        
-                        const ext = metadata.imageMimeType?.split('/')[1] || 'png';
-                        const imageHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
-                        const imageBlob = await imageHandle.getFile();
-                        
-                        photos.push({ ...metadata, imageBlob });
-                    } catch (e) {
-                        console.error(`Failed to load photo from ${entry.name} in ${dir.name}:`, e);
+                }
+            } else if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    const text = await file.text();
+                    // Quick check to avoid parsing non-photo JSON files like settings.json
+                    if (text.includes('"imageMimeType"')) {
+                        const metadata = JSON.parse(text);
+                        // Be certain it's a photo object before proceeding
+                        if (metadata.id && metadata.folder && metadata.date) {
+                            const ext = metadata.imageMimeType?.split('/')[1] || 'png';
+                            const imageHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
+                            const imageBlob = await imageHandle.getFile();
+                            photos.push({ ...metadata, imageBlob });
+                        }
+                    }
+                } catch (e) {
+                     if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+                         console.error(`Could not process potential photo metadata file ${entry.name} in ${dir.name}:`, e);
                     }
                 }
             }
-        };
-        
-        await processDirectory(photosDir);
-    } catch(e) { /* 'photos' dir doesn't exist */ }
+        }
+    };
+
+    await processDirectory(dirHandle);
     return photos;
 }
 
@@ -290,12 +296,24 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
 }
 
 const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item: ParsedProductData, structuredData: Record<string, string>) => {
-    const brandFolder = item.brand.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || 'Unbranded';
-    const skuFile = item.sku.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || `product_${Date.now()}`;
-    
-    const brandDirHandle = await getOrCreateDirectory(dirHandle, brandFolder);
+    const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
 
-    await writeFile(brandDirHandle, `${skuFile}.txt`, item.fullText);
+    const brandFolder = sanitize(item.brand) || 'Unbranded';
+    
+    // Use sanitized SKU if available, otherwise fallback to a sanitized product name.
+    const productIdentifier = sanitize(item.sku) || sanitize(item.name);
+    
+    // As a last resort if both SKU and name are empty, use a timestamp
+    const skuFolder = productIdentifier || `product_${Date.now()}`;
+    
+    const productPath = `${brandFolder}/${skuFolder}`;
+    const productDirHandle = await getOrCreateNestedDirectory(dirHandle, productPath);
+
+    // Save the main description text file
+    await writeFile(productDirHandle, `description.txt`, item.fullText);
+    
+    // Also save the structured data as a JSON file for easy machine reading
+    await writeFile(productDirHandle, 'details.json', JSON.stringify(structuredData, null, 2));
 }
 
 export const fileSystemService = {

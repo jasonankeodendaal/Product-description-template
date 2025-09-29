@@ -207,9 +207,23 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     }, [outputText]);
 
     const linkedPhotos = useMemo(() => {
-        if (!structuredData || !structuredData['Brand'] || !structuredData['SKU']) return [];
-        const folderPath = `${structuredData['Brand']}/${structuredData['SKU']}`;
+        if (!structuredData) return [];
+        
+        const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
+        
+        const brand = structuredData['Brand'] || '';
+        const sku = structuredData['SKU'] || '';
+        const name = structuredData['Name'] || '';
+        
+        if (!brand) return [];
+
+        // This identifier logic must match the save logic
+        const productIdentifier = sku || name;
+        if (!productIdentifier) return [];
+
+        const folderPath = `${sanitize(brand)}/${sanitize(productIdentifier)}`;
         return photos.filter(p => p.folder === folderPath);
+
     }, [photos, structuredData]);
 
     useEffect(() => {
@@ -231,7 +245,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         
         const item: ParsedProductData = {
             brand: structuredData['Brand'] || 'Unbranded',
-            sku: structuredData['SKU'] || `product-${Date.now()}`,
+            sku: structuredData['SKU'] || '', // Pass empty if not found, service will handle folder name
             name: structuredData['Name'] || 'Unnamed Product',
             fullText: outputText,
         };
@@ -248,8 +262,15 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     const handleImageUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0 || !structuredData) return;
         setIsUploading(true);
+        const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
+
         const brand = structuredData['Brand'] || 'Unbranded';
-        const sku = structuredData['SKU'] || 'Uncategorized';
+        const sku = structuredData['SKU'] || '';
+        const name = structuredData['Name'] || '';
+
+        // Consistent folder logic: use SKU, fallback to Name, then to timestamp as last resort.
+        const productIdentifier = sku || name || `product_${Date.now()}`;
+        const folderPath = `${sanitize(brand)}/${sanitize(productIdentifier)}`;
 
         for (const file of Array.from(files)) {
             try {
@@ -258,12 +279,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                 const newPhoto: Photo = {
                     id: crypto.randomUUID(),
                     name: file.name.split('.').slice(0, -1).join('.'),
-                    notes: `Linked to product: ${brand} - ${sku}`,
+                    notes: `Linked to product: ${brand} - ${productIdentifier}`,
                     date: new Date().toISOString(),
-                    folder: `${brand}/${sku}`,
+                    folder: folderPath,
                     imageBlob,
                     imageMimeType: imageBlob.type,
-                    tags: [brand, sku].filter(Boolean) as string[],
+                    tags: [brand, productIdentifier].filter(Boolean) as string[],
                 };
                 await onSavePhoto(newPhoto);
             } catch (error) {
