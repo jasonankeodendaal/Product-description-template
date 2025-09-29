@@ -1,6 +1,5 @@
 import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent } from "../App";
 import { SiteSettings } from "../constants";
-import { waitForGlobal } from "../utils/dataUtils";
 
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
     if (!('showDirectoryPicker' in window)) throw new Error('File System Access API is not supported.');
@@ -290,50 +289,13 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
     for (const event of data.calendarEvents) await saveCalendarEventToDirectory(dirHandle, event);
 }
 
-const createDocxBlob = async (structuredData: Record<string, string>): Promise<Blob> => {
-    const docx = await waitForGlobal<any>('docx');
-    
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
-
-    const children: any[] = [];
-    
-    children.push(new Paragraph({ text: structuredData['Name'] || 'Unnamed Product', heading: HeadingLevel.HEADING_1, spacing: { after: 200 } }));
-
-    const sections = [
-        'Brand', 'SKU', 'Short Description', 'What’s in the Box',
-        'Description', 'Key Features', 'Material Used',
-        'Product Dimensions (CM) & Weight (KG)', 'Buying This Product Means',
-        'Key Specifications', 'Terms & Conditions'
-    ];
-    
-    sections.forEach(sectionTitle => {
-        if (structuredData[sectionTitle]) {
-            children.push(new Paragraph({ text: sectionTitle, heading: HeadingLevel.HEADING_2, spacing: { before: 300, after: 100 } }));
-            // Handle multi-line sections like Key Features by splitting them
-            const contentLines = structuredData[sectionTitle].split('\n');
-            contentLines.forEach(line => {
-                if (line.trim()) {
-                    children.push(new Paragraph({ text: line.trim() }));
-                }
-            });
-        }
-    });
-
-    const doc = new Document({
-        sections: [{ children }],
-    });
-    
-    return Packer.toBlob(doc);
-};
-
 const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item: ParsedProductData, structuredData: Record<string, string>) => {
     const brandFolder = item.brand.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || 'Unbranded';
     const skuFile = item.sku.replace(/[^a-zA-Z0-9-_\.]/g, '_').trim() || `product_${Date.now()}`;
     
     const brandDirHandle = await getOrCreateDirectory(dirHandle, brandFolder);
 
-    const docxBlob = await createDocxBlob(structuredData);
-    await writeFile(brandDirHandle, `${skuFile}.docx`, docxBlob);
+    await writeFile(brandDirHandle, `${skuFile}.txt`, item.fullText);
 }
 
 export const fileSystemService = {
