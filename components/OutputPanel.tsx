@@ -217,11 +217,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         
         if (!brand) return [];
 
-        // This identifier logic must match the save logic
         const productIdentifier = sku || name;
         if (!productIdentifier) return [];
 
-        const folderPath = `${sanitize(brand)}/${sanitize(productIdentifier)}`;
+        const folderPath = `Generated_Content/${sanitize(brand)}/${sanitize(productIdentifier)}`;
         return photos.filter(p => p.folder === folderPath);
 
     }, [photos, structuredData]);
@@ -270,7 +269,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
 
         // Consistent folder logic: use SKU, fallback to Name, then to timestamp as last resort.
         const productIdentifier = sku || name || `product_${Date.now()}`;
-        const folderPath = `${sanitize(brand)}/${sanitize(productIdentifier)}`;
+        const folderPath = `Generated_Content/${sanitize(brand)}/${sanitize(productIdentifier)}`;
 
         for (const file of Array.from(files)) {
             try {

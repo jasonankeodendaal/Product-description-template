@@ -306,7 +306,7 @@ const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item
     // As a last resort if both SKU and name are empty, use a timestamp
     const skuFolder = productIdentifier || `product_${Date.now()}`;
     
-    const productPath = `${brandFolder}/${skuFolder}`;
+    const productPath = `Generated_Content/${brandFolder}/${skuFolder}`;
     const productDirHandle = await getOrCreateNestedDirectory(dirHandle, productPath);
 
     // Save the main description text file

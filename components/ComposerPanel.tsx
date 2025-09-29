@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { InputPanel } from './InputPanel';
 import { Template, Recording, Note, Photo } from '../App';
 import { SiteSettings } from '../constants';
 import { describeImage } from '../services/geminiService';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { Spinner } from './icons/Spinner';
+import { VideoIcon } from './icons/VideoIcon';
+import { dataURLtoBlob } from '../utils/dataUtils';
+import { XIcon } from './icons/XIcon';
 
 interface ComposerPanelProps {
     value: string;
@@ -24,15 +27,68 @@ interface ComposerPanelProps {
     onDeletePhoto: (photo: Photo) => Promise<void>;
 }
 
-type AssetTab = 'recordings' | 'notes' | 'photos';
+type AssetTab = 'recordings' | 'notes' | 'photos' | 'videos';
+
+const VideoFrameExtractorModal: React.FC<{
+    videoFile: File;
+    onClose: () => void;
+    onCapture: (dataUrl: string) => void;
+}> = ({ videoFile, onClose, onCapture }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [videoUrl, setVideoUrl] = useState('');
+
+    useEffect(() => {
+        const url = URL.createObjectURL(videoFile);
+        setVideoUrl(url);
+        return () => URL.revokeObjectURL(url);
+    }, [videoFile]);
+
+    const handleCaptureFrame = () => {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!video || !canvas) return;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        onCapture(dataUrl);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-[var(--theme-card-bg)] w-full max-w-2xl rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
+                <header className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-[var(--theme-text-primary)]">Capture Frame from Video</h3>
+                    <button onClick={onClose} className="text-[var(--theme-text-secondary)]/50 hover:text-[var(--theme-text-primary)]" aria-label="Close"><XIcon /></button>
+                </header>
+                <div className="p-6 flex-grow">
+                    {videoUrl && <video ref={videoRef} src={videoUrl} controls className="w-full max-h-[60vh] rounded-md" />}
+                    <canvas ref={canvasRef} className="hidden" />
+                </div>
+                <footer className="p-4 bg-black/20 border-t border-[var(--theme-border)] flex justify-end">
+                    <button onClick={handleCaptureFrame} className="bg-[var(--theme-orange)] text-black font-bold py-2 px-6 rounded-md hover:opacity-90">
+                        Capture & Use Frame
+                    </button>
+                </footer>
+            </div>
+        </div>
+    );
+};
 
 export const ComposerPanel: React.FC<ComposerPanelProps> = ({
     value, onChange, onGenerate, isLoading, templates, selectedTemplateId,
     onTemplateChange, tone, onToneChange, recordings, notes, photos,
     siteSettings, onAddToInput, onDeletePhoto
 }) => {
-    const [activeTab, setActiveTab] = useState<AssetTab>('recordings');
+    const [activeTab, setActiveTab] = useState<AssetTab>('photos');
     const [describingPhotoId, setDescribingPhotoId] = useState<string | null>(null);
+    const [videoToProcess, setVideoToProcess] = useState<File | null>(null);
+    const videoInputRef = useRef<HTMLInputElement>(null);
 
     const handleDescribeImage = async (photo: Photo) => {
         if (describingPhotoId) return;
@@ -46,6 +102,34 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
         } finally {
             setDescribingPhotoId(null);
         }
+    };
+    
+    const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && file.type.startsWith('video/')) {
+            setVideoToProcess(file);
+        } else if (file) {
+            alert('Please select a valid video file.');
+        }
+        if (e.target) e.target.value = ''; // Reset file input
+    };
+
+    const handleFrameCaptured = async (dataUrl: string) => {
+        if (!videoToProcess) return;
+        setVideoToProcess(null);
+        
+        const blob = dataURLtoBlob(dataUrl);
+        const tempPhoto: Photo = {
+            id: crypto.randomUUID(),
+            name: `${videoToProcess.name} frame`,
+            notes: '',
+            date: new Date().toISOString(),
+            folder: '',
+            imageBlob: blob,
+            imageMimeType: 'image/jpeg',
+            tags: [],
+        };
+        await handleDescribeImage(tempPhoto);
     };
 
     const renderTabContent = () => {
@@ -98,12 +182,39 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                         ))}
                     </div>
                 );
+            case 'videos':
+                return (
+                     <div className="flex flex-col items-center justify-center h-full text-center text-[var(--theme-text-secondary)]">
+                        <input
+                            type="file"
+                            ref={videoInputRef}
+                            className="sr-only"
+                            onChange={handleVideoUpload}
+                            accept="video/*"
+                        />
+                        <button
+                            onClick={() => videoInputRef.current?.click()}
+                            className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-[var(--theme-border)] rounded-md hover:bg-[var(--theme-bg)] transition-colors w-full h-full"
+                        >
+                            <VideoIcon className="w-10 h-10 mb-2" />
+                            <span className="text-sm font-semibold">Upload Video</span>
+                            <span className="text-xs">to capture a frame for AI description</span>
+                        </button>
+                    </div>
+                );
             default: return null;
         }
     }
     
     return (
         <div className="flex flex-col gap-8 h-full">
+             {videoToProcess && (
+                <VideoFrameExtractorModal
+                    videoFile={videoToProcess}
+                    onClose={() => setVideoToProcess(null)}
+                    onCapture={handleFrameCaptured}
+                />
+            )}
             <InputPanel 
                 value={value}
                 onChange={onChange}
@@ -119,9 +230,10 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                 <h2 className="text-xl font-semibold mb-4 text-[var(--theme-green)]">2. Add From Library</h2>
                 <div className="border-b border-[var(--theme-border)] mb-4">
                     <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                        <TabButton label="Photos" isActive={activeTab === 'photos'} onClick={() => setActiveTab('photos')} />
+                        <TabButton label="Videos" isActive={activeTab === 'videos'} onClick={() => setActiveTab('videos')} />
                         <TabButton label="Recordings" isActive={activeTab === 'recordings'} onClick={() => setActiveTab('recordings')} />
                         <TabButton label="Notes" isActive={activeTab === 'notes'} onClick={() => setActiveTab('notes')} />
-                        <TabButton label="Photos" isActive={activeTab === 'photos'} onClick={() => setActiveTab('photos')} />
                     </nav>
                 </div>
                 <div className="h-48 overflow-y-auto">
