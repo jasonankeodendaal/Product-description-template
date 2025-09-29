@@ -16,6 +16,9 @@ import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { PlusIcon } from './icons/PlusIcon';
 import { UploadIcon } from './icons/UploadIcon';
+import { GridIcon } from './icons/GridIcon';
+import { ListIcon } from './icons/ListIcon';
+import { formatRelativeTime } from '../utils/formatters';
 
 interface FileBrowserProps {
     photos: Photo[];
@@ -31,7 +34,6 @@ interface DisplayItem {
     type: string;
     date?: string;
     id?: string; // photo or video id
-    // FIX: Added 'directory' to itemKind to resolve type error in getFileTypeAndKind.
     itemKind?: 'directory' | 'photo' | 'video' | 'text' | 'json' | 'unknown';
 }
 
@@ -185,12 +187,32 @@ const GridItem: React.FC<{ item: DisplayItem; onClick: () => void; photos: Photo
     );
 });
 
+const ListItem: React.FC<{ item: DisplayItem; onClick: () => void; }> = ({ item, onClick }) => {
+    const iconColor = item.kind === 'directory' ? 'text-amber-400' :
+                      item.itemKind === 'photo' ? 'text-purple-400' :
+                      item.itemKind === 'video' ? 'text-pink-400' : 'text-sky-400';
+    return (
+        <button onClick={onClick} className="w-full flex items-center gap-4 p-2 rounded-md hover:bg-slate-800 transition-colors focus:outline-none focus:bg-slate-800">
+            <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center ${iconColor}`}>
+                {item.kind === 'directory' ? <FolderIcon /> : item.itemKind === 'photo' ? <PhotoIcon /> : item.itemKind === 'video' ? <VideoIcon /> : <FileTextIcon/>}
+            </div>
+            <span className="font-semibold flex-grow text-left truncate">{item.name}</span>
+            <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden md:block">{item.date ? formatRelativeTime(item.date) : '--'}</span>
+            <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden sm:block">{item.type}</span>
+        </button>
+    );
+};
+
+
 export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, directoryHandle, syncMode, onNavigate }) => {
     const [currentPath, setCurrentPath] = useState<string[]>([]);
     const [items, setItems] = useState<DisplayItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [previewFile, setPreviewFile] = useState<{ name: string; content: string | Blob } | null>(null);
     const uploadInputRef = useRef<HTMLInputElement>(null);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
+
 
     const virtualFileTree = useMemo(() => {
         if (syncMode === 'local' || syncMode === 'api') return buildFileTree(photos, videos);
@@ -236,6 +258,19 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     }, [currentPath, syncMode, directoryHandle, virtualFileTree]);
 
     useEffect(() => { loadItems(); }, [loadItems]);
+
+    const sortedItems = useMemo(() => {
+        // FIX: Explicitly type sort arguments to resolve incorrect type inference.
+        return [...items].sort((a: DisplayItem, b: DisplayItem) => {
+            if (a.kind === 'directory' && b.kind !== 'directory') return -1;
+            if (a.kind !== 'directory' && b.kind === 'directory') return 1;
+
+            if (sortBy === 'date') {
+                return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+            }
+            return a.name.localeCompare(b.name);
+        });
+    }, [items, sortBy]);
 
     const handleItemClick = (item: DisplayItem) => {
         if (item.kind === 'directory') navigateTo([...currentPath, item.name]);
@@ -315,22 +350,40 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
                 </div>
             </header>
 
-            <div className="p-2 flex-shrink-0 border-b border-[var(--theme-border)]/50 text-sm font-semibold text-gray-400 flex items-center flex-wrap">
-                {currentPath.map((part, index) => (
-                    <React.Fragment key={index}>
-                        <button onClick={() => navigateTo(currentPath.slice(0, index + 1))} className="hover:text-white p-1 rounded-md">{part.replace(/_/g, ' ')}</button>
-                        {index < currentPath.length - 1 && <ChevronRightIcon className="w-5 h-5 flex-shrink-0" />}
-                    </React.Fragment>
-                ))}
+            <div className="p-2 flex-shrink-0 border-b border-[var(--theme-border)]/50 flex justify-between items-center gap-2">
+                <div className="text-sm font-semibold text-gray-400 flex items-center flex-wrap">
+                    <button onClick={() => navigateTo([])} className="hover:text-white p-1 rounded-md">Root</button>
+                    {currentPath.map((part, index) => (
+                        <React.Fragment key={index}>
+                            <ChevronRightIcon className="w-5 h-5 flex-shrink-0" />
+                            <button onClick={() => navigateTo(currentPath.slice(0, index + 1))} className="hover:text-white p-1 rounded-md">{part.replace(/_/g, ' ')}</button>
+                        </React.Fragment>
+                    ))}
+                </div>
+                <div className="flex items-center gap-2">
+                    <select value={sortBy} onChange={e => setSortBy(e.target.value as 'name' | 'date')} className="bg-slate-700 text-sm rounded-md p-1.5 focus:ring-orange-500 border-none">
+                        <option value="name">Sort by Name</option>
+                        <option value="date">Sort by Date</option>
+                    </select>
+                    <div className="flex items-center bg-slate-700 rounded-md p-1">
+                        <button onClick={() => setViewMode('grid')} className={`p-1 rounded ${viewMode === 'grid' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}><GridIcon/></button>
+                        <button onClick={() => setViewMode('list')} className={`p-1 rounded ${viewMode === 'list' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}><ListIcon/></button>
+                    </div>
+                </div>
             </div>
 
             <main className="flex-1 overflow-y-auto p-4">
                 {isLoading ? <div className="h-full flex items-center justify-center"><Spinner className="w-8 h-8 text-orange-400" /></div>
-                : items.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
-                        {/* FIX: Explicitly typed the 'item' parameter in the map function to resolve a TypeScript inference issue where it was being treated as 'unknown'. */}
-                        {items.map((item: DisplayItem) => <GridItem key={item.name} item={item} onClick={() => handleItemClick(item)} photos={photos} videos={videos} currentPath={currentPath} />)}
-                    </div>
+                : sortedItems.length > 0 ? (
+                    viewMode === 'grid' ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+                            {sortedItems.map((item: DisplayItem) => <GridItem key={item.name} item={item} onClick={() => handleItemClick(item)} photos={photos} videos={videos} currentPath={currentPath} />)}
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                             {sortedItems.map((item: DisplayItem) => <ListItem key={item.name} item={item} onClick={() => handleItemClick(item)} />)}
+                        </div>
+                    )
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500 text-center">
                         <FolderIcon className="w-16 h-16 mb-4" />

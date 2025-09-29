@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { location } = req.body as { location: { city?: string; lat?: number; lon?: number } };
+  const { location, forecastDays } = req.body as { location: { city?: string; lat?: number; lon?: number }, forecastDays?: number };
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
@@ -30,34 +30,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = location.lat && location.lon
-        ? `Get the current weather for latitude ${location.lat} and longitude ${location.lon}. Also include the city name.`
-        : `Get the current weather for ${location.city}.`;
+        ? `Get the current weather and a ${forecastDays || 1}-day forecast for latitude ${location.lat} and longitude ${location.lon}. Include the city name. The forecast should start from today.`
+        : `Get the current weather and a ${forecastDays || 1}-day forecast for ${location.city}. The forecast should start from today.`;
         
+    const dailyForecastSchema = {
+        type: Type.OBJECT,
+        properties: {
+            date: { type: Type.STRING, description: 'The date for this forecast day in YYYY-MM-DD format.' },
+            tempHighCelsius: { type: Type.NUMBER },
+            tempLowCelsius: { type: Type.NUMBER },
+            condition: { type: Type.STRING },
+            windSpeedKph: { type: Type.NUMBER },
+            windDirection: { type: Type.STRING },
+            humidityPercent: { type: Type.NUMBER },
+            icon: { 
+                type: Type.STRING,
+                enum: ['SUNNY', 'CLOUDY', 'PARTLY_CLOUDY', 'RAIN', 'SNOW', 'WIND', 'FOG', 'STORM', 'UNKNOWN'],
+            },
+        }
+    };
+
+    const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+            city: { type: Type.STRING },
+            latitude: { type: Type.NUMBER },
+            longitude: { type: Type.NUMBER },
+            current: {
+                type: Type.OBJECT,
+                properties: {
+                    temperatureCelsius: { type: Type.NUMBER },
+                    feelsLikeCelsius: { type: Type.NUMBER },
+                    condition: { type: Type.STRING },
+                    icon: { type: Type.STRING, enum: ['SUNNY', 'CLOUDY', 'PARTLY_CLOUDY', 'RAIN', 'SNOW', 'WIND', 'FOG', 'STORM', 'UNKNOWN'] },
+                }
+            },
+            forecast: {
+                type: Type.ARRAY,
+                items: dailyForecastSchema,
+                description: `An array of daily forecast objects for the next ${forecastDays || 1} days, starting with today.`
+            }
+        }
+    };
+
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
             responseMimeType: 'application/json',
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    city: { type: Type.STRING },
-                    latitude: { type: Type.NUMBER },
-                    longitude: { type: Type.NUMBER },
-                    temperatureCelsius: { type: Type.NUMBER },
-                    feelsLikeCelsius: { type: Type.NUMBER },
-                    tempHighCelsius: { type: Type.NUMBER },
-                    tempLowCelsius: { type: Type.NUMBER },
-                    condition: { type: Type.STRING },
-                    windSpeedKph: { type: Type.NUMBER },
-                    windDirection: { type: Type.STRING },
-                    humidityPercent: { type: Type.NUMBER },
-                    icon: { 
-                        type: Type.STRING,
-                        enum: ['SUNNY', 'CLOUDY', 'PARTLY_CLOUDY', 'RAIN', 'SNOW', 'WIND', 'FOG', 'STORM', 'UNKNOWN'],
-                    },
-                }
-            }
+            responseSchema: responseSchema,
         },
     });
 

@@ -174,7 +174,7 @@ export async function getWeatherInfo(
         const response = await fetch(`${baseUrl}/api/weather`, {
             method: 'POST',
             headers: getHeaders(customApiAuthKey),
-            body: JSON.stringify({ location }),
+            body: JSON.stringify({ location, forecastDays: 7 }), // Always fetch 7-day forecast
         });
         return await handleFetchErrors(response);
     } catch (error) {

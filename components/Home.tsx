@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../App';
 import { SiteSettings } from '../constants';
 import { ClockWidget } from './widgets/ClockWidget';
-import { WeatherWidget } from './widgets/WeatherWidget';
+import { WeatherWidget, WeatherData } from './widgets/WeatherWidget';
 import { HomeTile } from './HomeTile';
 import { StorageUsage } from '../utils/storageUtils';
 import { StorageDetailsWidget } from './widgets/StorageDetailsWidget';
@@ -19,6 +19,8 @@ import { DashboardTile } from './tiles/DashboardTile';
 import { TourTile } from './tiles/TourTile';
 import { LogoutTile } from './tiles/LogoutTile';
 import { FileBrowserTile } from './tiles/FileBrowserTile';
+import { WeatherForecastModal } from './widgets/WeatherForecastModal';
+
 
 interface HomeProps {
     onNavigate: (view: View) => void;
@@ -40,12 +42,18 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = (props) => {
     const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem('welcomeShown'));
+    const [isWeatherForecastOpen, setIsWeatherForecastOpen] = useState(false);
+    const [forecastData, setForecastData] = useState<WeatherData | null>(null);
 
     const handleDismissWelcome = () => {
         setShowWelcome(false);
         sessionStorage.setItem('welcomeShown', 'true');
     };
     
+    const handleOpenForecast = (data: WeatherData) => {
+        setForecastData(data);
+        setIsWeatherForecastOpen(true);
+    };
 
     return (
         <div className="flex-1 flex flex-col font-inter relative overflow-y-auto no-scrollbar">
@@ -55,6 +63,13 @@ export const Home: React.FC<HomeProps> = (props) => {
                     creatorName={props.siteSettings.creator.name}
                     userName={props.siteSettings.userName || 'User'}
                     onDismiss={handleDismissWelcome}
+                />
+            )}
+            
+            {isWeatherForecastOpen && forecastData && (
+                <WeatherForecastModal 
+                    weatherData={forecastData}
+                    onClose={() => setIsWeatherForecastOpen(false)}
                 />
             )}
 
@@ -74,7 +89,9 @@ export const Home: React.FC<HomeProps> = (props) => {
                         <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />
                     </HomeTile>
                     <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '200ms' }}><ClockWidget /></HomeTile>
-                    <HomeTile className="col-span-1 row-span-2" style={{ animationDelay: '250ms' }}><WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} /></HomeTile>
+                    <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '250ms' }}>
+                         <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} onOpenForecast={handleOpenForecast} />
+                    </HomeTile>
 
                     <div className="col-span-full mt-2 mb-1 pl-1 text-lg font-bold text-white/90">Tools & Actions</div>
 
