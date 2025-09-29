@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { CREATOR_PIN, SiteSettings } from '../constants';
 import { AuthBrandingPanel } from './AuthBrandingPanel';
+import { DownloadIcon } from './icons/DownloadIcon';
 
 interface PinSetupModalProps {
   onSetPin: (pin: string, name: string) => void;
   mode: 'setup' | 'reset';
   siteSettings: SiteSettings;
+  showInstallButton: boolean;
+  onInstallClick: () => void;
 }
 
-export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, siteSettings }) => {
+export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, siteSettings, showInstallButton, onInstallClick }) => {
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -61,7 +64,7 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-start md:items-center justify-center p-4 auth-modal-container overflow-y-auto pt-16 md:pt-4 pb-8" aria-modal="true" role="dialog">
             <div className="bg-slate-800 w-full max-w-4xl rounded-xl shadow-2xl border border-slate-700/50 relative animate-modal-scale-in flex flex-col md:flex-row overflow-hidden md:min-h-[550px]">
                 <AuthBrandingPanel creator={siteSettings.creator} />
-                <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center auth-form-panel">
+                <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center relative auth-form-panel">
                     <h2 className="text-2xl sm:text-3xl font-bold text-orange-500">{title}</h2>
                     <p className="text-slate-400 mt-2 text-sm sm:text-base">{description}</p>
                     <form onSubmit={handleSubmit} className="mt-8 space-y-6">
@@ -127,6 +130,17 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                             Save & Continue
                         </button>
                     </form>
+                    <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
+                        {showInstallButton && (
+                            <button 
+                                onClick={onInstallClick}
+                                className="flex items-center gap-2 text-sm text-slate-400 hover:text-orange-500 hover:underline transition-colors"
+                            >
+                                <DownloadIcon className="w-4 h-4" />
+                                <span>Install App</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

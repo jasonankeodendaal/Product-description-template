@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
-import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN } from './constants';
+import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN, GITHUB_APK_URL } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
 import { GenerationResult } from './components/OutputPanel';
 import { FullScreenLoader } from './components/FullScreenLoader';
 import { db } from './services/db';
 import { fileSystemService } from './services/fileSystemService';
-import { apiSyncService, cloudAuthService } from './utils/dataUtils';
+import { apiSyncService, cloudAuthService, waitForGlobal } from './utils/dataUtils';
 import { AuthModal } from './components/AuthModal';
 import { Dashboard } from './components/Dashboard';
 import { RecordingManager } from './components/RecordingManager';
@@ -30,6 +30,7 @@ import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
 // FIX: Corrected import path for OnboardingTour from components/ to root, to match provided file structure.
 import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
+import { InstallOptionsModal } from './components/InstallOptionsModal';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -237,6 +238,7 @@ const App: React.FC = () => {
     const [isAppInstalled, setIsAppInstalled] = useState(
         () => window.matchMedia('(display-mode: standalone)').matches
     );
+    const [isInstallOptionsModalOpen, setIsInstallOptionsModalOpen] = useState(false);
     const [isManualInstallModalOpen, setIsManualInstallModalOpen] = useState(false);
     
     // App Update State
@@ -296,20 +298,25 @@ const App: React.FC = () => {
         };
     }, []);
     
-    const handlePwaInstall = async () => {
+    const handlePwaInstall = () => {
+        setIsInstallOptionsModalOpen(true);
+    };
+
+    const handlePwaInstallPrompt = async () => {
+        setIsInstallOptionsModalOpen(false);
         if (installPromptEvent) {
             installPromptEvent.prompt();
             const { outcome } = await installPromptEvent.userChoice;
             console.log(`User response to the install prompt: ${outcome}`);
-            setInstallPromptEvent(null); // The prompt can only be used once.
+            setInstallPromptEvent(null);
         } else {
-            // If the prompt isn't available, show instructions on how to install manually.
             setIsManualInstallModalOpen(true);
         }
     };
     
-    const handleDownloadSource = () => {
-        window.open('https://github.com/jasonankeodendaal/Product-description-template.git', '_blank');
+    const handleDownloadApk = () => {
+        window.open(GITHUB_APK_URL, '_blank');
+        setIsInstallOptionsModalOpen(false);
     };
 
 
@@ -883,14 +890,10 @@ const App: React.FC = () => {
     }, [siteSettings, handleUpdateSettings]);
 
     const onRestore = useCallback(async (file: File) => {
-        const JSZip = (window as any).JSZip;
-        if (typeof JSZip === 'undefined') {
-            alert("Error: JSZip library is not loaded. Cannot process backup file.");
-            return;
-        }
         setIsLoading(true);
         setLoadingMessage('Restoring backup...');
         try {
+            const JSZip = await waitForGlobal<any>('JSZip');
             const zip = await JSZip.loadAsync(file);
             const metadataFile = zip.file('metadata.json');
             if (!metadataFile) throw new Error('Invalid backup: metadata.json not found.');
@@ -1010,11 +1013,23 @@ const App: React.FC = () => {
     }
     
     if (isPinResetting) {
-        return <PinSetupModal onSetPin={(pin, _) => handleSetNewPinAfterReset(pin)} mode="reset" siteSettings={siteSettings}/>;
+        return <PinSetupModal 
+            onSetPin={(pin, _) => handleSetNewPinAfterReset(pin)} 
+            mode="reset" 
+            siteSettings={siteSettings}
+            showInstallButton={!isAppInstalled}
+            onInstallClick={handlePwaInstall}
+        />;
     }
 
     if (isPinSetupModalOpen) {
-        return <PinSetupModal onSetPin={handleSetUserPin} mode="setup" siteSettings={siteSettings}/>;
+        return <PinSetupModal 
+            onSetPin={handleSetUserPin} 
+            mode="setup" 
+            siteSettings={siteSettings}
+            showInstallButton={!isAppInstalled}
+            onInstallClick={handlePwaInstall}
+        />;
     }
     
     if (isOnboardingOpen) {
@@ -1022,7 +1037,13 @@ const App: React.FC = () => {
     }
 
     if (!isAuthenticated) {
-        return <AuthModal onUnlock={handleLogin} userPin={siteSettings.userPin} siteSettings={siteSettings} />;
+        return <AuthModal 
+            onUnlock={handleLogin} 
+            userPin={siteSettings.userPin} 
+            siteSettings={siteSettings} 
+            showInstallButton={!isAppInstalled}
+            onInstallClick={handlePwaInstall}
+        />;
     }
 
 
@@ -1201,7 +1222,6 @@ const App: React.FC = () => {
                     onApiDisconnect={handleApiDisconnect}
                     isApiConnecting={isApiConnecting}
                     isApiConnected={isApiConnected}
-                    onDownloadSource={handleDownloadSource}
                     userRole={userRole}
                     onInitiatePinReset={handleInitiatePinReset}
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
@@ -1235,6 +1255,14 @@ const App: React.FC = () => {
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
             {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
+            {isInstallOptionsModalOpen && (
+                <InstallOptionsModal 
+                    onClose={() => setIsInstallOptionsModalOpen(false)}
+                    onPwaInstall={handlePwaInstallPrompt}
+                    onDownloadApk={handleDownloadApk}
+                    siteSettings={siteSettings}
+                />
+            )}
             {isManualInstallModalOpen && <ManualInstallModal onClose={() => setIsManualInstallModalOpen(false)} />}
             {showUpdateToast && <UpdateToast onUpdate={() => window.location.reload()} />}
         </div>

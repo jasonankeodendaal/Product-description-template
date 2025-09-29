@@ -1,5 +1,6 @@
 import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent } from "../App";
 import { SiteSettings } from "../constants";
+import { waitForGlobal } from "../utils/dataUtils";
 
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
     if (!('showDirectoryPicker' in window)) throw new Error('File System Access API is not supported.');
@@ -289,11 +290,9 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
     for (const event of data.calendarEvents) await saveCalendarEventToDirectory(dirHandle, event);
 }
 
-const createDocxBlob = (structuredData: Record<string, string>): Promise<Blob> => {
-    const docx = (window as any).docx;
-    if (typeof docx === 'undefined') {
-        throw new Error('DOCX library is not loaded.');
-    }
+const createDocxBlob = async (structuredData: Record<string, string>): Promise<Blob> => {
+    const docx = await waitForGlobal<any>('docx');
+    
     const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
 
     const children: any[] = [];

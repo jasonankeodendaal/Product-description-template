@@ -1,5 +1,7 @@
 import React from 'react';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { GITHUB_APK_URL } from '../constants';
+import { AndroidIcon } from './icons/AndroidIcon';
 
 const CodeBlock: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <pre className="bg-black/50 p-3 rounded-md text-sm text-[var(--theme-text-primary)] font-mono overflow-x-auto whitespace-pre-wrap">
@@ -30,11 +32,7 @@ const Alert: React.FC<{ type: 'info' | 'warning' | 'tip', children: React.ReactN
 };
 
 
-interface AppPublishingGuideProps {
-    onDownloadSource: () => void;
-}
-
-export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownloadSource }) => {
+export const AppPublishingGuide: React.FC = () => {
     return (
         <div className="space-y-12 text-sm leading-relaxed animate-fade-in-down max-w-4xl">
             <section>
@@ -42,6 +40,24 @@ export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownlo
                 <p className="mt-2 text-[var(--theme-text-secondary)]">
                     This guide provides a complete walkthrough for packaging your Progressive Web App (PWA) into an Android App Bundle (AAB) file. This file can be installed directly on Android devices or submitted to the Google Play Store. We will use free, industry-standard tools for this process.
                 </p>
+            </section>
+
+            <section>
+                <h3 className="text-xl font-bold text-white mb-4">Quick Install (Android)</h3>
+                <p className="mb-4 text-gray-400">If you just want to install the app on an Android device without going through the manual build process, you can download the pre-built APK file directly.</p>
+                <Alert type="tip">
+                    <strong>Note:</strong> You may need to enable "Install from unknown sources" in your Android settings to install this file.
+                </Alert>
+                <div className="mt-4">
+                    <a 
+                        href={GITHUB_APK_URL}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-5 rounded-md text-sm inline-flex items-center gap-2"
+                    >
+                        <AndroidIcon /> Download APK File
+                    </a>
+                </div>
             </section>
 
             <Alert type="info">
@@ -68,10 +84,10 @@ export const AppPublishingGuide: React.FC<AppPublishingGuideProps> = ({ onDownlo
                 <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 1: Deploying Your Web App to Vercel</h3>
                  <div className="space-y-6">
                     <Step num="1" title="Get Your App's Source Code">
-                        <p>The first step is to get a complete copy of the application's code from the official GitHub repository. Click the button below to visit the repository where you can download it as a .zip or clone it.</p>
-                        <button onClick={onDownloadSource} className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2">
+                        <p>The first step is to get a complete copy of the application's code from the official GitHub repository. Visit the repository to download it as a .zip or clone it.</p>
+                        <a href="https://github.com/jasonankeodendaal/Product-description-template.git" target="_blank" rel="noopener noreferrer" className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2">
                             <DownloadIcon /> Go to GitHub Repository
-                        </button>
+                        </a>
                     </Step>
                     
                     <Step num="2" title="Deploy via Drag-and-Drop">

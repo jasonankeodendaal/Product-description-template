@@ -1,17 +1,13 @@
 import { SiteSettings } from '../constants';
 import { PrintableEntry } from '../components/PrintPreview';
+import { waitForGlobal } from './dataUtils';
 
-export const exportLogToPDF = (
+export const exportLogToPDF = async (
     summary: string,
     entries: PrintableEntry[],
     siteSettings: SiteSettings
 ) => {
-    const jspdf = (window as any).jspdf;
-    if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
-        alert("PDF generation library is not loaded.");
-        return;
-    }
-
+    const jspdf = await waitForGlobal<any>('jspdf');
     const { jsPDF } = jspdf;
     const doc = new jsPDF();
     const now = new Date();

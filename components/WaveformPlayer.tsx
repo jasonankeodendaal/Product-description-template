@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { PlayIcon } from './icons/PlayIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import { formatTime } from '../utils/formatters';
+import { waitForGlobal } from '../utils/dataUtils';
 
 interface WaveformPlayerProps {
     audioBlob: Blob | null;
@@ -17,43 +18,52 @@ export const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioBlob }) => 
     useEffect(() => {
         if (!containerRef.current || !audioBlob) return;
         
-        const WaveSurfer = (window as any).WaveSurfer;
-        if (!WaveSurfer) {
-            console.error("WaveSurfer library is not loaded.");
-            return;
-        }
+        let isCancelled = false;
+        
+        const init = async () => {
+            try {
+                const WaveSurfer = await waitForGlobal<any>('WaveSurfer');
+                if (isCancelled || !containerRef.current) return;
 
-        // Cleanup previous instance if it exists
-        if (wavesurferRef.current) {
-            wavesurferRef.current.destroy();
-        }
+                if (wavesurferRef.current) {
+                    wavesurferRef.current.destroy();
+                }
 
-        const ws = WaveSurfer.create({
-            container: containerRef.current,
-            waveColor: 'var(--theme-text-secondary, #9CA3AF)',
-            progressColor: 'var(--theme-orange, #F97316)',
-            cursorColor: 'var(--theme-text-primary, #F9FAFB)',
-            barWidth: 3,
-            barRadius: 3,
-            barGap: 2,
-            height: 60,
-            url: URL.createObjectURL(audioBlob),
-        });
+                const ws = WaveSurfer.create({
+                    container: containerRef.current,
+                    waveColor: 'var(--theme-text-secondary, #9CA3AF)',
+                    progressColor: 'var(--theme-orange, #F97316)',
+                    cursorColor: 'var(--theme-text-primary, #F9FAFB)',
+                    barWidth: 3,
+                    barRadius: 3,
+                    barGap: 2,
+                    height: 60,
+                    url: URL.createObjectURL(audioBlob),
+                });
+                wavesurferRef.current = ws;
 
-        wavesurferRef.current = ws;
+                ws.on('play', () => setIsPlaying(true));
+                ws.on('pause', () => setIsPlaying(false));
+                ws.on('finish', () => setIsPlaying(false));
+                ws.on('timeupdate', (time: number) => setCurrentTime(Math.floor(time)));
+                ws.on('ready', (newDuration: number) => {
+                     setDuration(Math.floor(newDuration));
+                     setCurrentTime(0);
+                });
 
-        ws.on('play', () => setIsPlaying(true));
-        ws.on('pause', () => setIsPlaying(false));
-        ws.on('finish', () => setIsPlaying(false));
-        ws.on('timeupdate', (time: number) => setCurrentTime(Math.floor(time)));
-        ws.on('ready', (newDuration: number) => {
-             setDuration(Math.floor(newDuration));
-             setCurrentTime(0);
-        });
+            } catch(e) {
+                console.error("WaveSurfer library failed to load.", e);
+            }
+        };
 
+        init();
 
         return () => {
-            ws.destroy();
+            isCancelled = true;
+            if (wavesurferRef.current) {
+                wavesurferRef.current.destroy();
+                wavesurferRef.current = null;
+            }
         };
     }, [audioBlob]);
 

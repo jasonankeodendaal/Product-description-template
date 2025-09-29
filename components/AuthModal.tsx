@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import { UserRole } from '../App';
 import { CREATOR_PIN, SiteSettings } from '../constants';
 import { AuthBrandingPanel } from './AuthBrandingPanel';
+import { DownloadIcon } from './icons/DownloadIcon';
 
 interface AuthModalProps {
   onUnlock: (role: UserRole) => void;
   userPin?: string;
   siteSettings: SiteSettings;
+  showInstallButton: boolean;
+  onInstallClick: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSettings }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSettings, showInstallButton, onInstallClick }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isCreatorLogin, setIsCreatorLogin] = useState(false);
@@ -78,6 +81,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSet
               <div className="text-center mt-6">
                     <button onClick={() => { setIsCreatorLogin(false); setError(''); }} className="text-sm text-slate-400 hover:text-orange-500 hover:underline transition-colors">← Back to User Login</button>
               </div>
+              <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
+                {showInstallButton && (
+                    <button 
+                        onClick={onInstallClick}
+                        className="flex items-center gap-2 text-sm text-slate-400 hover:text-orange-500 hover:underline transition-colors"
+                    >
+                        <DownloadIcon className="w-4 h-4" />
+                        <span>Install App</span>
+                    </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="animate-fade-in-down">
@@ -97,6 +111,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSet
                 {error && <p className="text-red-500 text-sm text-center">{error}</p>}
                 <button type="submit" style={{ backgroundColor: '#A0522D' }} className="w-full text-white font-bold py-4 px-4 rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors text-lg" disabled={pin.length < 4}>Unlock</button>
               </form>
+              <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
+                {showInstallButton && (
+                    <button 
+                        onClick={onInstallClick}
+                        className="flex items-center gap-2 text-sm text-slate-400 hover:text-orange-500 hover:underline transition-colors"
+                    >
+                        <DownloadIcon className="w-4 h-4" />
+                        <span>Install App</span>
+                    </button>
+                )}
+              </div>
               <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6">
                   <button onClick={() => { setIsCreatorLogin(true); setError(''); setPin(''); }} className="text-xs text-slate-400 hover:text-orange-500 hover:underline transition-colors">Admin Login</button>
               </div>

@@ -44,7 +44,6 @@ interface DashboardProps {
   onApiDisconnect: () => void;
   isApiConnecting: boolean;
   isApiConnected: boolean;
-  onDownloadSource: () => void;
   userRole: UserRole;
   onInitiatePinReset: () => void;
   onOpenCreatorInfo: () => void;
@@ -91,7 +90,7 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
         case 'about':
             return <AboutThisApp onNavigateToSetup={() => setDashboardView('setup')} />;
         case 'publishing':
-            return <AppPublishingGuide onDownloadSource={props.onDownloadSource} />;
+            return <AppPublishingGuide />;
         default:
             return (
                 <div className="space-y-6">

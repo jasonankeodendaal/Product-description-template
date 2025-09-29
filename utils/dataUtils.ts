@@ -39,6 +39,28 @@ export const dataURLtoBlob = (dataurl: string): Blob => {
     return new Blob([u8arr], {type:mime});
 }
 
+/**
+ * Waits for a global variable (from a CDN script) to be available on the window object.
+ * @param name The name of the global variable.
+ * @param timeout The maximum time to wait in milliseconds.
+ * @returns A promise that resolves with the library/variable.
+ */
+export const waitForGlobal = <T>(name: string, timeout = 5000): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const check = () => {
+      if ((window as any)[name]) {
+        resolve((window as any)[name] as T);
+      } else if (Date.now() - startTime > timeout) {
+        reject(new Error(`Library ${name} did not load within ${timeout}ms.`));
+      } else {
+        setTimeout(check, 100);
+      }
+    };
+    check();
+  });
+};
+
 
 export const createBackup = async (
     siteSettings: SiteSettings,
@@ -50,11 +72,7 @@ export const createBackup = async (
     logEntries: LogEntry[],
     calendarEvents: CalendarEvent[],
 ): Promise<void> => {
-    const JSZip = (window as any).JSZip;
-    if (typeof JSZip === 'undefined') {
-        alert("Error: JSZip library is not loaded. Cannot create backup file.");
-        throw new Error("JSZip not loaded");
-    }
+    const JSZip = await waitForGlobal<any>('JSZip');
     const zip = new JSZip();
 
     const metadata: Omit<BackupData, 'recordings' | 'photos' | 'noteRecordings'> = {

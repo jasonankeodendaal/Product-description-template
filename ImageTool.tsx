@@ -7,9 +7,7 @@ import { squareImageAndGetBlob } from './utils/imageUtils';
 import { XIcon } from './components/icons/XIcon';
 import { Spinner } from './components/icons/Spinner';
 import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
-
-// Declare JSZip which is loaded from a CDN
-declare var JSZip: any;
+import { waitForGlobal } from './utils/dataUtils';
 
 interface ImageToolProps {
   initialImage: Photo | null;
@@ -161,11 +159,12 @@ export const ImageTool: React.FC<ImageToolProps> = ({ initialImage, onClearIniti
     };
 
     const handleDownloadZip = useCallback(async () => {
-        if (imageItems.length === 0 || typeof JSZip === 'undefined') return;
+        if (imageItems.length === 0) return;
 
         setIsZipping(true);
         setZipProgress(0);
         try {
+            const JSZip = await waitForGlobal<any>('JSZip');
             const zip = new JSZip();
             for (let i = 0; i < imageItems.length; i++) {
                 const item = imageItems[i];

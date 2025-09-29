@@ -3,11 +3,12 @@ import { XIcon } from './icons/XIcon';
 import { PwaIcon } from './icons/PwaIcon';
 import { SiteSettings } from '../constants';
 import { ZipIcon } from './icons/ZipIcon';
+import { AndroidIcon } from './icons/AndroidIcon';
 
 interface InstallOptionsModalProps {
     onClose: () => void;
     onPwaInstall: () => void;
-    onDownloadSource: () => void;
+    onDownloadApk: () => void;
     siteSettings: SiteSettings;
 }
 
@@ -24,7 +25,7 @@ const InstallOption: React.FC<{ title: string; description: string; icon: React.
     </button>
 );
 
-export const InstallOptionsModal: React.FC<InstallOptionsModalProps> = ({ onClose, onPwaInstall, onDownloadSource, siteSettings }) => {
+export const InstallOptionsModal: React.FC<InstallOptionsModalProps> = ({ onClose, onPwaInstall, onDownloadApk, siteSettings }) => {
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
             <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-lg shadow-xl border border-[var(--theme-border)] relative animate-modal-scale-in">
@@ -45,10 +46,10 @@ export const InstallOptionsModal: React.FC<InstallOptionsModalProps> = ({ onClos
                         onClick={onPwaInstall}
                     />
                     <InstallOption
-                        title="Download App Source (.zip)"
-                        description="Download a complete package of the application's source code for offline use or self-hosting."
-                        icon={<ZipIcon />}
-                        onClick={onDownloadSource}
+                        title="Download Android APK (.apk)"
+                        description="Install the app directly on your Android device. You may need to enable 'Install from unknown sources'."
+                        icon={<AndroidIcon />}
+                        onClick={onDownloadApk}
                     />
                 </div>
             </div>

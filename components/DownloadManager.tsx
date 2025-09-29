@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
+import { waitForGlobal } from '../utils/dataUtils';
 
 // FIX: Define QueuedItem locally to resolve import error from App.tsx
 export interface QueuedItem {
@@ -27,16 +28,11 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
   const handleDownloadZip = async () => {
     if (queue.length === 0) return;
     
-    const JSZip = (window as any).JSZip;
-    if (typeof JSZip === 'undefined') {
-      setError("Error: JSZip library is not loaded. Cannot create .zip file.");
-      return;
-    }
-    
     setIsZipping(true);
     setError(null);
 
     try {
+      const JSZip = await waitForGlobal<any>('JSZip');
       const zip = new JSZip();
 
       queue.forEach(item => {
@@ -65,7 +61,8 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
 
     } catch (err) {
       console.error("Failed to generate zip file:", err);
-      setError("Could not generate the zip file. Please check the console for details.");
+      const message = err instanceof Error ? err.message : "An unknown error occurred.";
+      setError(`Could not generate the zip file: ${message}`);
     } finally {
       setIsZipping(false);
     }
@@ -122,7 +119,7 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
                 )}
             </div>
             
-            {error && <p className="text-[var(--theme-red)] text-sm px-4">{error}</p>}
+            {error && <p className="text-[var(--theme-red)] text-sm px-4 pb-2">{error}</p>}
 
             <footer className="p-4 border-t border-[var(--theme-border)] bg-black/20 flex justify-between items-center">
                  <button onClick={onClear} className="text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)] transition-colors">Clear Queue</button>
