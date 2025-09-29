@@ -6,10 +6,10 @@ interface TourTileProps {
 }
 
 export const TourTile: React.FC<TourTileProps> = ({ onOpenTour }) => (
-    <button onClick={onOpenTour} className="w-full h-full bg-gradient-to-br from-cyan-600/90 to-black/60 text-white p-2 sm:p-3 flex flex-col justify-between items-start gap-1 sm:gap-2 hover:from-cyan-500/90 hover:to-black/50 transition-all">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 holographic-icon">
+    <button onClick={onOpenTour} className="w-full h-full bg-gradient-to-br from-cyan-600/90 to-black/60 text-white p-2 sm:p-3 flex flex-col justify-center items-center text-center gap-2 hover:from-cyan-500/90 hover:to-black/50 transition-all">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 holographic-icon">
             <TourToolIcon />
         </div>
-        <span className="font-bold text-sm sm:text-base text-white">App Tour</span>
+        <span className="font-bold text-base sm:text-lg text-white">App Tour</span>
     </button>
 );

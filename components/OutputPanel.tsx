@@ -327,32 +327,25 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         if (!folderPath) return;
 
         setIsUploading(true);
-        const sku = structuredData['SKU'] || `media_${Date.now()}`;
-        const sanitizedSku = sanitize(sku);
-
-        // Find the next available number for this SKU in this specific folder
-        const allPhotosInFolder = photos.filter(p => p.folder === folderPath);
-        let counter = 1;
-        while (allPhotosInFolder.some(p => p.name === `${sanitizedSku}_${counter}`)) {
-            counter++;
-        }
-        
         for (const file of Array.from(files)) {
             try {
-                const resizedDataUrl = await resizeImage(file);
-                const imageBlob = dataURLtoBlob(resizedDataUrl);
+                const sanitizedName = sanitize(structuredData['Name'] || file.name.split('.').slice(0, -1).join('.'));
+                const sanitizedSku = sanitize(structuredData['SKU'] || `image_${Date.now()}`);
+                const newPhotoName = `${sanitizedName}_${sanitizedSku}`;
+
+                const imageBlob = await squareImageAndGetBlob(file, 800);
+                
                 const newPhoto: Photo = {
                     id: crypto.randomUUID(),
-                    name: `${sanitizedSku}_${counter}`,
+                    name: newPhotoName,
                     notes: `Linked to product in folder: ${folderPath}`,
                     date: new Date().toISOString(),
                     folder: folderPath,
                     imageBlob,
-                    imageMimeType: imageBlob.type,
+                    imageMimeType: 'image/jpeg', // squareImageAndGetBlob returns jpeg
                     tags: [structuredData['Brand'] || '', structuredData['SKU'] || ''].filter(Boolean) as string[],
                 };
                 await onSavePhoto(newPhoto);
-                counter++;
             } catch (error) {
                 console.error("Failed to process image:", error);
                 alert(`Failed to process ${file.name}. It might be corrupted or an unsupported format.`);
@@ -361,7 +354,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         setIsUploading(false);
         if(fileInputRef.current) fileInputRef.current.value = '';
 
-    }, [structuredData, onSavePhoto, getProductFolderPath, photos]);
+    }, [structuredData, onSavePhoto, getProductFolderPath]);
     
     const handleVideoUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0 || !structuredData) return;
@@ -369,20 +362,15 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         if (!folderPath) return;
         
         setIsUploadingVideo(true);
-        const sku = structuredData['SKU'] || `media_${Date.now()}`;
-        const sanitizedSku = sanitize(sku);
-
-        const allVideosInFolder = videos.filter(v => v.folder === folderPath);
-        let counter = 1;
-        while (allVideosInFolder.some(v => v.name === `${sanitizedSku}_${counter}`)) {
-            counter++;
-        }
-
         for (const file of Array.from(files)) {
              try {
+                const sanitizedName = sanitize(structuredData['Name'] || file.name.split('.').slice(0, -1).join('.'));
+                const sanitizedSku = sanitize(structuredData['SKU'] || `video_${Date.now()}`);
+                const newVideoName = `${sanitizedName}_${sanitizedSku}`;
+
                 const newVideo: Video = {
                     id: crypto.randomUUID(),
-                    name: `${sanitizedSku}_${counter}`,
+                    name: newVideoName,
                     notes: `Linked to product in folder: ${folderPath}`,
                     date: new Date().toISOString(),
                     folder: folderPath,
@@ -391,7 +379,6 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                     tags: [structuredData['Brand'] || '', structuredData['SKU'] || ''].filter(Boolean) as string[],
                 };
                 await onSaveVideo(newVideo);
-                counter++;
             } catch (error) {
                 console.error("Failed to process video:", error);
                 alert(`Failed to process ${file.name}.`);
@@ -399,7 +386,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         }
         setIsUploadingVideo(false);
         if(videoInputRef.current) videoInputRef.current.value = '';
-    }, [structuredData, onSaveVideo, getProductFolderPath, videos]);
+    }, [structuredData, onSaveVideo, getProductFolderPath]);
 
 
     const handleSquareImage = async (photo: Photo, size: number) => {

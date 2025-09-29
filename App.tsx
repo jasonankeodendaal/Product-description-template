@@ -84,6 +84,8 @@ export interface Photo {
     imageBlob: Blob;
     imageMimeType: string;
     tags: string[];
+    width?: number;
+    height?: number;
 }
 
 export interface Video {
@@ -95,6 +97,8 @@ export interface Video {
     videoBlob: Blob;
     videoMimeType: string;
     tags: string[];
+    width?: number;
+    height?: number;
 }
 
 

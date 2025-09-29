@@ -45,7 +45,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     latitude: { type: Type.NUMBER },
                     longitude: { type: Type.NUMBER },
                     temperatureCelsius: { type: Type.NUMBER },
+                    feelsLikeCelsius: { type: Type.NUMBER },
+                    tempHighCelsius: { type: Type.NUMBER },
+                    tempLowCelsius: { type: Type.NUMBER },
                     condition: { type: Type.STRING },
+                    windSpeedKph: { type: Type.NUMBER },
+                    windDirection: { type: Type.STRING },
+                    humidityPercent: { type: Type.NUMBER },
                     icon: { 
                         type: Type.STRING,
                         enum: ['SUNNY', 'CLOUDY', 'PARTLY_CLOUDY', 'RAIN', 'SNOW', 'WIND', 'FOG', 'STORM', 'UNKNOWN'],

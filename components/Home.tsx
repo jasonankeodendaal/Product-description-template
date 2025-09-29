@@ -74,7 +74,7 @@ export const Home: React.FC<HomeProps> = (props) => {
                         <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />
                     </HomeTile>
                     <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '200ms' }}><ClockWidget /></HomeTile>
-                    <HomeTile className="col-span-1 aspect-square" style={{ animationDelay: '250ms' }}><WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} /></HomeTile>
+                    <HomeTile className="col-span-1 row-span-2" style={{ animationDelay: '250ms' }}><WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} /></HomeTile>
 
                     <div className="col-span-full mt-2 mb-1 pl-1 text-lg font-bold text-white/90">Tools & Actions</div>
 

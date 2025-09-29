@@ -168,7 +168,9 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
           <div className="pt-6">
             <h3 className="font-semibold text-[var(--theme-text-primary)] mb-4">Existing Templates</h3>
             <div className="space-y-3">
-              {Object.entries(groupedTemplates).sort(([a], [b]) => a.localeCompare(b)).map(([category, templatesInCategory]) => {
+              {/* FIX: Refactored to use Object.keys().sort().map() for more reliable type inference and to prevent 'map does not exist on type unknown' error. */}
+              {Object.keys(groupedTemplates).sort().map(category => {
+                const templatesInCategory = groupedTemplates[category];
                 const isCollapsed = collapsedCategories.has(category);
                 return (
                     <div key={category} className="bg-[var(--theme-bg)]/50 rounded-md overflow-hidden">

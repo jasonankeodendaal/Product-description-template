@@ -7,6 +7,9 @@ import { RainIcon } from '../icons/RainIcon';
 import { SnowIcon } from '../icons/SnowIcon';
 import { WindIcon } from '../icons/WindIcon';
 import { RefreshIcon } from '../icons/RefreshIcon';
+import { ArrowDownIcon } from '../icons/ArrowDownIcon';
+import { ArrowUpIcon } from '../icons/ArrowUpIcon';
+import { HumidityIcon } from '../icons/HumidityIcon';
 
 interface WeatherWidgetProps {
     getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }) => Promise<any>;
@@ -18,7 +21,13 @@ interface WeatherData {
     latitude: number;
     longitude: number;
     temperatureCelsius: number;
+    feelsLikeCelsius: number;
+    tempHighCelsius: number;
+    tempLowCelsius: number;
     condition: string;
+    windSpeedKph: number;
+    windDirection: string;
+    humidityPercent: number;
     icon: 'SUNNY' | 'CLOUDY' | 'PARTLY_CLOUDY' | 'RAIN' | 'SNOW' | 'WIND' | 'FOG' | 'STORM' | 'UNKNOWN';
 }
 
@@ -33,6 +42,15 @@ const WeatherIcon: React.FC<{ icon: WeatherData['icon'] }> = ({ icon }) => {
         default: return <SunIcon />;
     }
 };
+
+const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string; }> = ({ icon, label, value }) => (
+    <div className="flex items-center gap-2 text-xs">
+        <div className="w-4 h-4 text-gray-400">{icon}</div>
+        <span className="font-semibold text-gray-300">{label}:</span>
+        <span className="font-bold text-white ml-auto">{value}</span>
+    </div>
+);
+
 
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, siteSettings }) => {
     const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -95,7 +113,8 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
 
     return (
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
+            {/* Header */}
+            <div className="flex justify-between items-start flex-shrink-0">
                 {isEditingCity ? (
                     <form onSubmit={handleCitySubmit} className="flex-grow">
                         <input
@@ -117,23 +136,32 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
                 </button>
             </div>
 
-            <div className="flex-grow flex items-center justify-center py-1">
+            {/* Main Display */}
+            <div className="flex-grow flex flex-col items-center justify-center py-1">
                 {isLoading || isDetecting ? (
-                    <Spinner className="w-6 h-6 text-white" />
+                    <Spinner className="w-8 h-8 text-white" />
                 ) : error ? (
-                    <p className="text-rose-400 text-xs text-center">{error}</p>
+                    <p className="text-rose-400 text-xs text-center p-4">{error}</p>
                 ) : weather ? (
-                    <div className="flex items-center gap-1">
-                        <div className="w-10 h-10 text-white">{<WeatherIcon icon={weather.icon} />}</div>
-                        <div>
-                            <p className="text-2xl md:text-3xl font-bold text-white">{Math.round(weather.temperatureCelsius)}°C</p>
-                            <p className="text-gray-300 font-semibold text-xs -mt-1">{weather.condition}</p>
-                        </div>
+                    <div className="w-full flex flex-col items-center">
+                        <div className="w-16 h-16 text-white my-1"><WeatherIcon icon={weather.icon} /></div>
+                        <p className="text-5xl font-bold text-white">{Math.round(weather.temperatureCelsius)}°</p>
+                        <p className="text-gray-300 font-semibold text-sm capitalize">{weather.condition}</p>
                     </div>
                 ) : (
                     <p className="text-gray-400 text-sm">No weather data.</p>
                 )}
             </div>
+
+            {/* Details */}
+            {weather && !isLoading && (
+                 <div className="flex-shrink-0 space-y-2 p-2 bg-black/20 rounded-lg">
+                    <DetailItem icon={<ArrowUpIcon />} label="High" value={`${Math.round(weather.tempHighCelsius)}°`} />
+                    <DetailItem icon={<ArrowDownIcon />} label="Low" value={`${Math.round(weather.tempLowCelsius)}°`} />
+                    <DetailItem icon={<WindIcon />} label="Wind" value={`${Math.round(weather.windSpeedKph)} kph ${weather.windDirection}`} />
+                    <DetailItem icon={<HumidityIcon />} label="Humidity" value={`${weather.humidityPercent}%`} />
+                 </div>
+            )}
         </div>
     );
 };

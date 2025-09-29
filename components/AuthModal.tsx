@@ -90,7 +90,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSet
         {showInstallButton && (
           <button 
             onClick={onInstallClick}
-            className="w-full text-slate-300 bg-slate-700/50 hover:bg-slate-700 font-bold py-4 px-4 rounded-lg transition-colors text-lg flex items-center justify-center gap-3"
+            style={{ backgroundColor: 'var(--theme-orange)' }}
+            className="w-full text-black font-bold py-4 px-4 rounded-lg transition-colors text-lg flex items-center justify-center gap-3 hover:opacity-90"
           >
             <DownloadIcon className="h-6 w-6" />
             <span>Install App</span>
