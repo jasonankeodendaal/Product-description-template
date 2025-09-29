@@ -83,10 +83,10 @@ export const AppPublishingGuide: React.FC = () => {
             <div>
                 <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 1: Deploying Your Web App to Vercel</h3>
                  <div className="space-y-6">
-                    <Step num="1" title="Get Your App's Source Code">
-                        <p>The first step is to get a complete copy of the application's code from the official GitHub repository. Visit the repository to download it as a .zip or clone it.</p>
-                        <a href="https://github.com/jasonankeodendaal/Product-description-template.git" target="_blank" rel="noopener noreferrer" className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2">
-                            <DownloadIcon /> Go to GitHub Repository
+                     <Step num="1" title="Download Source Code from GitHub">
+                        <p>As a creator, you can download the full source code to self-host, customize, or inspect the application. The code is available on GitHub.</p>
+                        <a href="https://github.com/jasonankeodendaal/Product-description-template.git" target="_blank" rel="noopener noreferrer" className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 mt-2">
+                            <DownloadIcon /> Download Source Code
                         </a>
                     </Step>
                     
