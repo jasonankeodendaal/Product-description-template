@@ -298,20 +298,26 @@ const App: React.FC = () => {
         };
     }, []);
     
-    const handlePwaInstall = () => {
-        setIsInstallOptionsModalOpen(true);
-    };
-
-    const handlePwaInstallPrompt = async () => {
-        setIsInstallOptionsModalOpen(false);
+    const handleInstallClick = async () => {
+        // If the PWA install prompt is available, show it directly. This is the ideal flow.
         if (installPromptEvent) {
             installPromptEvent.prompt();
             const { outcome } = await installPromptEvent.userChoice;
             console.log(`User response to the install prompt: ${outcome}`);
+            // The prompt can only be used once, so we clear it.
             setInstallPromptEvent(null);
         } else {
-            setIsManualInstallModalOpen(true);
+            // If the prompt is not available (e.g., on iOS, or if previously dismissed),
+            // open the modal that provides other options like APK download or manual instructions.
+            setIsInstallOptionsModalOpen(true);
         }
+    };
+
+    const handlePwaInstallFromModal = () => {
+        // This handler is called from the InstallOptionsModal. At this point, we know the
+        // direct prompt is not available, so we show the manual installation guide.
+        setIsInstallOptionsModalOpen(false);
+        setIsManualInstallModalOpen(true);
     };
     
     const handleDownloadApk = () => {
@@ -1018,7 +1024,7 @@ const App: React.FC = () => {
             mode="reset" 
             siteSettings={siteSettings}
             showInstallButton={!isAppInstalled}
-            onInstallClick={handlePwaInstall}
+            onInstallClick={handleInstallClick}
         />;
     }
 
@@ -1028,7 +1034,7 @@ const App: React.FC = () => {
             mode="setup" 
             siteSettings={siteSettings}
             showInstallButton={!isAppInstalled}
-            onInstallClick={handlePwaInstall}
+            onInstallClick={handleInstallClick}
         />;
     }
     
@@ -1042,7 +1048,7 @@ const App: React.FC = () => {
             userPin={siteSettings.userPin} 
             siteSettings={siteSettings} 
             showInstallButton={!isAppInstalled}
-            onInstallClick={handlePwaInstall}
+            onInstallClick={handleInstallClick}
         />;
     }
 
@@ -1166,7 +1172,7 @@ const App: React.FC = () => {
                     onOpenInfo={() => setIsInfoModalOpen(true)}
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                     showInstallButton={!isAppInstalled}
-                    onInstallClick={handlePwaInstall}
+                    onInstallClick={handleInstallClick}
                     onToggleOrientation={() => {}}
                     isLandscapeLocked={false}
                     userRole={userRole}
@@ -1186,7 +1192,7 @@ const App: React.FC = () => {
                         onOpenInfo={() => setIsInfoModalOpen(true)}
                         onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                         showInstallButton={!isAppInstalled}
-                        onInstallClick={handlePwaInstall}
+                        onInstallClick={handleInstallClick}
                         onToggleOrientation={() => {}}
                         isLandscapeLocked={false}
                     />
@@ -1258,7 +1264,7 @@ const App: React.FC = () => {
             {isInstallOptionsModalOpen && (
                 <InstallOptionsModal 
                     onClose={() => setIsInstallOptionsModalOpen(false)}
-                    onPwaInstall={handlePwaInstallPrompt}
+                    onPwaInstall={handlePwaInstallFromModal}
                     onDownloadApk={handleDownloadApk}
                     siteSettings={siteSettings}
                 />
