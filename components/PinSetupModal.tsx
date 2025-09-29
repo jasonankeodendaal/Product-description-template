@@ -130,17 +130,26 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
                             Save & Continue
                         </button>
                     </form>
-                    <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6">
-                        {showInstallButton && (
+                    
+                    {showInstallButton && (
+                        <>
+                            <div className="relative my-6 text-center">
+                                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                    <div className="w-full border-t border-slate-700"></div>
+                                </div>
+                                <div className="relative flex justify-center">
+                                    <span className="bg-slate-800 px-2 text-sm text-slate-500">Or</span>
+                                </div>
+                            </div>
                             <button 
                                 onClick={onInstallClick}
-                                className="flex items-center gap-2 text-sm text-slate-400 hover:text-orange-500 hover:underline transition-colors"
+                                className="w-full text-slate-300 bg-slate-700/50 hover:bg-slate-700 font-bold py-4 px-4 rounded-lg transition-colors text-lg flex items-center justify-center gap-3"
                             >
-                                <DownloadIcon className="w-4 h-4" />
+                                <DownloadIcon className="h-6 w-6" />
                                 <span>Install App</span>
                             </button>
-                        )}
-                    </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
