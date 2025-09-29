@@ -15,6 +15,7 @@ import { HomeIcon } from './icons/HomeIcon';
 import { ClockIcon } from './icons/ClockIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { RotateIcon } from './icons/RotateIcon';
+import { FolderOpenIcon } from './icons/FolderOpenIcon';
 
 interface HeaderProps {
   siteSettings: SiteSettings;
@@ -131,6 +132,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
             <HeaderNavItem label="Generator" icon={<SparklesIcon />} isActive={currentView === 'generator'} onClick={() => onNavigate('generator')} />
             <HeaderNavItem label="Recordings" icon={<RecordingIcon />} isActive={currentView === 'recordings'} onClick={() => onNavigate('recordings')} />
             <HeaderNavItem label="Photos" icon={<PhotoIcon />} isActive={currentView === 'photos'} onClick={() => onNavigate('photos')} />
+            <HeaderNavItem label="Browser" icon={<FolderOpenIcon />} isActive={currentView === 'browser'} onClick={() => onNavigate('browser')} />
             <HeaderNavItem label="Notepad" icon={<NotepadIcon />} isActive={currentView === 'notepad'} onClick={() => onNavigate('notepad')} />
             <HeaderNavItem label="Timesheet" icon={<ClockIcon />} isActive={currentView === 'timesheet'} onClick={() => onNavigate('timesheet')} />
             <HeaderNavItem label="Image Tool" icon={<ImageIcon />} isActive={currentView === 'image-tool'} onClick={() => onNavigate('image-tool')} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createBackup } from '../utils/dataUtils';
-import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent } from '../App';
+import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RestoreIcon } from './icons/RestoreIcon';
 import { FolderSyncIcon } from './icons/FolderSyncIcon';
@@ -24,6 +24,7 @@ interface DataManagementProps {
     templates: Template[];
     recordings: Recording[];
     photos: Photo[];
+    videos: Video[];
     notes: Note[];
     noteRecordings: NoteRecording[];
     logEntries: LogEntry[];
@@ -95,7 +96,7 @@ const InputField: React.FC<{ label: string; id: string; value: string; onChange:
 
 export const DataManagement: React.FC<DataManagementProps> = (props) => {
     const {
-        templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents,
+        templates, recordings, photos, videos, notes, noteRecordings, logEntries, calendarEvents,
         onRestore, directoryHandle, onClearLocalData, onSyncDirectory, onDisconnectDirectory,
         siteSettings, onUpdateSettings, onApiConnect, onApiDisconnect, isApiConnecting, isApiConnected,
         googleDriveStatus, onGoogleDriveConnect, onGoogleDriveDisconnect
@@ -151,7 +152,8 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
 
     const handleCreateBackup = async () => {
         try {
-            await createBackup(siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents);
+            // FIX: Added the missing 'videos' argument to the function call.
+            await createBackup(siteSettings, templates, recordings, photos, videos, notes, noteRecordings, logEntries, calendarEvents);
         } catch (error) {
             alert(`Failed to create backup: ${error instanceof Error ? error.message : "An unknown error occurred"}`);
         }

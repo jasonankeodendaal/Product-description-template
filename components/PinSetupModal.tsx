@@ -51,7 +51,7 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
 
   const title = mode === 'setup' ? 'Setup Your Workspace' : 'Reset Your PIN';
   const description = mode === 'setup' 
-    ? "First, let's get your workspace set up with a name and a secure PIN."
+    ? "First, let's get your workspace set up with a name and a secure 4-DIGIT PIN."
     : "Please enter a new 4-digit PIN. This will replace your old PIN immediately.";
 
   return (

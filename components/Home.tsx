@@ -18,6 +18,7 @@ import { ImageToolTile } from './tiles/ImageToolTile';
 import { DashboardTile } from './tiles/DashboardTile';
 import { TourTile } from './tiles/TourTile';
 import { LogoutTile } from './tiles/LogoutTile';
+import { FileBrowserTile } from './tiles/FileBrowserTile';
 
 interface HomeProps {
     onNavigate: (view: View) => void;
@@ -81,10 +82,11 @@ export const Home: React.FC<HomeProps> = (props) => {
                     <HomeTile className="aspect-square" style={{ animationDelay: '350ms' }}><RecordingsTile onNavigate={props.onNavigate} count={props.recordings.length} /></HomeTile>
                     <HomeTile className="aspect-square" style={{ animationDelay: '400ms' }}><PhotosTile onNavigate={props.onNavigate} count={props.photos.length} /></HomeTile>
                     <HomeTile className="aspect-square" style={{ animationDelay: '450ms' }}><NotepadTile onNavigate={props.onNavigate} count={props.notes.length} /></HomeTile>
-                    <HomeTile className="aspect-square" style={{ animationDelay: '500ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
-                    <HomeTile className="aspect-square" style={{ animationDelay: '550ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
-                    <HomeTile className="aspect-square" style={{ animationDelay: '600ms' }}><TourTile onOpenTour={props.onOpenOnboarding} /></HomeTile>
-                    <HomeTile className="aspect-square" style={{ animationDelay: '650ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '500ms' }}><FileBrowserTile onNavigate={props.onNavigate} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '550ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '600ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '650ms' }}><TourTile onOpenTour={props.onOpenOnboarding} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '700ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
                 </div>
             </div>
         </div>

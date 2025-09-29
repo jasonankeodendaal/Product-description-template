@@ -31,6 +31,8 @@ import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
 import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
+import { InactivityManager } from './components/InactivityManager';
+import { FileBrowser } from './components/FileBrowser';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -44,7 +46,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 // --- Type Definitions ---
-export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet' | 'calendar';
+export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet' | 'calendar' | 'browser';
 export type UserRole = 'user' | 'creator';
 
 export interface Template {
@@ -82,6 +84,18 @@ export interface Photo {
     imageMimeType: string;
     tags: string[];
 }
+
+export interface Video {
+    id: string;
+    name: string;
+    notes: string;
+    date: string;
+    folder: string;
+    videoBlob: Blob;
+    videoMimeType: string;
+    tags: string[];
+}
+
 
 export interface NoteRecording {
   id: string;
@@ -142,6 +156,7 @@ export interface BackupData {
     templates: Template[];
     recordings: Recording[];
     photos: Photo[];
+    videos: Video[];
     notes: Note[];
     noteRecordings: NoteRecording[];
     logEntries: LogEntry[];
@@ -193,6 +208,7 @@ const App: React.FC = () => {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [recordings, setRecordings] = useState<Recording[]>([]);
     const [photos, setPhotos] = useState<Photo[]>([]);
+    const [videos, setVideos] = useState<Video[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
     const [noteRecordings, setNoteRecordings] = useState<NoteRecording[]>([]);
     const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
@@ -246,8 +262,8 @@ const App: React.FC = () => {
 
     // Effect to recalculate storage whenever data changes
     useEffect(() => {
-        setStorageUsage(calculateStorageUsage({ photos, recordings, notes, logEntries, templates, calendarEvents }));
-    }, [photos, recordings, notes, logEntries, templates, calendarEvents]);
+        setStorageUsage(calculateStorageUsage({ photos, recordings, videos, notes, logEntries, templates, calendarEvents }));
+    }, [photos, recordings, videos, notes, logEntries, templates, calendarEvents]);
 
     // Effect for the live timer
     useEffect(() => {
@@ -343,7 +359,7 @@ const App: React.FC = () => {
         // Handle URL-based view navigation from PWA shortcuts
         const urlParams = new URLSearchParams(window.location.search);
         const requestedView = urlParams.get('view') as View;
-        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet'];
+        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet', 'browser'];
         if (requestedView && validViews.includes(requestedView)) {
             setCurrentView(requestedView);
         }
@@ -425,9 +441,10 @@ const App: React.FC = () => {
                         await handleApiConnect(settings.customApiEndpoint, settings.customApiAuthKey, true);
                     } else {
                         // This is the fallback for local storage
-                        const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
+                        const [dbRecordings, dbPhotos, dbVideos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
                             db.getAllRecordings(),
                             db.getAllPhotos(),
+                            db.getAllVideos(),
                             db.getAllNotes(),
                             db.getAllNoteRecordings(),
                             db.getAllLogEntries(),
@@ -435,6 +452,7 @@ const App: React.FC = () => {
                         ]);
                         setRecordings(dbRecordings);
                         setPhotos(dbPhotos);
+                        setVideos(dbVideos);
                         setNotes(dbNotes.map(migrateNote));
                         setNoteRecordings(dbNoteRecordings);
                         setLogEntries(dbLogEntries);
@@ -581,6 +599,25 @@ const App: React.FC = () => {
         await db.deletePhoto(photo.id);
         if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
     }, [directoryHandle]);
+    
+    const handleSaveVideo = useCallback(async (video: Video) => {
+        setVideos(prev => [video, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        await db.saveVideo(video);
+        if (directoryHandle) await fileSystemService.saveVideoToDirectory(directoryHandle, video);
+    }, [directoryHandle]);
+
+    const handleUpdateVideo = useCallback(async (video: Video) => {
+        setVideos(prev => prev.map(v => v.id === video.id ? video : v));
+        await db.saveVideo(video);
+        if (directoryHandle) await fileSystemService.saveVideoToDirectory(directoryHandle, video);
+    }, [directoryHandle]);
+
+    const handleDeleteVideo = useCallback(async (video: Video) => {
+        setVideos(prev => prev.filter(v => v.id !== video.id));
+        await db.deleteVideo(video.id);
+        if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
+    }, [directoryHandle]);
+
 
     const handleSaveNote = useCallback(async (note: Note) => {
         setNotes(prevNotes => {
@@ -742,11 +779,12 @@ const App: React.FC = () => {
         setLoadingMessage('Syncing from folder...');
         setIsLoading(true);
         try {
-            const [dirSettings, dirTemplates, {recordings: dirRecordings}, dirPhotos, dirNotes, dirNoteRecordings, dirLogEntries, dirCalendarEvents] = await Promise.all([
+            const [dirSettings, dirTemplates, {recordings: dirRecordings}, dirPhotos, dirVideos, dirNotes, dirNoteRecordings, dirLogEntries, dirCalendarEvents] = await Promise.all([
                 fileSystemService.loadSettings(handle),
                 fileSystemService.loadTemplates(handle),
                 fileSystemService.loadRecordingsFromDirectory(handle),
                 fileSystemService.loadPhotosFromDirectory(handle),
+                fileSystemService.loadVideosFromDirectory(handle),
                 fileSystemService.loadNotesFromDirectory(handle),
                 fileSystemService.loadNoteRecordingsFromDirectory(handle),
                 fileSystemService.loadLogEntriesFromDirectory(handle),
@@ -757,6 +795,7 @@ const App: React.FC = () => {
             if (dirTemplates) setTemplates(dirTemplates);
             setRecordings(dirRecordings);
             setPhotos(dirPhotos);
+            setVideos(dirVideos);
             setNotes(dirNotes.map(migrateNote));
             setNoteRecordings(dirNoteRecordings);
             setLogEntries(dirLogEntries);
@@ -783,7 +822,7 @@ const App: React.FC = () => {
                 await Promise.all([
                     fileSystemService.saveSettings(handle, newSettings),
                     fileSystemService.saveTemplates(handle, templates),
-                    fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, notes, noteRecordings, logEntries, calendarEvents }),
+                    fileSystemService.saveAllDataToDirectory(handle, { recordings, photos, videos, notes, noteRecordings, logEntries, calendarEvents }),
                 ]);
                 alert("Connected to new folder and saved current data.");
             }
@@ -796,7 +835,7 @@ const App: React.FC = () => {
             if (err instanceof DOMException && err.name === 'AbortError') return;
             alert(`Could not connect to directory: ${err instanceof Error ? err.message : String(err)}`);
         }
-    }, [siteSettings, templates, recordings, photos, notes, noteRecordings, logEntries, calendarEvents, syncFromDirectory]);
+    }, [siteSettings, templates, recordings, photos, videos, notes, noteRecordings, logEntries, calendarEvents, syncFromDirectory]);
 
     const handleDisconnectDirectory = useCallback(async () => {
         if(window.confirm("Are you sure you want to disconnect? The app will switch back to using local browser storage.")) {
@@ -807,9 +846,10 @@ const App: React.FC = () => {
             setSiteSettings(newSettings);
             localStorage.setItem('siteSettings', JSON.stringify(newSettings));
 
-            const [dbRecordings, dbPhotos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
+            const [dbRecordings, dbPhotos, dbVideos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
                 db.getAllRecordings(),
                 db.getAllPhotos(),
+                db.getAllVideos(),
                 db.getAllNotes(),
                 db.getAllNoteRecordings(),
                 db.getAllLogEntries(),
@@ -817,6 +857,7 @@ const App: React.FC = () => {
             ]);
             setRecordings(dbRecordings);
             setPhotos(dbPhotos);
+            setVideos(dbVideos);
             setNotes(dbNotes.map(migrateNote));
             setNoteRecordings(dbNoteRecordings);
             setLogEntries(dbLogEntries);
@@ -825,10 +866,11 @@ const App: React.FC = () => {
     }, [siteSettings]);
 
     const handleClearLocalData = useCallback(async () => {
-        if (window.confirm("WARNING: This will permanently delete all recordings, photos, notes, logs, and calendar events from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
+        if (window.confirm("WARNING: This will permanently delete all recordings, photos, videos, notes, logs, and calendar events from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
             await db.clearAllData();
             setRecordings([]);
             setPhotos([]);
+            setVideos([]);
             setNotes([]);
             setNoteRecordings([]);
             setLogEntries([]);
@@ -854,6 +896,7 @@ const App: React.FC = () => {
                 setTemplates(data.templates);
                 setRecordings(newRecordings);
                 setPhotos(newPhotos);
+                setVideos([]); // TODO: Add video support to API sync
                 setNotes(data.notes.map(migrateNote));
                 setNoteRecordings(newNoteRecordings);
                 setLogEntries(data.logEntries);
@@ -958,6 +1001,25 @@ const App: React.FC = () => {
                 };
                 await processFolder(photosFolder, '');
             }
+            
+            const restoredVideos: Video[] = [];
+            const videosFolder = zip.folder('assets/videos');
+            if (videosFolder) {
+                 const processFolder = async (folder: any) => {
+                    for (const fileName in folder.files) {
+                        if (fileName.endsWith('.json')) {
+                            const videoMetadata = JSON.parse(await folder.files[fileName].async('string'));
+                            const ext = videoMetadata.videoMimeType.split('/')[1] || 'mp4';
+                            const videoFile = zip.file(`assets/videos/${videoMetadata.folder}/${videoMetadata.id}.${ext}`);
+                            if (videoFile) {
+                                const videoBlob = await videoFile.async('blob');
+                                restoredVideos.push({ ...videoMetadata, videoBlob });
+                            }
+                        }
+                    }
+                };
+                await processFolder(videosFolder);
+            }
 
             if (directoryHandle) await handleDisconnectDirectory();
 
@@ -965,6 +1027,7 @@ const App: React.FC = () => {
             await Promise.all([
                 ...restoredRecordings.map(r => db.saveRecording(r)),
                 ...restoredPhotos.map(p => db.savePhoto(p)),
+                ...restoredVideos.map(v => db.saveVideo(v)),
                 ...metadata.notes.map((n: Note) => db.saveNote(n)),
                 ...restoredNoteRecordings.map(r => db.saveNoteRecording(r)),
                 ...(metadata.logEntries || []).map((l: LogEntry) => db.saveLogEntry(l)),
@@ -975,6 +1038,7 @@ const App: React.FC = () => {
             setTemplates(metadata.templates);
             setRecordings(restoredRecordings);
             setPhotos(restoredPhotos);
+            setVideos(restoredVideos);
             setNotes(metadata.notes.map(migrateNote));
             setNoteRecordings(restoredNoteRecordings);
             setLogEntries(metadata.logEntries || []);
@@ -1096,6 +1160,9 @@ const App: React.FC = () => {
                         photos={photos}
                         onSavePhoto={handleSavePhoto}
                         onDeletePhoto={handleDeletePhoto}
+                        videos={videos}
+                        onSaveVideo={handleSaveVideo}
+                        onDeleteVideo={handleDeleteVideo}
                         recordings={recordings}
                         notes={notes}
                         onEditImage={handleEditImage}
@@ -1152,6 +1219,14 @@ const App: React.FC = () => {
                     onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
                     onNavigate={setCurrentView}
                 />;
+            case 'browser':
+                return <FileBrowser 
+                    photos={photos}
+                    videos={videos}
+                    directoryHandle={directoryHandle}
+                    syncMode={siteSettings.syncMode}
+                    onNavigate={setCurrentView}
+                />;
             case 'calendar':
                 // This view is now handled by a modal, so this case is effectively unused.
                 return null;
@@ -1162,6 +1237,7 @@ const App: React.FC = () => {
 
     return (
         <div className="min-h-screen font-sans text-[var(--theme-text-primary)] flex flex-col">
+            <InactivityManager onLogout={handleLogout} />
             
             {/* --- Mobile App Shell (Remains fixed at top for mobile) --- */}
             <div className="lg:hidden">
@@ -1213,6 +1289,7 @@ const App: React.FC = () => {
                     templates={templates}
                     recordings={recordings}
                     photos={photos}
+                    videos={videos}
                     notes={notes}
                     noteRecordings={noteRecordings}
                     logEntries={logEntries}

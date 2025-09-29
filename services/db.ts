@@ -1,9 +1,10 @@
-import { Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent } from '../App';
+import { Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../App';
 
 const DB_NAME = 'AiToolsDB';
-const DB_VERSION = 6; // Incremented version for schema change
+const DB_VERSION = 7; // Incremented version for schema change
 const RECORDING_STORE = 'recordings';
 const PHOTO_STORE = 'photos';
+const VIDEO_STORE = 'videos';
 const NOTE_STORE = 'notes';
 const NOTE_RECORDING_STORE = 'noteRecordings';
 const LOG_ENTRY_STORE = 'logEntries';
@@ -21,6 +22,9 @@ const openDB = (): Promise<IDBDatabase> => {
       }
        if (!db.objectStoreNames.contains(PHOTO_STORE)) {
         db.createObjectStore(PHOTO_STORE, { keyPath: 'id' });
+      }
+       if (!db.objectStoreNames.contains(VIDEO_STORE)) {
+        db.createObjectStore(VIDEO_STORE, { keyPath: 'id' });
       }
        if (!db.objectStoreNames.contains(NOTE_STORE)) {
         const noteStore = db.createObjectStore(NOTE_STORE, { keyPath: 'id' });
@@ -72,6 +76,11 @@ export const db = {
   getAllPhotos: (): Promise<Photo[]> => performDBRequest(PHOTO_STORE, 'readonly', store => store.getAll()),
   deletePhoto: (id: string): Promise<void> => performDBRequest(PHOTO_STORE, 'readwrite', store => store.delete(id)),
 
+  // Videos
+  saveVideo: (video: Video): Promise<void> => performDBRequest(VIDEO_STORE, 'readwrite', store => store.put(video)),
+  getAllVideos: (): Promise<Video[]> => performDBRequest(VIDEO_STORE, 'readonly', store => store.getAll()),
+  deleteVideo: (id: string): Promise<void> => performDBRequest(VIDEO_STORE, 'readwrite', store => store.delete(id)),
+
   // Notes
   saveNote: (note: Note): Promise<void> => performDBRequest(NOTE_STORE, 'readwrite', store => store.put(note)),
   getAllNotes: (): Promise<Note[]> => performDBRequest(NOTE_STORE, 'readonly', store => store.getAll()),
@@ -94,7 +103,7 @@ export const db = {
   // Clear All Data
   async clearAllData(): Promise<void> {
       const db = await openDB();
-      const stores = [RECORDING_STORE, PHOTO_STORE, NOTE_STORE, NOTE_RECORDING_STORE, LOG_ENTRY_STORE, CALENDAR_EVENT_STORE];
+      const stores = [RECORDING_STORE, PHOTO_STORE, VIDEO_STORE, NOTE_STORE, NOTE_RECORDING_STORE, LOG_ENTRY_STORE, CALENDAR_EVENT_STORE];
       const tx = db.transaction(stores, 'readwrite');
       for (const storeName of stores) {
           tx.objectStore(storeName).clear();

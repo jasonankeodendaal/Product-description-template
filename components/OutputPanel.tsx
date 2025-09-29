@@ -2,13 +2,17 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { SaveIcon } from './icons/SaveIcon';
-import { ParsedProductData, Photo } from '../App';
+import { ParsedProductData, Photo, Video } from '../App';
 import { UploadIcon } from './icons/UploadIcon';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { resizeImage, squareImageAndGetBlob } from '../utils/imageUtils';
 import { CropIcon } from './icons/CropIcon';
 import { XIcon } from './icons/XIcon';
 import { Spinner } from './icons/Spinner';
+import { generateVideoThumbnail } from '../utils/videoUtils';
+import { PlayIcon } from './icons/PlayIcon';
+import { VideoIcon } from './icons/VideoIcon';
+
 
 // Define GroundingChunk locally to remove dependency on @google/genai types on the client
 export interface GroundingChunk {
@@ -32,7 +36,10 @@ interface OutputPanelProps {
   photos: Photo[];
   onSavePhoto: (photo: Photo) => Promise<void>;
   onUpdatePhoto: (photo: Photo) => Promise<void>;
-  onEditImage: (photo: Photo) => void; // Kept for other potential uses, but generator flow is changed
+  onEditImage: (photo: Photo) => void;
+  videos: Video[];
+  onSaveVideo: (video: Video) => Promise<void>;
+  onDeleteVideo: (video: Video) => Promise<void>;
 }
 
 const SkeletonLoader: React.FC = () => (
@@ -191,13 +198,63 @@ const ImageSquarerModal: React.FC<{
     );
 };
 
+const VideoPlayerModal: React.FC<{ video: Video; onClose: () => void }> = ({ video, onClose }) => {
+    const videoUrl = useMemo(() => URL.createObjectURL(video.videoBlob), [video.videoBlob]);
+    useEffect(() => () => URL.revokeObjectURL(videoUrl), [videoUrl]);
+    
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-black w-full max-w-4xl rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
+                <video src={videoUrl} controls autoPlay className="w-full max-h-[80vh] rounded-t-xl" />
+                <div className="p-4 bg-[var(--theme-card-bg)] rounded-b-xl flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-white truncate">{video.name}</h3>
+                    <button onClick={onClose} className="text-sm bg-orange-500 text-black font-bold py-1 px-3 rounded-md">Close</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
-export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto }) => {
+const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video) => void }> = ({ video, onOpenPlayer }) => {
+    const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        generateVideoThumbnail(video.videoBlob)
+            .then(url => { if (isMounted) setThumbUrl(url); })
+            .catch(err => console.error("Could not generate video thumbnail for", video.name, err));
+        return () => { isMounted = false; };
+    }, [video.videoBlob, video.name]);
+
+    return (
+        <div className="w-full aspect-square bg-black/20 rounded-md overflow-hidden group relative">
+            {thumbUrl ? (
+                <img src={thumbUrl} alt={`${video.name} thumbnail`} className="w-full h-full object-cover" />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    <VideoIcon className="w-8 h-8"/>
+                </div>
+            )}
+            <div 
+                onClick={() => onOpenPlayer(video)}
+                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+            >
+                <PlayIcon className="w-10 h-10 text-white drop-shadow-lg" />
+            </div>
+        </div>
+    );
+};
+
+
+export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, videos, onSaveVideo }) => {
     const [isCopied, setIsCopied] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
     const [isUploading, setIsUploading] = useState(false);
+    const [isUploadingVideo, setIsUploadingVideo] = useState(false);
     const [squaringPhoto, setSquaringPhoto] = useState<Photo | null>(null);
+    const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const videoInputRef = useRef<HTMLInputElement>(null);
     const outputText = output?.text || '';
     const hasOutput = outputText.trim().length > 0;
 
@@ -205,25 +262,31 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         if (!outputText) return null;
         return parseOutputToStructuredData(outputText);
     }, [outputText]);
-
-    const linkedPhotos = useMemo(() => {
-        if (!structuredData) return [];
-        
-        const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
-        
-        const brand = structuredData['Brand'] || '';
+    
+    const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
+    
+    const getProductFolderPath = useCallback(() => {
+        if (!structuredData) return null;
+        const brand = structuredData['Brand'] || 'Unbranded';
         const sku = structuredData['SKU'] || '';
         const name = structuredData['Name'] || '';
-        
-        if (!brand) return [];
+        const productIdentifier = sku || name || `product_${Date.now()}`;
+        return `Generated_Content/${sanitize(brand)}/${sanitize(productIdentifier)}`;
+    }, [structuredData]);
 
-        const productIdentifier = sku || name;
-        if (!productIdentifier) return [];
 
-        const folderPath = `Generated_Content/${sanitize(brand)}/${sanitize(productIdentifier)}`;
+    const linkedPhotos = useMemo(() => {
+        const folderPath = getProductFolderPath();
+        if (!folderPath) return [];
         return photos.filter(p => p.folder === folderPath);
+    }, [photos, getProductFolderPath]);
+    
+    const linkedVideos = useMemo(() => {
+        const folderPath = getProductFolderPath();
+        if (!folderPath) return [];
+        return videos.filter(v => v.folder === folderPath);
+    }, [videos, getProductFolderPath]);
 
-    }, [photos, structuredData]);
 
     useEffect(() => {
         if (isCopied) {
@@ -260,17 +323,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
 
     const handleImageUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0 || !structuredData) return;
+        const folderPath = getProductFolderPath();
+        if (!folderPath) return;
+
         setIsUploading(true);
-        const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
-
-        const brand = structuredData['Brand'] || 'Unbranded';
-        const sku = structuredData['SKU'] || '';
-        const name = structuredData['Name'] || '';
-
-        // Consistent folder logic: use SKU, fallback to Name, then to timestamp as last resort.
-        const productIdentifier = sku || name || `product_${Date.now()}`;
-        const folderPath = `Generated_Content/${sanitize(brand)}/${sanitize(productIdentifier)}`;
-
         for (const file of Array.from(files)) {
             try {
                 const resizedDataUrl = await resizeImage(file);
@@ -278,12 +334,12 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
                 const newPhoto: Photo = {
                     id: crypto.randomUUID(),
                     name: file.name.split('.').slice(0, -1).join('.'),
-                    notes: `Linked to product: ${brand} - ${productIdentifier}`,
+                    notes: `Linked to product in folder: ${folderPath}`,
                     date: new Date().toISOString(),
                     folder: folderPath,
                     imageBlob,
                     imageMimeType: imageBlob.type,
-                    tags: [brand, productIdentifier].filter(Boolean) as string[],
+                    tags: [structuredData['Brand'] || '', structuredData['SKU'] || ''].filter(Boolean) as string[],
                 };
                 await onSavePhoto(newPhoto);
             } catch (error) {
@@ -294,7 +350,36 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         setIsUploading(false);
         if(fileInputRef.current) fileInputRef.current.value = '';
 
-    }, [structuredData, onSavePhoto]);
+    }, [structuredData, onSavePhoto, getProductFolderPath]);
+    
+    const handleVideoUpload = useCallback(async (files: FileList | null) => {
+        if (!files || files.length === 0 || !structuredData) return;
+        const folderPath = getProductFolderPath();
+        if (!folderPath) return;
+        
+        setIsUploadingVideo(true);
+        for (const file of Array.from(files)) {
+             try {
+                const newVideo: Video = {
+                    id: crypto.randomUUID(),
+                    name: file.name.split('.').slice(0, -1).join('.'),
+                    notes: `Linked to product in folder: ${folderPath}`,
+                    date: new Date().toISOString(),
+                    folder: folderPath,
+                    videoBlob: file,
+                    videoMimeType: file.type,
+                    tags: [structuredData['Brand'] || '', structuredData['SKU'] || ''].filter(Boolean) as string[],
+                };
+                await onSaveVideo(newVideo);
+            } catch (error) {
+                console.error("Failed to process video:", error);
+                alert(`Failed to process ${file.name}.`);
+            }
+        }
+        setIsUploadingVideo(false);
+        if(videoInputRef.current) videoInputRef.current.value = '';
+    }, [structuredData, onSaveVideo, getProductFolderPath]);
+
 
     const handleSquareImage = async (photo: Photo, size: number) => {
         try {
@@ -380,44 +465,64 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
       </div>
 
       {structuredData && (
-        <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
-            <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Images</h3>
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} onOpenSquarer={setSquaringPhoto} />)}
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="sr-only"
-                    onChange={(e) => handleImageUpload(e.target.files)}
-                    accept="image/*"
-                    multiple
-                    disabled={isUploading}
-                />
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="aspect-square border-2 border-dashed border-[var(--theme-border)] rounded-md flex flex-col items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]/50 hover:border-solid hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {isUploading ? (
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    ) : (
-                       <>
-                            <UploadIcon />
-                            <span className="text-xs mt-1">Add</span>
-                        </>
-                    )}
-                </button>
+        <>
+            <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
+                <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Images</h3>
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                    {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} onOpenSquarer={setSquaringPhoto} />)}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="sr-only"
+                        onChange={(e) => handleImageUpload(e.target.files)}
+                        accept="image/*"
+                        multiple
+                        disabled={isUploading}
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="aspect-square border-2 border-dashed border-[var(--theme-border)] rounded-md flex flex-col items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]/50 hover:border-solid hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isUploading ? ( <Spinner className="h-5 w-5" /> ) : ( <> <UploadIcon /> <span className="text-xs mt-1">Add</span> </>)}
+                    </button>
+                </div>
             </div>
-        </div>
+            <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
+                <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Videos</h3>
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                    {linkedVideos.map(video => <LinkedVideoThumbnail key={video.id} video={video} onOpenPlayer={setPlayingVideo} />)}
+                    <input
+                        type="file"
+                        ref={videoInputRef}
+                        className="sr-only"
+                        onChange={(e) => handleVideoUpload(e.target.files)}
+                        accept="video/*"
+                        multiple
+                        disabled={isUploadingVideo}
+                    />
+                    <button
+                        onClick={() => videoInputRef.current?.click()}
+                        disabled={isUploadingVideo}
+                        className="aspect-square border-2 border-dashed border-[var(--theme-border)] rounded-md flex flex-col items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]/50 hover:border-solid hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isUploadingVideo ? ( <Spinner className="h-5 w-5" /> ) : ( <> <VideoIcon /> <span className="text-xs mt-1">Add</span> </>)}
+                    </button>
+                </div>
+            </div>
+        </>
       )}
       {squaringPhoto && (
         <ImageSquarerModal 
             photo={squaringPhoto}
             onClose={() => setSquaringPhoto(null)}
             onSquare={(size) => handleSquareImage(squaringPhoto, size)}
+        />
+      )}
+       {playingVideo && (
+        <VideoPlayerModal 
+            video={playingVideo}
+            onClose={() => setPlayingVideo(null)}
         />
       )}
     </div>

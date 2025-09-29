@@ -1,4 +1,4 @@
-import { Template, Recording, Photo, Note, BackupData, NoteRecording, LogEntry, CalendarEvent } from '../App';
+import { Template, Recording, Photo, Note, BackupData, NoteRecording, LogEntry, CalendarEvent, Video } from '../App';
 import { SiteSettings } from '../constants';
 
 export const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -67,6 +67,7 @@ export const createBackup = async (
     templates: Template[],
     recordings: Recording[],
     photos: Photo[],
+    videos: Video[],
     notes: Note[],
     noteRecordings: NoteRecording[],
     logEntries: LogEntry[],
@@ -75,7 +76,7 @@ export const createBackup = async (
     const JSZip = await waitForGlobal<any>('JSZip');
     const zip = new JSZip();
 
-    const metadata: Omit<BackupData, 'recordings' | 'photos' | 'noteRecordings'> = {
+    const metadata: Omit<BackupData, 'recordings' | 'photos' | 'videos' | 'noteRecordings'> = {
         siteSettings,
         templates,
         notes,
@@ -119,6 +120,23 @@ export const createBackup = async (
         }
     }
     
+    const videosFolder = zip.folder('assets/videos');
+    if (videosFolder) {
+        for (const video of videos) {
+            const { videoBlob, ...videoMetadata } = video;
+            
+            const pathParts = video.folder.split('/').filter(p => p.trim() !== '' && p !== '.');
+            let currentFolder = videosFolder;
+            for (const part of pathParts) {
+                currentFolder = currentFolder.folder(part)!;
+            }
+            
+            currentFolder.file(`${video.id}.json`, JSON.stringify(videoMetadata, null, 2));
+            const ext = video.videoMimeType.split('/')[1] || 'mp4';
+            currentFolder.file(`${video.id}.${ext}`, videoBlob);
+        }
+    }
+    
     const blob = await zip.generateAsync({ type: 'blob' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -145,7 +163,7 @@ const handleApiResponse = async (response: Response) => {
     return response.json();
 };
 
-type ApiBackupData = Omit<BackupData, 'recordings' | 'photos' | 'noteRecordings'> & {
+type ApiBackupData = Omit<BackupData, 'recordings' | 'photos' | 'videos' | 'noteRecordings'> & {
     recordings: (Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string })[];
     photos: (Omit<Photo, 'imageBlob'> & { imageBase64: string, imageMimeType: string })[];
     noteRecordings: (Omit<NoteRecording, 'audioBlob'> & { audioBase64: string, audioMimeType: string })[];

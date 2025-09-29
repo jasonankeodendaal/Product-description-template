@@ -8,6 +8,7 @@ import { View, UserRole } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RotateIcon } from './icons/RotateIcon';
 import { UserIcon } from './icons/UserIcon';
+import { FolderOpenIcon } from './icons/FolderOpenIcon';
 
 interface MobileHeaderProps {
   siteSettings: SiteSettings;
@@ -114,6 +115,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
                                 {userRole === 'creator' && (
                                     <MoreMenuItem label="Creator" icon={<UserIcon />} onClick={() => { onOpenCreatorInfo(); setIsMoreMenuOpen(false); }} />
                                 )}
+                                <MoreMenuItem label="Browser" icon={<FolderOpenIcon />} onClick={() => { onNavigate('browser'); setIsMoreMenuOpen(false); }} />
                                 <MoreMenuItem label="Image Tool" icon={<ImageIcon />} onClick={() => { onNavigate('image-tool'); setIsMoreMenuOpen(false); }} />
                                 <MoreMenuItem label="Dashboard" icon={<DatabaseIcon />} onClick={() => { onOpenDashboard(); setIsMoreMenuOpen(false); }} />
                                 <MoreMenuItem label="Lock" icon={<RotateIcon />} onClick={() => { onToggleOrientation(); setIsMoreMenuOpen(false); }} isActive={isLandscapeLocked} />

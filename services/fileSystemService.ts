@@ -1,4 +1,4 @@
-import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent } from "../App";
+import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../App";
 import { SiteSettings } from "../constants";
 
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
@@ -112,7 +112,7 @@ const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHan
     return recordings;
 };
 
-// --- Photos ---
+// --- Photos & Videos ---
 const getOrCreateNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle> => {
     let current = root;
     const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');
@@ -137,12 +137,9 @@ const getNestedDirectory = async (root: FileSystemDirectoryHandle, path: string)
 
 
 const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
-    // The photo.folder property is expected to be 'brand/sku'
     const productDir = await getOrCreateNestedDirectory(dirHandle, photo.folder || '_uncategorized');
-    
     const metadata: Omit<Photo, 'imageBlob'> = { ...photo };
     delete (metadata as any).imageBlob;
-    
     const ext = photo.imageMimeType.split('/')[1] || 'png';
     await writeFile(productDir, `${photo.id}.json`, JSON.stringify(metadata, null, 2));
     await writeFile(productDir, `${photo.id}.${ext}`, photo.imageBlob);
@@ -151,19 +148,36 @@ const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo:
 const deletePhotoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
     try {
         const productDir = await getNestedDirectory(dirHandle, photo.folder || '_uncategorized');
-        
         if (!productDir) return; // Folder doesn't exist, so nothing to delete.
-
         const ext = photo.imageMimeType.split('/')[1] || 'png';
         try { await productDir.removeEntry(`${photo.id}.json`); } catch(e) {}
         try { await productDir.removeEntry(`${photo.id}.${ext}`); } catch(e) {}
     } catch (e) { /* Parent dirs might not exist, ignore */ }
 };
 
+const saveVideoToDirectory = async (dirHandle: FileSystemDirectoryHandle, video: Video) => {
+    const productDir = await getOrCreateNestedDirectory(dirHandle, video.folder || '_uncategorized');
+    const metadata: Omit<Video, 'videoBlob'> = { ...video };
+    delete (metadata as any).videoBlob;
+    const ext = video.videoMimeType.split('/')[1] || 'mp4';
+    await writeFile(productDir, `${video.id}.json`, JSON.stringify(metadata, null, 2));
+    await writeFile(productDir, `${video.id}.${ext}`, video.videoBlob);
+};
+
+const deleteVideoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, video: Video) => {
+    try {
+        const productDir = await getNestedDirectory(dirHandle, video.folder || '_uncategorized');
+        if (!productDir) return;
+        const ext = video.videoMimeType.split('/')[1] || 'mp4';
+        try { await productDir.removeEntry(`${video.id}.json`); } catch(e) {}
+        try { await productDir.removeEntry(`${video.id}.${ext}`); } catch(e) {}
+    } catch(e) {}
+};
+
+const reservedDirs = ['recordings', 'notes', 'logs', 'note_recordings', 'calendar_events', 'videos'];
+
 const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Photo[]> => {
     const photos: Photo[] = [];
-    const reservedDirs = ['recordings', 'notes', 'logs', 'note_recordings', 'calendar_events'];
-
     const processDirectory = async (dir: FileSystemDirectoryHandle) => {
         for await (const entry of dir.values()) {
             if (entry.kind === 'directory') {
@@ -174,10 +188,8 @@ const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Pr
                 try {
                     const file = await (entry as FileSystemFileHandle).getFile();
                     const text = await file.text();
-                    // Quick check to avoid parsing non-photo JSON files like settings.json
                     if (text.includes('"imageMimeType"')) {
                         const metadata = JSON.parse(text);
-                        // Be certain it's a photo object before proceeding
                         if (metadata.id && metadata.folder && metadata.date) {
                             const ext = metadata.imageMimeType?.split('/')[1] || 'png';
                             const imageHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
@@ -193,10 +205,43 @@ const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Pr
             }
         }
     };
-
     await processDirectory(dirHandle);
     return photos;
 }
+
+const loadVideosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Video[]> => {
+    const videos: Video[] = [];
+     const processDirectory = async (dir: FileSystemDirectoryHandle) => {
+        for await (const entry of dir.values()) {
+            if (entry.kind === 'directory') {
+                if (!reservedDirs.includes(entry.name)) {
+                    await processDirectory(entry as FileSystemDirectoryHandle);
+                }
+            } else if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    const text = await file.text();
+                    if (text.includes('"videoMimeType"')) {
+                        const metadata = JSON.parse(text);
+                        if (metadata.id && metadata.folder && metadata.date) {
+                            const ext = metadata.videoMimeType?.split('/')[1] || 'mp4';
+                            const videoHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
+                            const videoBlob = await videoHandle.getFile();
+                            videos.push({ ...metadata, videoBlob });
+                        }
+                    }
+                } catch (e) {
+                     if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+                         console.error(`Could not process potential video metadata file ${entry.name} in ${dir.name}:`, e);
+                    }
+                }
+            }
+        }
+    };
+    await processDirectory(dirHandle);
+    return videos;
+}
+
 
 // --- Notes ---
 const saveNoteToDirectory = async (dirHandle: FileSystemDirectoryHandle, note: Note) => {
@@ -286,9 +331,10 @@ const loadCalendarEventsFromDirectory = async (dirHandle: FileSystemDirectoryHan
 }
 
 
-const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data: { recordings: Recording[], photos: Photo[], notes: Note[], noteRecordings: NoteRecording[], logEntries: LogEntry[], calendarEvents: CalendarEvent[] }) => {
+const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data: { recordings: Recording[], photos: Photo[], videos: Video[], notes: Note[], noteRecordings: NoteRecording[], logEntries: LogEntry[], calendarEvents: CalendarEvent[] }) => {
     for (const rec of data.recordings) await saveRecordingToDirectory(dirHandle, rec);
     for (const photo of data.photos) await savePhotoToDirectory(dirHandle, photo);
+    for (const video of data.videos) await saveVideoToDirectory(dirHandle, video);
     for (const note of data.notes) await saveNoteToDirectory(dirHandle, note);
     for (const noteRec of data.noteRecordings) await saveNoteRecordingToDirectory(dirHandle, noteRec);
     for (const log of data.logEntries) await saveLogEntryToDirectory(dirHandle, log);
@@ -316,6 +362,58 @@ const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item
     await writeFile(productDirHandle, 'details.json', JSON.stringify(structuredData, null, 2));
 }
 
+// --- New Functions for File Browser ---
+
+const getDirectoryHandleByPath = async (rootHandle: FileSystemDirectoryHandle, pathParts: string[]): Promise<FileSystemDirectoryHandle> => {
+    let currentHandle = rootHandle;
+    for (const part of pathParts) {
+        if (part) { // handle empty parts from splitting
+            currentHandle = await currentHandle.getDirectoryHandle(part);
+        }
+    }
+    return currentHandle;
+};
+
+const listDirectoryContents = async (rootHandle: FileSystemDirectoryHandle, path: string): Promise<{ name: string; kind: 'file' | 'directory' }[]> => {
+    try {
+        const pathParts = path.split('/').filter(p => p);
+        const dirHandle = await getDirectoryHandleByPath(rootHandle, pathParts);
+        
+        const contents = [];
+        for await (const entry of dirHandle.values()) {
+            contents.push({ name: entry.name, kind: entry.kind });
+        }
+        return contents.sort((a, b) => {
+            if (a.kind === b.kind) return a.name.localeCompare(b.name);
+            return a.kind === 'directory' ? -1 : 1; // Folders first
+        });
+    } catch (error) {
+        console.warn(`Could not list directory contents for path "${path}":`, error);
+        return [];
+    }
+};
+
+const readFileContentByPath = async (rootHandle: FileSystemDirectoryHandle, path: string): Promise<string | Blob> => {
+    try {
+        const pathParts = path.split('/');
+        const fileName = pathParts.pop();
+        if (!fileName) throw new Error("Invalid file path");
+        
+        const dirHandle = await getDirectoryHandleByPath(rootHandle, pathParts.filter(p => p));
+        const fileHandle = await dirHandle.getFileHandle(fileName);
+        const file = await fileHandle.getFile();
+
+        if (file.type.startsWith('text/') || file.type === 'application/json') {
+            return await file.text();
+        }
+        return file; // Return as Blob for images/videos
+    } catch (error) {
+        console.error(`Error reading file content for path "${path}":`, error);
+        throw error;
+    }
+};
+
+
 export const fileSystemService = {
     getDirectoryHandle,
     directoryHasData,
@@ -329,6 +427,9 @@ export const fileSystemService = {
     savePhotoToDirectory,
     loadPhotosFromDirectory,
     deletePhotoFromDirectory,
+    saveVideoToDirectory,
+    loadVideosFromDirectory,
+    deleteVideoFromDirectory,
     saveNoteToDirectory,
     loadNotesFromDirectory,
     deleteNoteFromDirectory,
@@ -343,4 +444,6 @@ export const fileSystemService = {
     deleteCalendarEventFromDirectory,
     saveAllDataToDirectory,
     saveProductDescription,
+    listDirectoryContents,
+    readFileContentByPath,
 };

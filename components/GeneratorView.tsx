@@ -1,7 +1,7 @@
 import React from 'react';
 import { GenerationResult, OutputPanel } from './OutputPanel';
 import { TemplateManager } from './TemplateManager';
-import { Template, ParsedProductData, Photo, Recording, Note, View } from '../App';
+import { Template, ParsedProductData, Photo, Recording, Note, View, Video } from '../App';
 import { SiteSettings } from '../constants';
 import { ComposerPanel } from './ComposerPanel';
 import { Hero } from '../Hero';
@@ -26,6 +26,9 @@ interface GeneratorViewProps {
     photos: Photo[];
     onSavePhoto: (photo: Photo) => Promise<void>;
     onDeletePhoto: (photo: Photo) => Promise<void>;
+    videos: Video[];
+    onSaveVideo: (video: Video) => Promise<void>;
+    onDeleteVideo: (video: Video) => Promise<void>;
     recordings: Recording[];
     notes: Note[];
     onEditImage: (photo: Photo) => void;
@@ -53,6 +56,9 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
     photos,
     onSavePhoto,
     onDeletePhoto,
+    videos,
+    onSaveVideo,
+    onDeleteVideo,
     recordings,
     notes,
     onEditImage,
@@ -109,6 +115,9 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                         onSavePhoto={onSavePhoto}
                         onEditImage={onEditImage}
                         onUpdatePhoto={onUpdatePhoto}
+                        videos={videos}
+                        onSaveVideo={onSaveVideo}
+                        onDeleteVideo={onDeleteVideo}
                     />
                 </div>
             </div>

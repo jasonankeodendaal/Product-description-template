@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent } from '../App';
+import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent, Video } from '../App';
 import { XIcon } from './icons/XIcon';
 import { DataManagement } from './DataManagement';
 import { SiteSettingsEditor } from './SiteSettingsEditor';
@@ -29,6 +29,7 @@ interface DashboardProps {
   templates: Template[];
   recordings: Recording[];
   photos: Photo[];
+  videos: Video[];
   notes: Note[];
   noteRecordings: NoteRecording[];
   logEntries: LogEntry[];
