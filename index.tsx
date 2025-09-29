@@ -2,13 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Declare globals for TypeScript since they are loaded from a CDN
-declare var JSZip: any;
-declare var WaveSurfer: any;
-declare var docx: any;
-declare var Recharts: any;
-declare var jspdf: any;
-
 // Register the Service Worker to enable PWA offline functionality
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

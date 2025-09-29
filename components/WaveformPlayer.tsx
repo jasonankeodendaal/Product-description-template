@@ -3,8 +3,6 @@ import { PlayIcon } from './icons/PlayIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import { formatTime } from '../utils/formatters';
 
-declare var WaveSurfer: any;
-
 interface WaveformPlayerProps {
     audioBlob: Blob | null;
 }
@@ -19,6 +17,12 @@ export const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioBlob }) => 
     useEffect(() => {
         if (!containerRef.current || !audioBlob) return;
         
+        const WaveSurfer = (window as any).WaveSurfer;
+        if (!WaveSurfer) {
+            console.error("WaveSurfer library is not loaded.");
+            return;
+        }
+
         // Cleanup previous instance if it exists
         if (wavesurferRef.current) {
             wavesurferRef.current.destroy();

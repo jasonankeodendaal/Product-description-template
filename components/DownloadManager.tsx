@@ -13,9 +13,6 @@ export interface QueuedItem {
   csvText: string;
 }
 
-// FIX: Declare JSZip to inform TypeScript about the global variable from the CDN.
-declare var JSZip: any;
-
 interface DownloadManagerProps {
   queue: QueuedItem[];
   onRemove: (id: string) => void;
@@ -29,7 +26,8 @@ export const DownloadManager: React.FC<DownloadManagerProps> = React.memo(({ que
 
   const handleDownloadZip = async () => {
     if (queue.length === 0) return;
-
+    
+    const JSZip = (window as any).JSZip;
     if (typeof JSZip === 'undefined') {
       setError("Error: JSZip library is not loaded. Cannot create .zip file.");
       return;

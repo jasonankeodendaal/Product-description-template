@@ -31,8 +31,6 @@ import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
 import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 
-declare var JSZip: any;
-
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -885,6 +883,7 @@ const App: React.FC = () => {
     }, [siteSettings, handleUpdateSettings]);
 
     const onRestore = useCallback(async (file: File) => {
+        const JSZip = (window as any).JSZip;
         if (typeof JSZip === 'undefined') {
             alert("Error: JSZip library is not loaded. Cannot process backup file.");
             return;

@@ -1,9 +1,6 @@
 import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent } from "../App";
 import { SiteSettings } from "../constants";
 
-// Declare the docx library which is loaded from a CDN script in index.html
-declare var docx: any;
-
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
     if (!('showDirectoryPicker' in window)) throw new Error('File System Access API is not supported.');
     return await (window as any).showDirectoryPicker({ mode: 'readwrite' });
@@ -293,6 +290,7 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
 }
 
 const createDocxBlob = (structuredData: Record<string, string>): Promise<Blob> => {
+    const docx = (window as any).docx;
     if (typeof docx === 'undefined') {
         throw new Error('DOCX library is not loaded.');
     }

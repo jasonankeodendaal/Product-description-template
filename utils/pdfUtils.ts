@@ -1,14 +1,12 @@
 import { SiteSettings } from '../constants';
 import { PrintableEntry } from '../components/PrintPreview';
 
-declare var jspdf: any;
-
-
 export const exportLogToPDF = (
     summary: string,
     entries: PrintableEntry[],
     siteSettings: SiteSettings
 ) => {
+    const jspdf = (window as any).jspdf;
     if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
         alert("PDF generation library is not loaded.");
         return;

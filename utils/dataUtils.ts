@@ -1,9 +1,6 @@
 import { Template, Recording, Photo, Note, BackupData, NoteRecording, LogEntry, CalendarEvent } from '../App';
 import { SiteSettings } from '../constants';
 
-// Declare JSZip to inform TypeScript about the global variable from the CDN.
-declare var JSZip: any;
-
 export const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -53,6 +50,7 @@ export const createBackup = async (
     logEntries: LogEntry[],
     calendarEvents: CalendarEvent[],
 ): Promise<void> => {
+    const JSZip = (window as any).JSZip;
     if (typeof JSZip === 'undefined') {
         alert("Error: JSZip library is not loaded. Cannot create backup file.");
         throw new Error("JSZip not loaded");
