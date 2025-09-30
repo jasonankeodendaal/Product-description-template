@@ -1,19 +1,14 @@
-const STATIC_CACHE_NAME = 'site-static-v22';
-const DYNAMIC_CACHE_NAME = 'site-dynamic-v22';
+const STATIC_CACHE_NAME = 'site-static-v23'; // Incremented version
+const DYNAMIC_CACHE_NAME = 'site-dynamic-v23'; // Incremented version
 
-// Comprehensive list of assets needed for the app to work offline
+// Simplified list of assets for a more robust installation
 const APP_SHELL_URLS = [
   '/',
-  '/index.html', // Explicitly cache the main HTML file
+  '/index.html',
   '/index.tsx',
   '/manifest.json',
-  'https://i.ibb.co/d46Mf1g1/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png', // New icon URL
-  'https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg', // Main background
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
-  'https://unpkg.com/wavesurfer.js@7',
-  'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Patrick+Hand&display=swap',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap'
+  '/logo.png',
+  '/background.jpg'
 ];
 
 // Install service worker and cache the app shell
@@ -64,9 +59,10 @@ self.addEventListener('fetch', event => {
         
         // Otherwise, fetch from network
         return fetch(event.request).then(fetchRes => {
-          // Check for valid, non-opaque responses before caching
-          if (!fetchRes || fetchRes.status !== 200 || fetchRes.type !== 'basic') {
-            return fetchRes; // Return non-cacheable response as is
+          // Check for valid responses before caching
+          // Allow caching of opaque responses from CDNs
+          if (!fetchRes || fetchRes.status !== 200) {
+            return fetchRes;
           }
 
           // Cache the new response for future offline use
