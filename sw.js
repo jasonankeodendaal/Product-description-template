@@ -7,7 +7,7 @@ const APP_SHELL_URLS = [
   '/index.html', // Explicitly cache the main HTML file
   '/index.tsx',
   '/manifest.json',
-  'https://i.postimg.cc/8Pwh82s2/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png', // New icon URL
+  'https://i.ibb.co/d46Mf1g1/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png', // New icon URL
   'https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg', // Main background
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',

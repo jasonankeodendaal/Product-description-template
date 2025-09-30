@@ -136,6 +136,14 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSett
                     <InputField id="slogan" label="Slogan" value={formData.slogan} onChange={handleFormChange} fullWidth />
                     <ImageUploader id="logoSrc" label="Company Logo" src={formData.logoSrc} onImageChange={handleImageChange('logoSrc')} description="Recommended: Square (e.g., 256x256px)." />
                     <ImageUploader id="heroImageSrc" label="Hero Image" src={formData.heroImageSrc} onImageChange={handleImageChange('heroImageSrc')} description="Recommended: Wide (e.g., 1600x400px)." />
+                    <ImageUploader 
+                        id="backgroundImageSrc" 
+                        label="App Background Image" 
+                        src={formData.backgroundImageSrc || null} 
+                        onImageChange={handleImageChange('backgroundImageSrc')} 
+                        description="High-res, abstract, or textured images work best."
+                        fullWidth
+                    />
                     <InputField id="tel" label="Telephone" value={formData.tel} onChange={handleFormChange} />
                     <InputField id="email" label="Email" value={formData.email} onChange={handleFormChange} />
                     <InputField id="website" label="Website URL" value={formData.website} onChange={handleFormChange} fullWidth />

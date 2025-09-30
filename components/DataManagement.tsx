@@ -226,22 +226,25 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                      <SectionCard title="Browser Storage (Default)" description="Data is saved privately in this browser. Fast, simple, and works offline." icon={<HardDriveIcon />}>
                         <p className="text-sm text-gray-400">This is the default mode. No setup required. Ideal for single-device use.</p>
                     </SectionCard>
-                    {!isMobile && (
-                         <SectionCard title="Local Folder Sync (Desktop Only)" description="Saves data to a folder on your computer. Great for local backups and use with desktop-based cloud clients." icon={<FolderSyncIcon />}>
-                            <div className="flex flex-col gap-4">
-                                {directoryHandle ? (
-                                    <div className="flex items-center gap-4">
-                                        <p className="text-sm font-semibold text-green-400">Connected to: <span className="font-mono bg-black/30 px-2 py-1 rounded">{directoryHandle.name}</span></p>
-                                        <button onClick={onDisconnectDirectory} className="text-sm font-semibold text-gray-400 hover:text-white">Disconnect</button>
-                                    </div>
-                                ) : (
-                                    <button onClick={onSyncDirectory} className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 self-start">
-                                        <FolderIcon /> Connect to Folder...
-                                    </button>
-                                )}
-                            </div>
-                        </SectionCard>
-                    )}
+                    <SectionCard title="Local Folder Sync (Desktop Only)" description="Saves data to a folder on your computer. Great for local backups and use with desktop-based cloud clients." icon={<FolderSyncIcon />}>
+                        <div className="flex flex-col gap-4">
+                            {directoryHandle ? (
+                                <div className="flex items-center gap-4">
+                                    <p className="text-sm font-semibold text-green-400">Connected to: <span className="font-mono bg-black/30 px-2 py-1 rounded">{directoryHandle.name}</span></p>
+                                    <button onClick={onDisconnectDirectory} className="text-sm font-semibold text-gray-400 hover:text-white">Disconnect</button>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={onSyncDirectory}
+                                    disabled={isMobile}
+                                    title={isMobile ? "This feature is only available on desktop browsers" : "Connect to a folder on your computer"}
+                                    className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 self-start disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <FolderIcon /> Connect to Folder...
+                                </button>
+                            )}
+                        </div>
+                    </SectionCard>
                 </div>
             );
             case 'backup': return (

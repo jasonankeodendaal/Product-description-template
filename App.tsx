@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
@@ -379,6 +380,16 @@ const App: React.FC = () => {
             }
         };
     }, [siteSettings.logoSrc]);
+
+    // Effect to dynamically update app background image
+    useEffect(() => {
+        if (siteSettings.backgroundImageSrc) {
+            document.body.style.setProperty('--app-background-image', `url(${siteSettings.backgroundImageSrc})`);
+        } else {
+            // Fallback to the default from the CSS file if the user removes the custom one.
+            document.body.style.removeProperty('--app-background-image');
+        }
+    }, [siteSettings.backgroundImageSrc]);
 
     const handleInstallClick = async () => {
         // If the PWA install prompt is available, show it directly. This is the ideal flow.
