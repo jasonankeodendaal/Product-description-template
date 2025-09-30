@@ -6,11 +6,14 @@ import { RedoIcon } from './icons/RedoIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { TimerIcon } from './icons/TimerIcon';
 import { GridIcon } from './icons/GridIcon';
-import { ExposureIcon } from './icons/ExposureIcon';
 import { ImageIcon } from './icons/ImageIcon';
+import { FlashOnIcon } from './icons/FlashOnIcon';
+import { FlashOffIcon } from './icons/FlashOffIcon';
+import { FlashAutoIcon } from './icons/FlashAutoIcon';
+import { AspectRatioIcon } from './icons/AspectRatioIcon';
 
 const FILTERS = [ { name: 'None', css: 'camera-filter-none' }, { name: 'Vivid', css: 'camera-filter-vivid' }, { name: 'Vintage', css: 'camera-filter-vintage' }, { name: 'Noir', css: 'camera-filter-noir' }, { name: 'Dreamy', css: 'camera-filter-dreamy' }, { name: 'Cool', css: 'camera-filter-cool' }, { name: 'Warm', css: 'camera-filter-warm' }, { name: 'Mono', css: 'camera-filter-grayscale' }, { name: 'Sepia', css: 'camera-filter-sepia' }];
-const ASPECT_RATIOS = { '4:3': 4/3, '16:9': 16/9, '1:1': 1 };
+const ASPECT_RATIOS: Record<string, number> = { '4:3': 4/3, '16:9': 16/9, '1:1': 1 };
 
 interface CameraCaptureProps {
   onCapture: (dataUrl: string) => void;
@@ -18,176 +21,165 @@ interface CameraCaptureProps {
   mode?: 'photo' | 'document';
 }
 
-const ControlItem: React.FC<{ icon: React.ReactNode; label: string; onClick?: () => void; active?: boolean, children?: React.ReactNode }> = ({ icon, label, onClick, active, children }) => (
-    <div className="control-item">
-        <button onClick={onClick} className={`transition-colors ${active ? 'text-orange-400' : ''}`}>
-            {icon}
-        </button>
-        <span className="mt-1">{label}</span>
+const TopBarButton: React.FC<{ onClick?: () => void; children: React.ReactNode; active?: boolean }> = ({ onClick, children, active }) => (
+    <button onClick={onClick} className={`p-2 rounded-full transition-colors ${active ? 'bg-orange-500/80 text-black' : 'bg-black/30 text-white'}`}>
         {children}
-    </div>
-);
-
-const CameraAdvancedControls: React.FC<{
-    exposure: number;
-    onExposureChange: (e: number) => void;
-    timer: number;
-    onTimerChange: (t: number) => void;
-    isGridOn: boolean;
-    onGridToggle: () => void;
-}> = ({ exposure, onExposureChange, timer, onTimerChange, isGridOn, onGridToggle }) => (
-    <div className="camera-advanced-controls animate-fade-in-down">
-        <div className="controls-grid">
-            <ControlItem icon={<TimerIcon />} label={`${timer}s`} onClick={() => onTimerChange(timer === 0 ? 3 : timer === 3 ? 5 : 0)} />
-            <ControlItem icon={<GridIcon />} label="Grid" onClick={onGridToggle} active={isGridOn} />
-        </div>
-        <div className="exposure-control mt-4">
-            <ExposureIcon />
-            <input 
-                type="range" 
-                min="-2" 
-                max="2" 
-                step="0.5" 
-                value={exposure} 
-                onChange={e => onExposureChange(parseFloat(e.target.value))} 
-            />
-        </div>
-        {/* Placeholder for Styles button */}
-        <div className="controls-grid mt-4">
-            <ControlItem icon={<ImageIcon />} label="Styles" />
-        </div>
-    </div>
+    </button>
 );
 
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose, mode = 'photo' }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { stream, error, capabilities, switchCamera, applyAdvancedConstraint, activeDevice, devices } = useCamera();
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const { stream, error, capabilities, switchCamera, applyAdvancedConstraint, activeDevice, devices } = useCamera();
 
-  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [exposure, setExposure] = useState(0); // -2 to 2
-  const [aspectRatio, setAspectRatio] = useState('4:3');
-
-  // UI State
-  const [isControlsOpen, setIsControlsOpen] = useState(false);
-  const [timer, setTimer] = useState<0 | 3 | 5>(0);
-  const [isGridOn, setIsGridOn] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [isClosing, setIsClosing] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsInitialized(true), 10);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(onClose, 350);
-  }, [onClose]);
-
-  useEffect(() => { if (stream && videoRef.current) { videoRef.current.srcObject = stream; setZoom(capabilities.zoom?.min || 1); } }, [stream, capabilities.zoom]);
-
-  const takePicture = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
+    const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+    const [zoom, setZoom] = useState(1);
     
-    const videoRatio = video.videoWidth / video.videoHeight;
-    const targetRatio = ASPECT_RATIOS[aspectRatio as keyof typeof ASPECT_RATIOS];
+    // UI State
+    const [flashMode, setFlashMode] = useState<'off' | 'on' | 'auto'>('auto');
+    const [timer, setTimer] = useState<0 | 3 | 5>(0);
+    const [isGridOn, setIsGridOn] = useState(false);
+    const [countdown, setCountdown] = useState<number | null>(null);
+    const [activeFilter, setActiveFilter] = useState(FILTERS[0].css);
+    const [aspectRatio, setAspectRatio] = useState('4:3');
 
-    let sx = 0, sy = 0, sWidth = video.videoWidth, sHeight = video.videoHeight;
-
-    if (videoRatio > targetRatio) { // Video is wider than target, crop sides
-        sWidth = video.videoHeight * targetRatio;
-        sx = (video.videoWidth - sWidth) / 2;
-    } else { // Video is taller than target, crop top/bottom
-        sHeight = video.videoWidth / targetRatio;
-        sy = (video.videoHeight - sHeight) / 2;
-    }
-
-    canvas.width = sWidth;
-    canvas.height = sHeight;
-
-    const context = canvas.getContext('2d');
-    if (!context) return;
+    useEffect(() => { if (stream && videoRef.current) { videoRef.current.srcObject = stream; setZoom(capabilities.zoom?.min || 1); } }, [stream, capabilities.zoom]);
     
-    if (activeDevice?.label.toLowerCase().includes('front')) { context.translate(canvas.width, 0); context.scale(-1, 1); }
-    
-    context.filter = `brightness(${1 + exposure * 0.15})`;
-    
-    context.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
-    setPreviewDataUrl(dataUrl);
-  }, [activeDevice, exposure, aspectRatio]);
-
-  const handleCapture = useCallback(() => {
-    if (timer > 0) {
-        let count = timer;
-        setCountdown(count);
-        const interval = setInterval(() => {
-            count--;
-            setCountdown(count);
-            if (count <= 0) { clearInterval(interval); setCountdown(null); takePicture(); }
-        }, 1000);
-    } else { takePicture(); }
-  }, [timer, takePicture]);
-
-  const handleSave = () => { if(previewDataUrl) { onCapture(previewDataUrl); } }
-
-  return (
-    <div className={`camera-drawer-container ${isInitialized ? (isClosing ? 'camera-drawer-out' : 'camera-drawer-in') : 'camera-drawer-initial'}`} aria-modal="true" role="dialog">
-      <div className="camera-drawer-content font-inter">
-        <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden bg-black">
-             {error ? ( <div className="p-8 text-center text-rose-400">{error}</div>
-            ) : previewDataUrl ? ( <img src={previewDataUrl} alt="Capture preview" className="w-full h-full object-contain animate-fade-in-down" />
-            ) : ( <>
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ filter: `brightness(${1 + exposure * 0.15})` }}></video>
-                    {isGridOn && <div className="camera-grid-overlay"></div>}
-                </>
-            )}
-            {countdown !== null && countdown > 0 && ( <div className="absolute inset-0 flex items-center justify-center bg-black/50"><span className="text-9xl font-bold text-white drop-shadow-lg animate-ping">{countdown}</span></div> )}
-        </div>
-        
-        <button onClick={handleClose} className="absolute top-4 left-4 bg-black/40 text-white rounded-full p-2.5 z-20"><XIcon /></button>
-        
-        {isControlsOpen && !previewDataUrl &&
-            <CameraAdvancedControls
-                timer={timer} onTimerChange={(t) => setTimer(t as 0 | 3 | 5)}
-                isGridOn={isGridOn} onGridToggle={() => setIsGridOn(p => !p)}
-                exposure={exposure} onExposureChange={setExposure}
-            />
+    useEffect(() => {
+        if (capabilities.torch) {
+            const isTorchOn = flashMode === 'on';
+            applyAdvancedConstraint([{ torch: isTorchOn } as any]);
         }
+    }, [flashMode, capabilities.torch, applyAdvancedConstraint]);
+
+    const handleZoomChange = useCallback((newZoom: number) => {
+        if (!capabilities.zoom) return;
+        const clampedZoom = Math.max(capabilities.zoom.min, Math.min(newZoom, capabilities.zoom.max));
+        setZoom(clampedZoom);
+        applyAdvancedConstraint([{ zoom: clampedZoom } as any]);
+    }, [capabilities.zoom, applyAdvancedConstraint]);
+
+    const takePicture = useCallback(() => {
+        if (!videoRef.current || !canvasRef.current) return;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
         
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-10 flex flex-col items-center gap-4">
-            {!previewDataUrl ? (
-                <>
-                    <button onClick={() => setIsControlsOpen(p => !p)} className="p-1 text-white transition-transform" style={{ transform: isControlsOpen ? 'rotate(180deg)' : 'rotate(0deg)'}}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </button>
-                    <div className="flex items-center gap-4 text-sm font-semibold">
-                        <button className="text-gray-400">VIDEO</button>
-                        <button className="text-orange-400 relative">PHOTO<div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-orange-400 rounded-full"></div></button>
+        const videoRatio = video.videoWidth / video.videoHeight;
+        const targetRatio = ASPECT_RATIOS[aspectRatio as keyof typeof ASPECT_RATIOS];
+
+        let sx = 0, sy = 0, sWidth = video.videoWidth, sHeight = video.videoHeight;
+
+        if (videoRatio > targetRatio) {
+            sWidth = video.videoHeight * targetRatio;
+            sx = (video.videoWidth - sWidth) / 2;
+        } else {
+            sHeight = video.videoWidth / targetRatio;
+            sy = (video.videoHeight - sHeight) / 2;
+        }
+
+        canvas.width = sWidth;
+        canvas.height = sHeight;
+
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        
+        if (activeDevice?.label.toLowerCase().includes('front')) { context.translate(canvas.width, 0); context.scale(-1, 1); }
+        
+        context.filter = window.getComputedStyle(video).filter;
+        
+        context.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+        setPreviewDataUrl(dataUrl);
+    }, [activeDevice, aspectRatio, activeFilter]);
+
+    const handleCapture = useCallback(() => {
+        if (timer > 0) {
+            let count = timer;
+            setCountdown(count);
+            const interval = setInterval(() => {
+                count--;
+                setCountdown(count);
+                if (count <= 0) { clearInterval(interval); setCountdown(null); takePicture(); }
+            }, 1000);
+        } else { takePicture(); }
+    }, [timer, takePicture]);
+
+    const handleSave = () => { if(previewDataUrl) { onCapture(previewDataUrl); } }
+    
+    const toggleFlash = () => { setFlashMode(prev => prev === 'auto' ? 'on' : prev === 'on' ? 'off' : 'auto'); };
+    const toggleTimer = () => { setTimer(prev => prev === 0 ? 3 : prev === 3 ? 5 : 0); };
+    const toggleAspectRatio = () => { setAspectRatio(prev => prev === '4:3' ? '16:9' : prev === '16:9' ? '1:1' : '4:3'); };
+
+    return (
+        <div className="fixed inset-0 bg-black z-[60] flex flex-col font-inter animate-fade-in-down" aria-modal="true" role="dialog">
+            <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden">
+                {error ? ( <div className="p-8 text-center text-rose-400">{error}</div>
+                ) : previewDataUrl ? ( <img src={previewDataUrl} alt="Capture preview" className="w-full h-full object-contain" />
+                ) : ( <>
+                        <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover transition-all duration-300 ${activeFilter}`}></video>
+                        {isGridOn && <div className="camera-grid-overlay"></div>}
+                    </>
+                )}
+                {countdown !== null && countdown > 0 && ( <div className="absolute inset-0 flex items-center justify-center bg-black/50"><span className="text-9xl font-bold text-white drop-shadow-lg animate-ping">{countdown}</span></div> )}
+            </div>
+
+            <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-10 flex justify-between items-center">
+                <TopBarButton onClick={onClose}>{<XIcon />}</TopBarButton>
+                {!previewDataUrl && (
+                    <div className="flex items-center gap-3 bg-black/30 backdrop-blur-sm p-2 rounded-full">
+                        {capabilities.torch && <TopBarButton onClick={toggleFlash}>{flashMode === 'auto' ? <FlashAutoIcon/> : flashMode === 'on' ? <FlashOnIcon /> : <FlashOffIcon />}</TopBarButton>}
+                        <TopBarButton onClick={toggleTimer} active={timer > 0}>{<TimerIcon />}</TopBarButton>
+                        <TopBarButton onClick={toggleAspectRatio}>{<AspectRatioIcon />}</TopBarButton>
+                        <TopBarButton onClick={() => setIsGridOn(p => !p)} active={isGridOn}>{<GridIcon />}</TopBarButton>
                     </div>
-                    <div className="w-full flex items-center justify-between">
-                        <div className="w-16 h-16 bg-white/10 rounded-lg"></div> {/* Placeholder for gallery */}
-                        <button onClick={handleCapture} disabled={!stream || !!error} className="shutter-button disabled:bg-gray-400" aria-label="Take Picture" />
-                        <div className="w-16 h-16 flex items-center justify-center">
-                             {devices.length > 1 && <button onClick={switchCamera} className="bg-white/20 rounded-full p-3"><SwitchCameraIcon /></button>}
+                )}
+                 <div className="w-10"></div> {/* Spacer */}
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-10 flex flex-col items-center gap-4">
+                {!previewDataUrl ? (
+                    <>
+                        {mode === 'photo' && (
+                             <div className="flex justify-center items-center gap-2 mb-4 overflow-x-auto no-scrollbar pb-2 w-full">
+                                {FILTERS.map(filter => (
+                                    <button key={filter.name} onClick={() => setActiveFilter(filter.css)} className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                                        <div className={`w-12 h-12 rounded-lg border-2 bg-cover bg-center transition-all ${activeFilter === filter.css ? 'border-orange-500' : 'border-transparent'}`} style={{backgroundImage: `url(https://i.postimg.cc/pXG25b2d/filter-preview.jpg)`}}>
+                                            <div className={`w-full h-full ${filter.css}`}></div>
+                                        </div>
+                                        <span className={`text-xs font-semibold transition-colors ${activeFilter === filter.css ? 'text-orange-500' : 'text-white'}`}>{filter.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-center gap-4 font-semibold text-white mb-4">
+                            <button className="text-gray-400">VIDEO</button>
+                            <button className="text-orange-400 relative">PHOTO<div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-orange-400 rounded-full"></div></button>
                         </div>
+
+                         <div className="w-full flex items-center justify-center gap-4 mb-4">
+                            <button onClick={() => handleZoomChange(0.5)} className={`text-sm font-bold rounded-full h-8 px-3 transition-colors ${zoom === 0.5 ? 'bg-orange-500 text-black' : 'bg-black/40 text-white'}`}>.5x</button>
+                            <button onClick={() => handleZoomChange(1)} className={`text-sm font-bold rounded-full h-8 px-3 transition-colors ${zoom === 1 ? 'bg-orange-500 text-black' : 'bg-black/40 text-white'}`}>1x</button>
+                            <button onClick={() => handleZoomChange(2)} className={`text-sm font-bold rounded-full h-8 px-3 transition-colors ${zoom === 2 ? 'bg-orange-500 text-black' : 'bg-black/40 text-white'}`}>2x</button>
+                        </div>
+
+                        <div className="w-full flex items-center justify-between">
+                            <div className="w-16 h-16 bg-white/10 rounded-lg"></div>
+                            <button onClick={handleCapture} disabled={!stream || !!error} className="shutter-button disabled:bg-gray-400" aria-label="Take Picture" />
+                            <div className="w-16 h-16 flex items-center justify-center">
+                                {devices.length > 1 && <button onClick={switchCamera} className="bg-white/20 rounded-full p-3"><SwitchCameraIcon /></button>}
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex w-full items-center justify-between animate-fade-in-down">
+                        <button onClick={() => setPreviewDataUrl(null)} className="flex items-center gap-2 font-semibold bg-white/20 text-white py-3 px-6 rounded-full"><RedoIcon /> Retake</button>
+                        <button onClick={handleSave} className="flex items-center gap-2 font-semibold bg-orange-500 text-black py-3 px-6 rounded-full"><CheckIcon /> Use Photo</button>
                     </div>
-                </>
-            ) : (
-                <div className="flex w-full items-center justify-between">
-                    <button onClick={() => setPreviewDataUrl(null)} className="flex items-center gap-2 font-semibold bg-white/20 text-white py-3 px-6 rounded-full"><RedoIcon /> Retake</button>
-                    <button onClick={handleSave} className="flex items-center gap-2 font-semibold bg-orange-500 text-black py-3 px-6 rounded-full"><CheckIcon /> Use Photo</button>
-                </div>
-            )}
+                )}
+            </div>
+            <canvas ref={canvasRef} className="hidden"></canvas>
         </div>
-        <canvas ref={canvasRef} className="hidden"></canvas>
-      </div>
-    </div>
-  );
+    );
 };

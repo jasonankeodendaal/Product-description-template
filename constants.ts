@@ -1,3 +1,5 @@
+
+
 export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
 Periscope telephoto zoom – ultra-long zoom without losing quality.
 High-resolution sensors (200MP+) – super detailed photos.
@@ -26,6 +28,7 @@ export interface SiteSettings {
   slogan: string;
   logoSrc: string | null;
   heroImageSrc: string | null;
+  backgroundImageSrc?: string | null;
   tel: string;
   email: string;
   website: string;
@@ -46,6 +49,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   slogan: "Jason's solution to your problems, Yes me!!",
   logoSrc: 'https://i.ibb.co/d46Mf1g1/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png',
   heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
+  backgroundImageSrc: 'https://i.postimg.cc/Fd7t0xX1/bb343bbc-19bb-4fbd-a9d4-2df5d7292898.jpg',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
   website: '',
@@ -129,37 +133,5 @@ What’s in the Box:
 1 x Power Cord
 
 Description:
-The Defy DMF451 Chest Freezer in Metallic Finish delivers 195 liters of net storage capacity with a static cooling system and flexible multimode operation. Energy-efficient, lockable, and elegantly styled, it’s a premium solution for dependable frozen storage, perfect for homes or small businesses.
-
-Key Features:
-Multimode freezer compartment for versatile storage
-Free-standing installation with stable dome feet
-Energy Class A for low electricity usage
-Rotational side-wall controller for precise temperature adjustment
-Door lock for added safety and security
-
-Material Used:
-Steel body with satin metallic finish; durable plastic interior components
-
-Product Dimensions (CM) & Weight (KG):
-Width: 72.5 cm | Height: 75.1 cm | Depth: 86 cm | Weight: 32 kg
-
-Buying This Product Means:
-You get a reliable, energy-efficient chest freezer that keeps your food fresh longer while offering flexible storage and easy operation.
-
-Key Specifications:
-Total Gross Volume: 331 L
-Total Net Volume: 195 L
-Cooling System: Static
-Climate Class: SN-ST
-Voltage: 220-240 V | Frequency: 50 Hz
-Annual Energy Consumption: 266 kWh/year
-Daily Energy Consumption: 0.71 kWh/24h
-
-Terms & Conditions:
-Based on the official warranty card for model DMF451, this product is covered by Defy's 3-year standard warranty for parts and labour against manufacturing faults. Additionally, the compressor is covered for an extra 2 years (5 years total). This is a carry-in warranty. To validate, the product must be registered online at the brand's official website within 30 days of purchase. The warranty is void if the product is used for commercial purposes and does not cover cosmetic damage or faults from power surges.
-
----
-
-⚠️ IMPORTANT: When product information is provided, always use the above layout exactly as shown. Do not change any wording from the original content supplied — only restructure and reformat it to fit this template. Do not add or invent information. For the "What's in the Box", "Material Used", "Product Dimensions & Weight", and "Terms & Conditions" sections, you MUST use web search to find any missing information. If information cannot be found online after searching, write: “No info.” Never omit any section. Always follow this template format strictly.
-`
+The Defy DMF451 Chest Freezer offers 195 litres of storage in a sleek satin metallic finish. Its multimode function allows you to switch between freezer, chiller, or fridge modes to suit your needs, while the A-rated energy efficiency helps save on electricity costs. The durable aluminium interior and lockable lid make it a practical and secure choice for any home.
+`;

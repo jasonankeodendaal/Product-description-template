@@ -57,10 +57,12 @@ export const WeatherIcon: React.FC<{ icon: WeatherData['current']['icon'], class
 };
 
 const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string; }> = ({ icon, label, value }) => (
-    <div className="flex items-center gap-1 text-xs">
-        <div className="w-4 h-4 text-gray-400 flex-shrink-0">{icon}</div>
-        <span className="font-semibold text-gray-300">{label}:</span>
-        <span className="font-bold text-white ml-auto">{value}</span>
+    <div className="flex items-center justify-between text-[10px] sm:text-xs">
+        <div className="flex items-center gap-1">
+            <div className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0">{icon}</div>
+            <span className="font-semibold text-gray-300">{label}:</span>
+        </div>
+        <span className="font-bold text-white">{value}</span>
     </div>
 );
 
@@ -119,7 +121,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
                 setIsDetecting(false);
                 const lastCity = localStorage.getItem('weather_last_city');
                  if (lastCity) {
-                    fetchWeather({ city: lastCity });
+                    setCityInput(lastCity);
                 }
             },
             { timeout: 15000, enableHighAccuracy: true }
@@ -162,13 +164,13 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
                             type="text"
                             value={cityInput}
                             onChange={(e) => setCityInput(e.target.value)}
-                            className="w-full bg-transparent border-b-2 border-orange-500 text-white text-sm font-semibold focus:outline-none"
+                            className="w-full bg-transparent border-b-2 border-orange-500 text-white text-xs sm:text-sm font-semibold focus:outline-none"
                             autoFocus
                             onBlur={handleCitySubmit}
                         />
                     </form>
                 ) : (
-                    <button onClick={handleCityEditClick} className="text-sm font-semibold text-white hover:text-orange-400 truncate text-left">
+                    <button onClick={handleCityEditClick} className="text-xs sm:text-sm font-semibold text-white hover:text-orange-400 truncate text-left">
                         {isDetecting ? 'Detecting...' : (weather?.city || cityInput || 'Set City')}
                     </button>
                 )}
@@ -180,14 +182,14 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
             {/* Main Display */}
             <div className="flex-grow flex flex-col items-center justify-center py-1 overflow-hidden">
                 {isLoading || isDetecting ? (
-                    <Spinner className="w-8 h-8 text-white" />
+                    <Spinner className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 ) : error && !weather ? (
                     <p className="text-rose-400 text-xs text-center p-1">{error}</p>
                 ) : weather ? (
                     <div className="w-full flex flex-col items-center">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 text-white my-1"><WeatherIcon icon={weather.current.icon} /></div>
-                        <p className="text-3xl sm:text-5xl font-bold text-white">{Math.round(weather.current.temperatureCelsius)}°</p>
-                        <p className="text-gray-300 font-semibold text-xs sm:text-sm capitalize truncate">{weather.current.condition}</p>
+                        <div className="w-8 h-8 sm:w-12 sm:h-12 text-white my-1"><WeatherIcon icon={weather.current.icon} /></div>
+                        <p className="text-3xl sm:text-4xl font-bold text-white">{Math.round(weather.current.temperatureCelsius)}°</p>
+                        <p className="text-gray-300 font-semibold text-[10px] sm:text-xs capitalize truncate">{weather.current.condition}</p>
                     </div>
                 ) : (
                     <p className="text-gray-400 text-sm">No weather data.</p>
@@ -196,7 +198,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
 
             {/* Details */}
             {weather && weather.forecast[0] && !isLoading && (
-                 <div className="flex-shrink-0 space-y-1 p-1 bg-black/20 rounded-lg">
+                 <div className="flex-shrink-0 space-y-0.5 p-1.5 bg-black/20 rounded-lg">
                     <DetailItem icon={<ArrowUpIcon />} label="High" value={`${Math.round(weather.forecast[0].tempHighCelsius)}°`} />
                     <DetailItem icon={<ArrowDownIcon />} label="Low" value={`${Math.round(weather.forecast[0].tempLowCelsius)}°`} />
                     <DetailItem icon={<WindIcon />} label="Wind" value={`${Math.round(weather.forecast[0].windSpeedKph)}kph`} />
