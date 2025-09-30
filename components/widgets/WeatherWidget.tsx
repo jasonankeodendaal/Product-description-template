@@ -37,7 +37,7 @@ export interface WeatherData {
 
 
 interface WeatherWidgetProps {
-    getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }) => Promise<WeatherData>;
+    getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }, customApiUrl?: string | null, customApiAuthKey?: string | null) => Promise<WeatherData>;
     siteSettings: SiteSettings;
     onOpenForecast: (data: WeatherData) => void;
 }
@@ -79,7 +79,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
         setIsLoading(true);
         setError(null);
         try {
-            const data = await getWeatherInfo(location);
+            const data = await getWeatherInfo(location, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey);
             setWeather(data);
             if (data.city) {
                 setCityInput(data.city);
@@ -91,7 +91,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
         } finally {
             setIsLoading(false);
         }
-    }, [getWeatherInfo]);
+    }, [getWeatherInfo, siteSettings]);
     
     useEffect(() => {
         setIsDetecting(true);

@@ -32,7 +32,7 @@ interface HomeProps {
     siteSettings: SiteSettings;
     onOpenDashboard: () => void;
     calendarEvents: CalendarEvent[];
-    getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }) => Promise<any>;
+    getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }, customApiUrl?: string | null, customApiAuthKey?: string | null) => Promise<any>;
     storageUsage: StorageUsage;
     onLogout: () => void;
     userRole: UserRole;
