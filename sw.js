@@ -6,9 +6,7 @@ const APP_SHELL_URLS = [
   '/',
   '/index.html',
   '/index.tsx',
-  '/manifest.json',
-  '/logo.png',
-  '/background.jpg'
+  '/manifest.json'
 ];
 
 // Install service worker and cache the app shell
