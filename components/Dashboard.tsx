@@ -58,7 +58,7 @@ const viewTitles: Record<DashboardView, string> = {
     settings: 'Site & Creator Settings',
     setup: 'Setup Guide',
     about: 'About This App',
-    publishing: 'App Publishing (APK)',
+    publishing: 'App Publishing Tool',
 };
 
 const DashboardTile: React.FC<{ title: string; icon: React.ReactNode; onClick: () => void; colorClass: string, delay: number }> = 
@@ -88,7 +88,7 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
         case 'about':
             return <AboutThisApp onNavigateToSetup={() => setDashboardView('setup')} />;
         case 'publishing':
-            return <AppPublishingGuide />;
+            return <AppPublishingGuide siteSettings={props.siteSettings} />;
         default:
             return (
                 <div className="space-y-6">
@@ -103,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                 <DashboardTile title="Creator Info" icon={<CreatorToolIcon />} onClick={onOpenCreatorInfo} colorClass="bg-red-500" delay={200} />
                                 <DashboardTile title="Setup Guide" icon={<SetupToolIcon />} onClick={() => setDashboardView('setup')} colorClass="bg-orange-700" delay={250} />
-                                <DashboardTile title="App Publishing" icon={<PublishToolIcon />} onClick={() => setDashboardView('publishing')} colorClass="bg-amber-600" delay={300} />
+                                <DashboardTile title="App Publishing Tool" icon={<PublishToolIcon />} onClick={() => setDashboardView('publishing')} colorClass="bg-amber-600" delay={300} />
                             </div>
                         </div>
                     )}
