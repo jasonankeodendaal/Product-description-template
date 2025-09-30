@@ -40,42 +40,42 @@
   ],
   "screenshots": [
     {
-      "src": "https://i.ibb.co/Rz7xWdY/screenshot-generator.webp",
+      "src": "https://i.postimg.cc/850gZvjM/screenshot-generator.webp",
       "sizes": "1280x720",
       "type": "image/webp",
       "form_factor": "wide",
       "label": "AI Generator Workspace"
     },
     {
-      "src": "https://i.ibb.co/2vXQZtP/screenshot-recordings.webp",
+      "src": "https://i.postimg.cc/6p7B6s71/screenshot-recordings.webp",
       "sizes": "1280x720",
       "type": "image/webp",
       "form_factor": "wide",
       "label": "Recording and Transcription Manager"
     },
     {
-      "src": "https://i.ibb.co/1K5x2L1/screenshot-photos.webp",
+      "src": "https://i.postimg.cc/mDDBqK7B/screenshot-photos.webp",
       "sizes": "1280x720",
       "type": "image/webp",
       "form_factor": "wide",
       "label": "Photo Library and Management"
     },
     {
-      "src": "https://i.ibb.co/b3D0z0p/screenshot-generator-narrow.webp",
+      "src": "https://i.postimg.cc/L8QpW5gR/screenshot-generator-narrow.webp",
       "sizes": "720x1280",
       "type": "image/webp",
       "form_factor": "narrow",
       "label": "AI Generator on Mobile"
     },
     {
-      "src": "https://i.ibb.co/4Z58f6d/screenshot-recordings-narrow.webp",
+      "src": "https://i.postimg.cc/Y0zVb7YV/screenshot-recordings-narrow.webp",
       "sizes": "720x1280",
       "type": "image/webp",
       "form_factor": "narrow",
       "label": "Recordings on Mobile"
     },
     {
-      "src": "https://i.ibb.co/yq4503s/screenshot-photos-narrow.webp",
+      "src": "https://i.postimg.cc/brdY0W3b/screenshot-photos-narrow.webp",
       "sizes": "720x1280",
       "type": "image/webp",
       "form_factor": "narrow",
@@ -102,7 +102,7 @@
       "url": "/?view=notepad",
       "icons": [
         {
-          "src": "https://i.ibb.co/L6Szk5X/shortcut-note.png",
+          "src": "https://i.ibb.co/mCb1B5P/shortcut-note.png",
           "sizes": "96x96"
         }
       ]
