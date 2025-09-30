@@ -135,9 +135,21 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
                     </ul>
                 </div>
                 {!isChecking && !allChecksPassed && (
-                    <Alert type="warning">
-                        <strong>Check Failed:</strong> One or more resources could not be reached. Please fix the broken URLs (often found in `manifest.json` or Dashboard &gt; Site Settings) and reload this page to try again. PWABuilder will fail if these links are broken.
-                    </Alert>
+                    <div className="mt-4">
+                        <Alert type="warning">
+                            <strong>Check Failed:</strong> One or more resources could not be reached. Please fix the broken URLs and reload this page to try again. PWABuilder will fail if these links are broken.
+                        </Alert>
+                        <div className="mt-4 bg-red-900/20 p-4 rounded-md border border-red-500/30">
+                            <h4 className="font-semibold text-red-400">Failed Resources:</h4>
+                            <ul className="mt-2 space-y-1 text-xs list-disc list-inside text-red-300">
+                                {checkResults.filter(r => r.status === 'failure').map(result => (
+                                    <li key={result.url}>
+                                        <strong className="text-red-200">{result.name}:</strong> <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-white">{result.url}</a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
                 )}
             </section>
 
