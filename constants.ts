@@ -54,7 +54,7 @@ export const CREATOR_PIN = '1723j';
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',
   slogan: "Jason's solution to your problems, Yes me!!",
-  logoSrc: 'https://i.ibb.co/d46Mf1g1/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png',
+  logoSrc: 'https://i.postimg.cc/jCTZNwWk/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png',
   heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
   backgroundImageSrc: 'https://i.postimg.cc/9F0C3r4M/futuristic-background.jpg',
   tel: '0695989427',
@@ -63,7 +63,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   creator: {
     name: 'JSTYP.me',
     slogan: "Jason's solution to your problems, Yes me!!",
-    logoSrc: 'https://i.ibb.co/RkrJ44HK/Whats-App-Image-2025-06-25-at-15-31-54-removebg-preview.png',
+    logoSrc: 'https://i.postimg.cc/6y4PVtQf/Creator-logo.png',
     tel: '0695989427',
     email: 'odendaaljason454@gmail.com',
     whatsapp: 'https://wa.link/nohogl',
