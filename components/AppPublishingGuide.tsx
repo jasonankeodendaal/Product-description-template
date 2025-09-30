@@ -98,7 +98,7 @@ export const AppPublishingGuide: React.FC = () => {
                     </Step>
 
                     <Step num="3" title="Add Environment Variables (Crucial!)">
-                        <p>Your deployed app needs your secret keys to function. Without them, the AI features and Google Drive sync will fail.</p>
+                        <p>Your deployed app needs your secret keys to function. Without them, the AI features will fail.</p>
                         <p>1. After deploying, go to your new project's dashboard on Vercel.</p>
                         <p>2. Click the <strong className="text-white">"Settings"</strong> tab, then <strong className="text-white">"Environment Variables"</strong> on the left.</p>
                         <p>3. Create the following variables:</p>

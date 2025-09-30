@@ -35,11 +35,18 @@ export interface SiteSettings {
   creator: CreatorDetails;
   customApiEndpoint?: string | null;
   customApiAuthKey?: string | null;
-  syncMode?: 'local' | 'folder' | 'api';
+  syncMode?: 'local' | 'folder' | 'api' | 'ftp';
   userPin?: string;
   pinIsSet?: boolean;
   onboardingCompleted?: boolean;
   userName?: string;
+  // FTP Settings
+  ftpHost?: string;
+  ftpPort?: number;
+  ftpUser?: string;
+  ftpPassword?: string;
+  ftpPath?: string;
+  ftpProtocol?: 'ftp' | 'sftp';
 }
 
 export const CREATOR_PIN = '1723j';
@@ -69,6 +76,13 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   pinIsSet: false,
   onboardingCompleted: false,
   userName: 'User',
+  // FTP Defaults
+  ftpHost: '',
+  ftpPort: 21,
+  ftpUser: '',
+  ftpPassword: '',
+  ftpPath: '/',
+  ftpProtocol: 'ftp',
 };
 
 export const DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE = `
