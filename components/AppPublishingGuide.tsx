@@ -105,9 +105,6 @@ export const AppPublishingGuide: React.FC = () => {
                         <ul className="list-disc list-inside space-y-2 pl-4">
                             <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_KEY</code>, <strong>Value:</strong> Paste your Google Gemini API Key here.</li>
                             <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_SECRET_KEY</code>, <strong>Value:</strong> Paste the strong password you created.</li>
-                            <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">GOOGLE_CLIENT_ID</code>, <strong>Value:</strong> Your Client ID for Google Drive sync (if configured).</li>
-                            <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">GOOGLE_CLIENT_SECRET</code>, <strong>Value:</strong> Your Client Secret for Google Drive sync (if configured).</li>
-                            <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">NEXTAUTH_URL</code>, <strong>Value:</strong> Your full Vercel app URL (e.g., <code className="bg-black/30 px-1 py-0.5 rounded text-xs">https://your-project-name.vercel.app</code>).</li>
                         </ul>
                         <p>4. After adding them, you must <strong className="text-white">re-deploy</strong> the app for the changes to take effect. Go to the "Deployments" tab, click the latest one, and find the "Redeploy" option in the menu (...).</p>
                     </Step>

@@ -40,9 +40,6 @@ interface DataManagementProps {
     onApiDisconnect: () => void;
     isApiConnecting: boolean;
     isApiConnected: boolean;
-    googleDriveStatus: { connected: boolean, email?: string };
-    onGoogleDriveConnect: () => void;
-    onGoogleDriveDisconnect: () => void;
 }
 
 type DataManagementTab = 'sync' | 'backup' | 'api' | 'danger';
@@ -64,14 +61,17 @@ const TabButton: React.FC<{
     </button>
 );
 
-const SectionCard: React.FC<{ title: string; description: string; icon: React.ReactNode; children: React.ReactNode; }> = ({ title, description, icon, children }) => (
+const SectionCard: React.FC<{ title: string; description: string; icon: React.ReactNode; children: React.ReactNode; badge?: string; }> = ({ title, description, icon, children, badge }) => (
     <div className="bg-white/5 p-6 rounded-lg border border-[var(--theme-border)]/50">
-        <div className="flex items-start gap-4">
-            <div className="w-8 h-8 flex-shrink-0 text-orange-400">{icon}</div>
-            <div>
-                <h4 className="text-lg font-bold text-white">{title}</h4>
-                <p className="text-sm text-gray-400">{description}</p>
+        <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+                <div className="w-8 h-8 flex-shrink-0 text-orange-400">{icon}</div>
+                <div>
+                    <h4 className="text-lg font-bold text-white">{title}</h4>
+                    <p className="text-sm text-gray-400">{description}</p>
+                </div>
             </div>
+            {badge && <span className="text-xs font-bold bg-green-500/20 text-green-300 border border-green-500/30 px-2 py-1 rounded-full">{badge}</span>}
         </div>
         <div className="mt-4 pl-12">
             {children}
@@ -98,8 +98,7 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
     const {
         templates, recordings, photos, videos, notes, noteRecordings, logEntries, calendarEvents,
         onRestore, directoryHandle, onClearLocalData, onSyncDirectory, onDisconnectDirectory,
-        siteSettings, onUpdateSettings, onApiConnect, onApiDisconnect, isApiConnecting, isApiConnected,
-        googleDriveStatus, onGoogleDriveConnect, onGoogleDriveDisconnect
+        siteSettings, onUpdateSettings, onApiConnect, onApiDisconnect, isApiConnecting, isApiConnected
     } = props;
     
     const [activeTab, setActiveTab] = useState<DataManagementTab>('sync');
@@ -110,6 +109,8 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
         customApiEndpoint: siteSettings.customApiEndpoint || '',
         customApiAuthKey: siteSettings.customApiAuthKey || '',
     });
+
+    const isMobile = useMemo(() => /Mobi/i.test(window.navigator.userAgent), []);
 
     const handleApiSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -152,7 +153,6 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
 
     const handleCreateBackup = async () => {
         try {
-            // FIX: Added the missing 'videos' argument to the function call.
             await createBackup(siteSettings, templates, recordings, photos, videos, notes, noteRecordings, logEntries, calendarEvents);
         } catch (error) {
             alert(`Failed to create backup: ${error instanceof Error ? error.message : "An unknown error occurred"}`);
@@ -178,50 +178,22 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                      <SectionCard title="Browser Storage (Default)" description="Data is saved privately in this browser. Fast, simple, and works offline." icon={<HardDriveIcon />}>
                         <p className="text-sm text-gray-400">This is the default mode. No setup required. Ideal for single-device use.</p>
                     </SectionCard>
-                    <SectionCard title="Cloud Sync" description="Connect to cloud services to sync your data across all devices, including mobile and tablets." icon={<CloudIcon isConnected={googleDriveStatus.connected} />}>
-                        <div className="space-y-4">
-                            {/* Google Drive */}
-                            <div className="flex items-center gap-4 p-3 bg-black/20 rounded-lg">
-                                <GoogleDriveIcon />
-                                <div className="flex-grow">
-                                    <h5 className="font-semibold text-white">Google Drive</h5>
-                                    {googleDriveStatus.connected ? (
-                                         <p className="text-xs text-gray-400 truncate">Connected as: {googleDriveStatus.email}</p>
-                                    ) : (
-                                         <p className="text-xs text-gray-400">Syncs data to a private app folder.</p>
-                                    )}
-                                </div>
-                                {googleDriveStatus.connected ? (
-                                    <button onClick={onGoogleDriveDisconnect} className="text-sm font-semibold text-gray-400 hover:text-white flex-shrink-0">Disconnect</button>
+                    {!isMobile && (
+                         <SectionCard title="Local Folder Sync (Desktop Only)" description="Saves data to a folder on your computer. Great for local backups and use with desktop-based cloud clients." icon={<FolderSyncIcon />}>
+                            <div className="flex flex-col gap-4">
+                                {directoryHandle ? (
+                                    <div className="flex items-center gap-4">
+                                        <p className="text-sm font-semibold text-green-400">Connected to: <span className="font-mono bg-black/30 px-2 py-1 rounded">{directoryHandle.name}</span></p>
+                                        <button onClick={onDisconnectDirectory} className="text-sm font-semibold text-gray-400 hover:text-white">Disconnect</button>
+                                    </div>
                                 ) : (
-                                    <button onClick={onGoogleDriveConnect} className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm flex-shrink-0">Connect</button>
+                                    <button onClick={onSyncDirectory} className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 self-start">
+                                        <FolderIcon /> Connect to Folder...
+                                    </button>
                                 )}
                             </div>
-                            {/* Dropbox */}
-                             <div className="flex items-center gap-4 p-3 bg-black/20 rounded-lg opacity-60">
-                                <DropboxIcon />
-                                <div className="flex-grow">
-                                    <h5 className="font-semibold text-white">Dropbox</h5>
-                                    <p className="text-xs text-gray-400">Integration coming soon!</p>
-                                </div>
-                                <button disabled className="bg-white/10 text-white font-semibold py-2 px-4 rounded-lg text-sm flex-shrink-0 cursor-not-allowed">Connect</button>
-                            </div>
-                        </div>
-                    </SectionCard>
-                     <SectionCard title="Local Folder Sync (Desktop Only)" description="Saves data to a folder on your computer. Great for local backups and use with desktop-based cloud clients." icon={<FolderSyncIcon />}>
-                        <div className="flex flex-col gap-4">
-                            {directoryHandle ? (
-                                <div className="flex items-center gap-4">
-                                    <p className="text-sm font-semibold text-green-400">Connected to: <span className="font-mono bg-black/30 px-2 py-1 rounded">{directoryHandle.name}</span></p>
-                                    <button onClick={onDisconnectDirectory} className="text-sm font-semibold text-gray-400 hover:text-white">Disconnect</button>
-                                </div>
-                            ) : (
-                                <button onClick={onSyncDirectory} className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 self-start">
-                                    <FolderIcon /> Connect to Folder...
-                                </button>
-                            )}
-                        </div>
-                    </SectionCard>
+                        </SectionCard>
+                    )}
                 </div>
             );
             case 'backup': return (
@@ -258,7 +230,7 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                             </div>
                             <div className="pt-4 border-t border-white/10">
                                 <h4 className="font-semibold text-orange-400 mb-1">Custom API Server (Advanced)</h4>
-                                <p className="text-sm text-gray-400 mb-3">For team sync, enter your custom API URL. Leave blank for standard Vercel use with Google Drive sync.</p>
+                                <p className="text-sm text-gray-400 mb-3">For team sync, enter your custom API URL. If you are not using a custom sync server, this can be left blank.</p>
                                 <div className="flex items-end gap-4">
                                     <div className="flex-grow">
                                         <InputField 

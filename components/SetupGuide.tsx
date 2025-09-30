@@ -53,7 +53,7 @@ export const SetupGuide: React.FC = () => (
         <section>
             <h2 className="text-2xl font-bold text-[var(--theme-text-primary)]">Understanding Your Data Options</h2>
             <p className="mt-2 text-[var(--theme-text-secondary)]">
-                This application gives you full control over your data. Choose the mode that best fits your workflow, from simple and private to powerful and collaborative across all your devices.
+                This application gives you full control over your data. Choose the mode that best fits your workflow, from simple and private to using a custom sync server.
             </p>
         </section>
 
@@ -66,25 +66,6 @@ export const SetupGuide: React.FC = () => (
                 <strong>Heads up:</strong> Data is not shared between different browsers (e.g., Chrome and Firefox) or different devices. Clearing your browser's site data will permanently erase all your app data, so regular backups are recommended!
             </div>
              <p><strong>Setup:</strong> None! You're already using it.</p>
-        </Section>
-        
-        <Section icon={<CloudIcon isConnected={true} />} title="Direct Cloud Sync (Recommended for Mobile)">
-            <p><strong>Best for:</strong> Syncing your data across all devices, including desktops, tablets, and mobile phones.</p>
-            <p>
-                This mode connects the app directly to your cloud storage account, saving data to a private app folder. It's the best way to keep your work synchronized everywhere.
-            </p>
-             <div className="text-sm mt-2 p-3 bg-orange-500/10 rounded-md border border-orange-500/30">
-                <strong className="text-orange-300">How to Sync with Google Drive</strong>
-                <ol className="list-decimal list-inside space-y-2 mt-2 text-orange-300/80">
-                    <li>Go to the <strong className="text-white">Dashboard</strong> &gt; <strong className="text-white">Data Management</strong>.</li>
-                    <li>Find the "Cloud Sync" section.</li>
-                    <li>Click the <strong className="text-white">Connect</strong> button next to Google Drive.</li>
-                    <li>Follow the on-screen prompts to sign in to your Google Account and grant permission.</li>
-                </ol>
-                 <p className="text-orange-300/80 mt-2">
-                    That's it! The app will now be connected. Future versions will automatically sync your data. (Dropbox support is coming soon!).
-                 </p>
-            </div>
         </Section>
         
         <Section icon={<FolderSyncIcon />} title="Local Folder Sync (Desktop Alternative)">

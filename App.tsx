@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
@@ -8,7 +10,7 @@ import { GenerationResult } from './components/OutputPanel';
 import { FullScreenLoader } from './components/FullScreenLoader';
 import { db } from './services/db';
 import { fileSystemService } from './services/fileSystemService';
-import { apiSyncService, cloudAuthService, waitForGlobal } from './utils/dataUtils';
+import { apiSyncService, waitForGlobal } from './utils/dataUtils';
 import { AuthModal } from './components/AuthModal';
 import { Dashboard } from './components/Dashboard';
 import { RecordingManager } from './components/RecordingManager';
@@ -243,8 +245,6 @@ const App: React.FC = () => {
     const [isApiConnecting, setIsApiConnecting] = useState(false);
     const [isApiConnected, setIsApiConnected] = useState(false);
     
-    const [googleDriveStatus, setGoogleDriveStatus] = useState({ connected: false, email: '' });
-
     const [currentView, setCurrentView] = useState<View>('home');
     const [imageToEdit, setImageToEdit] = useState<Photo | null>(null);
     const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
@@ -446,12 +446,6 @@ const App: React.FC = () => {
                     localStorage.removeItem('loginData');
                   }
                 }
-
-                // Check Google Drive connection status
-                const gDriveStatus = await cloudAuthService.checkStatus();
-                // FIX: Ensure gDriveStatus.email has a default value to match the state type.
-                setGoogleDriveStatus({ connected: gDriveStatus.connected, email: gDriveStatus.email || '' });
-
 
                 const storedSettings = localStorage.getItem('siteSettings');
                 let settings: SiteSettings = storedSettings ? JSON.parse(storedSettings) : DEFAULT_SITE_SETTINGS;
@@ -991,20 +985,6 @@ const App: React.FC = () => {
         }
     }, [siteSettings]);
 
-    const handleGoogleDriveConnect = useCallback(() => {
-        const newSettings = { ...siteSettings, syncMode: 'api' as const };
-        handleUpdateSettings(newSettings);
-        cloudAuthService.connect();
-    }, [siteSettings, handleUpdateSettings]);
-    
-    const handleGoogleDriveDisconnect = useCallback(async () => {
-        await cloudAuthService.disconnect();
-        setGoogleDriveStatus({ connected: false, email: '' });
-        const newSettings = { ...siteSettings, syncMode: 'local' as const };
-        handleUpdateSettings(newSettings);
-        alert("Disconnected from Google Drive.");
-    }, [siteSettings, handleUpdateSettings]);
-
     const onRestore = useCallback(async (file: File) => {
         setIsLoading(true);
         setLoadingMessage('Restoring backup...');
@@ -1375,9 +1355,6 @@ const App: React.FC = () => {
                     userRole={userRole}
                     onInitiatePinReset={handleInitiatePinReset}
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
-                    googleDriveStatus={googleDriveStatus}
-                    onGoogleDriveConnect={handleGoogleDriveConnect}
-                    onGoogleDriveDisconnect={handleGoogleDriveDisconnect}
                 />
             )}
             {isPrintPreviewOpen && (

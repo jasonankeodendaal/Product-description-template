@@ -48,9 +48,6 @@ interface DashboardProps {
   userRole: UserRole;
   onInitiatePinReset: () => void;
   onOpenCreatorInfo: () => void;
-  googleDriveStatus: { connected: boolean, email?: string };
-  onGoogleDriveConnect: () => void;
-  onGoogleDriveDisconnect: () => void;
 }
 
 type DashboardView = 'main' | 'data' | 'settings' | 'setup' | 'about' | 'publishing';
