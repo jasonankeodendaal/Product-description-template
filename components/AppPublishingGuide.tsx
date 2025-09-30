@@ -36,6 +36,7 @@ const Alert: React.FC<{ type: 'info' | 'warning' | 'tip', children: React.ReactN
 
 export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ siteSettings }) => {
     const [checkResults, setCheckResults] = useState<CheckResult[]>([]);
+    const [failedChecks, setFailedChecks] = useState<CheckResult[]>([]);
     const [allChecksPassed, setAllChecksPassed] = useState(false);
     const [isChecking, setIsChecking] = useState(true);
 
@@ -43,6 +44,7 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
         const runChecks = async () => {
             setIsChecking(true);
             setAllChecksPassed(false);
+            setFailedChecks([]);
 
             let urlsToCheck: {name: string, url: string}[] = [];
 
@@ -67,7 +69,9 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
 
             } catch (e) {
                 console.error("Failed to fetch or parse manifest.json", e);
-                setCheckResults([{ name: 'manifest.json', url: '/manifest.json', status: 'failure' }]);
+                const manifestFailure = { name: 'manifest.json', url: '/manifest.json', status: 'failure' as const };
+                setCheckResults([manifestFailure]);
+                setFailedChecks([manifestFailure]);
                 setIsChecking(false);
                 return;
             }
@@ -77,23 +81,32 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
             const initialResults = uniqueUrls.map(item => ({...item, status: 'pending' as 'pending' }));
             setCheckResults(initialResults);
 
+            const failures: CheckResult[] = [];
             let allPassed = true;
-            for (let i = 0; i < uniqueUrls.length; i++) {
-                const item = uniqueUrls[i];
-                let status: 'success' | 'failure' = 'failure';
-                try {
+
+            const checkPromises = uniqueUrls.map(async (item, i): Promise<CheckResult> => {
+                 try {
                     const response = await fetch(item.url, { method: 'HEAD', mode: 'cors' });
                     if (response.ok) {
-                        status = 'success';
+                        return { ...item, status: 'success' };
                     } else {
                         allPassed = false;
+                        const failure = { ...item, status: 'failure' as const };
+                        failures.push(failure);
+                        return failure;
                     }
                 } catch (e) {
                     allPassed = false;
+                    const failure = { ...item, status: 'failure' as const };
+                    failures.push(failure);
+                    return failure;
                 }
-                setCheckResults(prev => prev.map((res, index) => index === i ? { ...res, status } : res));
-            }
+            });
+
+            const results = await Promise.all(checkPromises);
             
+            setCheckResults(results.sort((a,b) => a.name.localeCompare(b.name)));
+            setFailedChecks(failures);
             setAllChecksPassed(allPassed);
             setIsChecking(false);
         };
@@ -121,7 +134,7 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
                     )}
                     <ul className="space-y-2">
                         {checkResults.map(result => (
-                             <li key={result.url} className="flex items-center justify-between text-xs">
+                             <li key={result.url + result.name} className="flex items-center justify-between text-xs">
                                 <span className="text-gray-300 truncate pr-4">{result.name}</span>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                     <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-orange-400 underline truncate max-w-[150px]">{result.url}</a>
@@ -142,8 +155,8 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
                         <div className="mt-4 bg-red-900/20 p-4 rounded-md border border-red-500/30">
                             <h4 className="font-semibold text-red-400">Failed Resources:</h4>
                             <ul className="mt-2 space-y-1 text-xs list-disc list-inside text-red-300">
-                                {checkResults.filter(r => r.status === 'failure').map(result => (
-                                    <li key={result.url}>
+                                {failedChecks.map(result => (
+                                    <li key={result.url + result.name}>
                                         <strong className="text-red-200">{result.name}:</strong> <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-white">{result.url}</a>
                                     </li>
                                 ))}
