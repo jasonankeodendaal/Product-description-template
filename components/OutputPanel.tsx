@@ -32,7 +32,8 @@ interface OutputPanelProps {
   isLoading: boolean;
   error: string | null;
   onSaveToFolder: (item: ParsedProductData, structuredData: Record<string, string>) => Promise<void>;
-  syncMode?: 'local' | 'folder' | 'api';
+  // FIX: Add 'ftp' to syncMode to match the type in SiteSettings, resolving a type error.
+  syncMode?: 'local' | 'folder' | 'api' | 'ftp';
   photos: Photo[];
   onSavePhoto: (photo: Photo) => Promise<void>;
   onUpdatePhoto: (photo: Photo) => Promise<void>;

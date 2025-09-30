@@ -24,7 +24,8 @@ interface FileBrowserProps {
     photos: Photo[];
     videos: Video[];
     directoryHandle: FileSystemDirectoryHandle | null;
-    syncMode?: 'local' | 'folder' | 'api';
+    // FIX: Add 'ftp' to syncMode to match the SiteSettings type.
+    syncMode?: 'local' | 'folder' | 'api' | 'ftp';
     onNavigate: (view: View) => void;
 }
 
@@ -215,7 +216,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
 
 
     const virtualFileTree = useMemo(() => {
-        if (syncMode === 'local' || syncMode === 'api') return buildFileTree(photos, videos);
+        if (syncMode === 'local' || syncMode === 'api' || syncMode === 'ftp') return buildFileTree(photos, videos);
         return null;
     }, [syncMode, photos, videos]);
 

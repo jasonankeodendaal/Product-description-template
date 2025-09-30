@@ -73,7 +73,7 @@ export const AppPublishingGuide: React.FC = () => {
                 <h3 className="text-xl font-bold text-white mb-4">Prerequisites</h3>
                 <p className="mb-4 text-gray-400">Before you begin, make sure you have the following ready:</p>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">A Vercel Account:</strong> We'll use this for free, high-performance hosting. Sign up at <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">vercel.com</a>.</div></li>
+                    <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">A GitHub & Vercel Account:</strong> We'll use these for professional code hosting and deployment. Both are free.</div></li>
                     <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">A Google Gemini API Key:</strong> To power the AI features. Get one from <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">Google AI Studio</a>.</div></li>
                     <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">An `API_SECRET_KEY`:</strong> This is a strong password you create yourself to protect your app's AI functions.</div></li>
                     <li className="bg-gray-800/50 p-4 rounded-lg flex items-center gap-3"><span className="text-orange-400 text-2xl">✅</span> <div><strong className="text-white">Android Studio:</strong> The official software for building Android apps. Download it from the <a href="https://developer.android.com/studio" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">official website</a>.</div></li>
@@ -83,33 +83,30 @@ export const AppPublishingGuide: React.FC = () => {
             <div>
                 <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 1: Deploying Your Web App to Vercel</h3>
                  <div className="space-y-6">
-                     <Step num="1" title="Download Source Code from GitHub">
-                        <p>As a creator, you can download the full source code to self-host, customize, or inspect the application. The code is available on GitHub.</p>
-                        <a href="https://github.com/jasonankeodendaal/Product-description-template.git" target="_blank" rel="noopener noreferrer" className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 mt-2">
-                            <DownloadIcon /> Download Source Code
-                        </a>
+                     <Step num="1" title="Get the Source Code on GitHub">
+                        <p>The most reliable way to deploy is through Git. First, you need your own copy of the code in a GitHub repository.</p>
+                        <p>1. Go to the app's source code repository: <a href="https://github.com/jasonankeodendaal/Product-description-template" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-orange)] hover:underline">View on GitHub</a>.</p>
+                        <p>2. Click the <strong className="text-white">"Fork"</strong> button in the top-right corner. This will create a personal copy of the repository under your own GitHub account.</p>
                     </Step>
                     
-                    <Step num="2" title="Deploy via Drag-and-Drop">
-                        <p>1. Unzip the source code you downloaded in Step 1.</p>
-                        <p>2. On your Vercel dashboard, click "Add New... &gt; Project".</p>
-                        <p>3. Vercel will prompt you to connect a Git repository. Instead, find the option to <strong className="text-white">"Deploy a Project from Your Computer"</strong> (you may need to scroll down) and drag your unzipped folder into the browser window.</p>
-                        <p>4. Vercel will analyze the folder. You don't need to change any build settings. Just click <strong className="text-white">"Deploy"</strong>.</p>
+                    <Step num="2" title="Connect Vercel to Your GitHub Repository">
+                        <p>1. On your Vercel dashboard, click "Add New... &gt; Project".</p>
+                        <p>2. Vercel will ask to connect to your Git provider. Connect it to your GitHub account.</p>
+                        <p>3. Find the repository you just forked and click <strong className="text-white">"Import"</strong>.</p>
                     </Step>
 
                     <Step num="3" title="Add Environment Variables (Crucial!)">
-                        <p>Your deployed app needs your secret keys to function. Without them, the AI features will fail.</p>
-                        <p>1. After deploying, go to your new project's dashboard on Vercel.</p>
-                        <p>2. Click the <strong className="text-white">"Settings"</strong> tab, then <strong className="text-white">"Environment Variables"</strong> on the left.</p>
-                        <p>3. Create the following variables:</p>
+                        <p>Your deployed app needs your secret keys to function. Without them, the AI features will fail with an 'Unauthorized' error.</p>
+                        <p>1. In the "Configure Project" screen on Vercel, expand the <strong className="text-white">"Environment Variables"</strong> section.</p>
+                        <p>2. Create the following two variables:</p>
                         <ul className="list-disc list-inside space-y-2 pl-4">
                             <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_KEY</code>, <strong>Value:</strong> Paste your Google Gemini API Key here.</li>
                             <li><strong>Key:</strong> <code className="bg-black/30 px-1 py-0.5 rounded text-xs">API_SECRET_KEY</code>, <strong>Value:</strong> Paste the strong password you created.</li>
                         </ul>
-                        <p>4. After adding them, you must <strong className="text-white">re-deploy</strong> the app for the changes to take effect. Go to the "Deployments" tab, click the latest one, and find the "Redeploy" option in the menu (...).</p>
+                        <p>3. Vercel will automatically detect the project settings. You don't need to change anything. Click <strong className="text-white">"Deploy"</strong>.</p>
                     </Step>
                      <Step num="4" title="Get Your Public URL">
-                        <p>Once redeployed, Vercel will give you a public URL, like <code className="bg-black/30 px-1 py-0.5 rounded text-xs">https://your-project-name.vercel.app</code>. Visit this URL and test the AI generator to ensure your keys are working. Copy this URL for the next part.</p>
+                        <p>Once deployed, Vercel will give you a public URL, like <code className="bg-black/30 px-1 py-0.5 rounded text-xs">https://your-project-name.vercel.app</code>. Visit this URL and test the AI generator to ensure your keys are working. Copy this URL for the next part.</p>
                     </Step>
                 </div>
             </div>
@@ -118,7 +115,7 @@ export const AppPublishingGuide: React.FC = () => {
                 <h3 className="text-xl font-bold text-[var(--theme-text-primary)] mb-3">Part 2: Packaging with PWABuilder</h3>
                 <div className="space-y-6">
                     <Step num="1" title="Analyze Your App in PWABuilder">
-                        <p>PWABuilder is a free tool from Microsoft that helps package PWAs for app stores. Open <a href="https://www.pwabuilder.com" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-orange)] hover:underline">www.pwABuilder.com</a> in your browser.</p>
+                        <p>PWABuilder is a free tool from Microsoft that helps package PWAs for app stores. Open <a href="https://www.pwabuilder.com" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-orange)] hover:underline">www.pwabuilder.com</a> in your browser.</p>
                         <p>Paste the public URL you got from Vercel into the input box and click <strong className="text-white">"Start"</strong>.</p>
                     </Step>
                     <Step num="2" title="Configure Android App Options">
@@ -141,51 +138,19 @@ export const AppPublishingGuide: React.FC = () => {
                         <p>3. Go to <strong className="text-white">File &gt; Open</strong> (do not choose "New" or "Import").</p>
                         <p>4. Navigate to and select the unzipped folder. Android Studio will then load and sync the project. This is called a <strong className="text-white">"Gradle Sync"</strong> and can take several minutes the first time. Let it finish completely.</p>
                     </Step>
-                    <Step num="2" title="Generate a Production Signing Key">
-                         <p>To publish on the Play Store, your app must be cryptographically signed. This proves you are the legitimate developer.</p>
+                    <Step num="2" title="Generate a Signed App Bundle (AAB)">
+                         <p>To publish on the Play Store or install on a device, your app must be cryptographically signed. This proves you are the legitimate developer.</p>
                          <p>1. In the Android Studio menu, go to <strong className="text-white">Build &gt; Generate Signed Bundle / APK...</strong></p>
                          <p>2. Select <strong className="text-white">Android App Bundle</strong> and click Next.</p>
                          <p>3. In the "Key store path" field, click <strong className="text-white">"Create new..."</strong></p>
                          <p>4. Choose a location to save your key file (e.g., a secure personal folder). Give it a name like <code className="bg-black/30 px-1 py-0.5 rounded text-xs">my-app-key.jks</code>. Fill in the passwords for the keystore and the key. Also, provide an "Alias" (e.g., `app_release_key`). Complete the certificate information (only "First and Last Name" is required).</p>
                         <Alert type="warning"><strong>CRITICAL:</strong> You <strong className="text-amber-200">MUST</strong> back up this `.jks` file and save your passwords securely. If you lose this key, you will <strong className="text-amber-200">NEVER</strong> be able to update your app on the Play Store again. No exceptions.</Alert>
-                         <p>5. After creating the key, Android Studio will return you to the previous dialog. Click <strong className="text-white">"Cancel"</strong> for now. We have the key file, now we need to tell the project how to use it.</p>
+                         <p>5. After creating the key, the wizard will return to the previous screen with the new key details filled in. Enter the passwords you just created and click <strong className="text-white">Next</strong>.</p>
+                         <p>6. Select <strong className="text-white">`release`</strong> as the build variant and click <strong className="text-white">"Create"</strong>.</p>
+                         <p>7. Android Studio will build your app. When it's finished, a notification will appear.</p>
                     </Step>
-                     <Step num="3" title="Configure Gradle for Signing">
-                        <p>1. In the Project pane on the left, make sure you are in "Android" view.</p>
-                        <p>2. Expand the <strong className="text-white">"Gradle Scripts"</strong> section and double-click on <strong className="text-white">`build.gradle (Module :app)`</strong> to open it.</p>
-                        <p>3. Scroll to the bottom of the file. Inside the <code>android {'{}'}</code> block, paste the following code, replacing the placeholder values with your own details. (It's often best to place this right before the closing <code>{'}'}</code> of the <code>android</code> block).</p>
-                        <CodeBlock>
-{
-[
-'    // Add this block to sign your app for release',
-'    signingConfigs {',
-'        release {',
-"            storeFile file('C:/path/to/your/my-app-key.jks') // Use absolute path or relative path from app folder",
-"            storePassword 'your_keystore_password'",
-"            keyAlias 'your_key_alias'",
-"            keyPassword 'your_key_password'",
-'        }',
-'    }',
-'    buildTypes {',
-'        release {',
-'            signingConfig signingConfigs.release',
-'        }',
-'    }',
-].join('\\n')
-}
-                        </CodeBlock>
-                         <p>4. A yellow bar will appear at the top of the editor. Click <strong className="text-white">"Sync Now"</strong> to apply the changes.</p>
-                    </Step>
-                     <Step num="4" title="Build the Production App Bundle (AAB)">
-                        <p>Now you're ready to build the final file for the Play Store.</p>
-                        <p>1. Go back to <strong className="text-white">Build &gt; Generate Signed Bundle / APK...</strong></p>
-                        <p>2. Select <strong className="text-white">Android App Bundle</strong> and click Next.</p>
-                        <p>3. Android Studio should now have your keystore information pre-filled. Click Next.</p>
-                        <p>4. Select <strong className="text-white">`release`</strong> as the build variant and click <strong className="text-white">"Create"</strong>.</p>
-                        <p>Android Studio will build your app. When it's finished, a notification will appear.</p>
-                    </Step>
-                    <Step num="5" title="Locate Your AAB File">
-                        <p>In the notification, click the <strong className="text-white">"locate"</strong> link. This will open your computer's file explorer to the release folder.</p>
+                    <Step num="3" title="Locate Your AAB File">
+                        <p>In the notification that appears after the build is complete, click the <strong className="text-white">"locate"</strong> link. This will open your computer's file explorer to the release folder.</p>
                         <p>The file you need is <code className="bg-black/30 px-1 py-0.5 rounded text-xs">app-release.aab</code>. This is the file you will upload to the Google Play Store!</p>
                     </Step>
                 </div>
