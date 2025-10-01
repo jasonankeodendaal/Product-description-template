@@ -148,8 +148,6 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
     }, [siteSettings]);
 
 
-    const isMobile = useMemo(() => /Mobi/i.test(window.navigator.userAgent), []);
-
     const handleApiSettingsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setApiSettings(prev => ({ ...prev, [id]: value }));
@@ -226,7 +224,7 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                      <SectionCard title="Browser Storage (Default)" description="Data is saved privately in this browser. Fast, simple, and works offline." icon={<HardDriveIcon />}>
                         <p className="text-sm text-gray-400">This is the default mode. No setup required. Ideal for single-device use.</p>
                     </SectionCard>
-                    <SectionCard title="Local Folder Sync (Desktop Only)" description="Saves data to a folder on your computer. Great for local backups and use with desktop-based cloud clients." icon={<FolderSyncIcon />}>
+                    <SectionCard title="Local Folder Sync" description="Saves data to a folder on your device. Great for local backups and use with cloud clients." icon={<FolderSyncIcon />}>
                         <div className="flex flex-col gap-4">
                             {directoryHandle ? (
                                 <div className="flex items-center gap-4">
@@ -236,13 +234,15 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                             ) : (
                                 <button 
                                     onClick={onSyncDirectory}
-                                    disabled={isMobile}
-                                    title={isMobile ? "This feature is only available on desktop browsers" : "Connect to a folder on your computer"}
+                                    title="Connect to a folder on your device. Note: This feature is not supported on all mobile browsers (e.g., Safari on iOS)."
                                     className="bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg text-sm inline-flex items-center gap-2 self-start disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <FolderIcon /> Connect to Folder...
                                 </button>
                             )}
+                             <Alert type="tip">
+                                On mobile, this feature is available on browsers like Chrome for Android. It is not available on iOS.
+                            </Alert>
                         </div>
                     </SectionCard>
                 </div>
