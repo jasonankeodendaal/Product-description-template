@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
@@ -433,20 +432,16 @@ const App: React.FC = () => {
                 let folderSyncSuccess = false;
 
                 if (handle) {
-                    let hasPermission = false;
-                    // Check silently first.
-                    // FIX: The standard FileSystemDirectoryHandle type may not include 'queryPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
-                    if ((await (handle as any).queryPermission({ mode: 'readwrite' })) === 'granted') {
-                        hasPermission = true;
-                    } else {
-                        // If not granted, try to re-request it. This may show a browser prompt.
+                    let permissionState = await (handle as any).queryPermission({ mode: 'readwrite' });
+                    let hasPermission = permissionState === 'granted';
+
+                    if (permissionState === 'prompt') {
                         try {
-                            // FIX: The standard FileSystemDirectoryHandle type may not include 'requestPermission'. Cast to 'any' to bypass the check for this widely supported but sometimes untyped method.
-                            if ((await (handle as any).requestPermission({ mode: 'readwrite' })) === 'granted') {
-                                hasPermission = true;
-                            }
+                            permissionState = await (handle as any).requestPermission({ mode: 'readwrite' });
+                            hasPermission = permissionState === 'granted';
                         } catch (err) {
-                            console.warn('Could not re-acquire permission for folder handle.', err);
+                            console.warn('Folder permission request was dismissed or failed.', err);
+                            hasPermission = false;
                         }
                     }
 
@@ -456,9 +451,9 @@ const App: React.FC = () => {
                         await syncFromDirectory(handle);
                         folderSyncSuccess = true;
                     } else {
-                        // Permission was not granted, so disconnect.
                         await db.clearDirectoryHandle();
-                        settings.syncMode = 'local'; // Fallback to local storage.
+                        settings.syncMode = 'local';
+                        console.log("Folder permission not granted. Falling back to local storage.");
                     }
                 }
                 
