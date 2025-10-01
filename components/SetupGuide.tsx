@@ -71,6 +71,7 @@ export const SetupGuide: React.FC = () => (
                 <p>3. Paste the content of the `CREATOR_DETAILS` object from `src/constants.ts` into this file.</p>
                 <p>4. IMPORTANT: Before saving, click the dropdown and select <strong className="text-white">"Create secret gist"</strong>.</p>
                 <p>5. After saving, copy the <strong className="text-white">32-character ID</strong> from the URL. This is your `GIST_ID`.</p>
+                <p className="text-xs text-gray-500 pl-2">Example: If your URL is `https://gist.github.com/username/abcdef1234567890...`, your GIST_ID is just the `abcdef1234567890...` part.</p>
             </Step>
             <Step num="2" title="Create a GitHub Personal Access Token (PAT)">
                 <p>1. Go to your GitHub Settings &gt; Developer settings &gt; Personal access tokens &gt; Tokens (classic).</p>
@@ -84,12 +85,25 @@ export const SetupGuide: React.FC = () => (
                  <p>1. In your Vercel project dashboard, go to <strong className="text-white">Settings &gt; Environment Variables</strong>.</p>
                  <p>2. Add the following three secrets:</p>
                  <ul className="list-disc list-inside space-y-1 pl-4">
-                    <li>`GIST_ID`: The 32-character ID from your Gist's URL.</li>
+                    <li>`GIST_ID`: The 32-character ID from your Gist's URL (<strong className="text-amber-300">not</strong> the full URL).</li>
                     <li>`GIST_PAT`: The Personal Access Token you just generated.</li>
                     <li>`CREATOR_PIN`: The PIN used for creator login (e.g., "1723j").</li>
                  </ul>
                  <p>3. Re-deploy your project one last time to apply these variables. Now, you can edit and save creator details live from the dashboard!</p>
             </Step>
+            <div className="mt-6">
+                <Alert type="warning">
+                    <strong>Troubleshooting: "404 Not Found" Error?</strong>
+                    <div className="mt-2 space-y-2">
+                        <p>If you see a "GitHub API responded with status 404: Not Found" error when saving Creator Details, it's almost always a configuration issue:</p>
+                        <ul className="list-disc list-inside space-y-1 pl-4">
+                            <li><strong className="text-white">Incorrect GIST_ID:</strong> Double-check that the ID in Vercel matches the one from your Gist's URL (e.g., `https://gist.github.com/username/&lt;this_32_char_id&gt;`). It should <strong className="text-amber-300">only</strong> be the 32-character ID, not the full URL.</li>
+                            <li><strong className="text-white">Incorrect PAT Scopes:</strong> Your Personal Access Token <strong className="text-amber-300">must</strong> have the full `gist` scope selected. If you're unsure, generate a new token.</li>
+                            <li><strong className="text-white">Redeploy Vercel:</strong> After adding or changing environment variables, you <strong className="text-amber-300">must</strong> create a new deployment in Vercel for the changes to apply.</li>
+                        </ul>
+                    </div>
+                </Alert>
+            </div>
         </Section>
         
         <Section icon={<CodeIcon />} title="Custom API Server (Advanced)">
@@ -111,4 +125,3 @@ export const SetupGuide: React.FC = () => (
         </Section>
     </div>
 );
-      
