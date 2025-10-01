@@ -396,6 +396,40 @@ const getDirectoryHandleByPath = async (rootHandle: FileSystemDirectoryHandle, p
     return currentHandle;
 };
 
+const renameItem = async (
+    rootHandle: FileSystemDirectoryHandle,
+    path: string[],
+    oldName: string,
+    newName: string
+): Promise<void> => {
+    if (!newName || newName.includes('/') || newName === '.' || newName === '..') {
+        throw new Error('Invalid new name.');
+    }
+    if (newName === oldName) {
+        return; // Nothing to do
+    }
+
+    const parentHandle = await getDirectoryHandleByPath(rootHandle, path);
+
+    // Check for existing item with the new name to prevent overwriting
+    try {
+        await parentHandle.getDirectoryHandle(newName);
+        throw new Error(`An item named "${newName}" already exists.`);
+    } catch (e: any) {
+        if (e.name !== 'NotFoundError') throw e;
+    }
+    try {
+        await parentHandle.getFileHandle(newName);
+        throw new Error(`An item named "${newName}" already exists.`);
+    } catch (e: any) {
+        if (e.name !== 'NotFoundError') throw e;
+    }
+
+    // The move() method renames an entry within the same directory.
+    await (parentHandle as any).move(oldName, newName);
+};
+
+
 const listDirectoryContents = async (rootHandle: FileSystemDirectoryHandle, path: string): Promise<{ name: string; kind: 'file' | 'directory' }[]> => {
     try {
         const pathParts = path.split('/').filter(p => p);
@@ -472,4 +506,5 @@ export const fileSystemService = {
     saveProductDescription,
     listDirectoryContents,
     readFileContentByPath,
+    renameItem,
 };

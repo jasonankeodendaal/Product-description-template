@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { SiteSettings } from '../constants';
-import { CompanyInfoDropdown } from './CompanyInfoDropdown';
 import { CloudIcon } from './icons/CloudIcon';
 import { View } from '../App';
 import { SparklesIcon } from './icons/SparklesIcon';
@@ -92,28 +91,13 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     isLandscapeLocked,
     onOpenCreatorInfo,
 }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
   
   return (
     <header className="border-b border-white/10 flex-shrink-0 hidden lg:flex">
       <div className="w-full px-4 sm:px-6 lg:px-8 flex justify-between items-center h-[76px]">
-        <div className="relative" ref={dropdownRef}>
-            <button 
-                onClick={() => setIsDropdownOpen(prev => !prev)}
-                className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-[var(--theme-orange)] rounded-md p-1"
-                aria-haspopup="true"
-                aria-expanded={isDropdownOpen}
+        <div className="relative">
+            <div 
+                className="flex items-center gap-3"
             >
             {siteSettings.logoSrc ? (
                 <img src={siteSettings.logoSrc} alt="Company Logo" className="h-16 w-auto rounded-md logo-glow-effect" />
@@ -123,8 +107,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
                 </div>
             )}
             <span className="hidden sm:inline text-xl font-semibold text-[var(--theme-text-primary)]">{siteSettings.companyName}</span>
-            </button>
-            {isDropdownOpen && <CompanyInfoDropdown settings={siteSettings} onClose={() => setIsDropdownOpen(false)} />}
+            </div>
         </div>
 
         <nav className="hidden xl:flex items-center gap-1.5">

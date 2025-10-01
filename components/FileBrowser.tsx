@@ -19,6 +19,7 @@ import { UploadIcon } from './icons/UploadIcon';
 import { GridIcon } from './icons/GridIcon';
 import { ListIcon } from './icons/ListIcon';
 import { formatRelativeTime } from '../utils/formatters';
+import { MoreVerticalIcon } from './icons/MoreVerticalIcon';
 
 interface FileBrowserProps {
     photos: Photo[];
@@ -167,70 +168,6 @@ const VideoThumbnail: React.FC<{ video: Video }> = React.memo(({ video }) => {
     );
 });
 
-const GridItem: React.FC<{ item: DisplayItem; onClick: () => void; photos: Photo[]; videos: Video[]; currentPath: string[]; }> = React.memo(({ item, onClick, photos, videos, currentPath }) => {
-    const itemPath = [...currentPath, item.name].join('/');
-
-    const previewMedia = useMemo(() => {
-        if (item.kind === 'directory') {
-            const firstPhoto = photos.find(p => p.folder.startsWith(itemPath));
-            if (firstPhoto) return { type: 'photo', media: firstPhoto };
-            const firstVideo = videos.find(v => v.folder.startsWith(itemPath));
-            if (firstVideo) return { type: 'video', media: firstVideo };
-        }
-        if (item.itemKind === 'photo') return { type: 'photo', media: photos.find(p => p.id === item.id) };
-        if (item.itemKind === 'video') return { type: 'video', media: videos.find(v => v.id === item.id) };
-        return null;
-    }, [item, photos, videos, itemPath]);
-    
-    const iconColor = item.kind === 'directory' ? 'text-amber-400' :
-                      item.itemKind === 'photo' ? 'text-purple-400' :
-                      item.itemKind === 'video' ? 'text-pink-400' : 'text-sky-400';
-
-    return (
-        <button onClick={onClick} className="group aspect-[4/5] flex flex-col bg-slate-800/50 rounded-lg overflow-hidden border border-slate-700/50 hover:border-orange-500/50 hover:bg-slate-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 ring-offset-2 ring-offset-slate-900">
-            <div className="flex-grow w-full bg-slate-900/50 relative overflow-hidden flex items-center justify-center">
-                {/* Thumbnails for files and folder previews */}
-                {previewMedia?.type === 'photo' && previewMedia.media && <BrowserPhotoThumbnail photo={previewMedia.media as Photo} className={`transition-transform duration-300 group-hover:scale-105 ${item.kind === 'directory' ? 'opacity-30 blur-sm' : ''}`} />}
-                {previewMedia?.type === 'video' && previewMedia.media && <div className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${item.kind === 'directory' ? 'opacity-30 blur-sm' : ''}`}><VideoThumbnail video={previewMedia.media as Video} /></div>}
-                
-                {/* Fallback Icons for items without a visual preview */}
-                {!previewMedia && item.kind === 'directory' && <FolderIcon className="w-16 h-16 text-amber-400 opacity-80 drop-shadow-lg" />}
-                {!previewMedia && item.kind === 'file' && (item.itemKind === 'text' || item.itemKind === 'json' ? <FileTextIcon className="w-12 h-12 text-sky-400 opacity-60" /> : <FileTextIcon className="w-12 h-12 text-gray-500 opacity-60" />)}
-                
-                {/* Folder Icon Overlay for folders that have a preview */}
-                {item.kind === 'directory' && previewMedia && <FolderIcon className="w-16 h-16 text-amber-400 opacity-90 drop-shadow-lg absolute" />}
-            </div>
-            <div className="flex-shrink-0 p-2 text-left bg-slate-800/80 border-t border-slate-700/50">
-                <div className="flex items-center gap-2">
-                    <div className={iconColor + ' flex-shrink-0'}>
-                        {item.kind === 'directory' ? <FolderIcon className="w-4 h-4" /> : item.itemKind === 'photo' ? <PhotoIcon className="w-4 h-4" /> : item.itemKind === 'video' ? <VideoIcon className="w-4 h-4" /> : <FileTextIcon className="w-4 h-4" />}
-                    </div>
-                    <p className="text-sm font-semibold text-white truncate group-hover:text-orange-300 transition-colors">{item.name}</p>
-                </div>
-                <p className="text-xs text-slate-400 mt-1">{item.type}</p>
-            </div>
-        </button>
-    );
-});
-
-
-const ListItem: React.FC<{ item: DisplayItem; onClick: () => void; }> = ({ item, onClick }) => {
-    const iconColor = item.kind === 'directory' ? 'text-amber-400' :
-                      item.itemKind === 'photo' ? 'text-purple-400' :
-                      item.itemKind === 'video' ? 'text-pink-400' : 'text-sky-400';
-    return (
-        <button onClick={onClick} className="w-full flex items-center gap-4 p-2 rounded-md hover:bg-slate-800 transition-colors focus:outline-none focus:bg-slate-800">
-            <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center ${iconColor}`}>
-                {item.kind === 'directory' ? <FolderIcon /> : item.itemKind === 'photo' ? <PhotoIcon /> : item.itemKind === 'video' ? <VideoIcon /> : <FileTextIcon/>}
-            </div>
-            <span className="font-semibold flex-grow text-left truncate">{item.name}</span>
-            <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden md:block">{item.date ? formatRelativeTime(item.date) : '--'}</span>
-            <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden sm:block">{item.type}</span>
-        </button>
-    );
-};
-
-
 export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, directoryHandle, syncMode, onNavigate }) => {
     const [currentPath, setCurrentPath] = useState<string[]>([]);
     const [items, setItems] = useState<DisplayItem[]>([]);
@@ -239,6 +176,10 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
+    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, item: DisplayItem } | null>(null);
+    const [renamingItem, setRenamingItem] = useState<DisplayItem | null>(null);
+    const [renameValue, setRenameValue] = useState('');
+    const contextMenuRef = useRef<HTMLDivElement>(null);
 
 
     const virtualFileTree = useMemo(() => {
@@ -256,7 +197,11 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
             const dirItems = await fileSystemService.listDirectoryContents(directoryHandle, currentPath.join('/'));
             displayItems = dirItems.map(item => {
                 const { type, itemKind } = getFileTypeAndKind(item.name, item.kind);
-                return { ...item, type, itemKind };
+                let id: string | undefined = undefined;
+                if (item.kind === 'file' && (itemKind === 'photo' || itemKind === 'video')) {
+                    id = item.name.split('.').slice(0, -1).join('.');
+                }
+                return { ...item, type, itemKind, id };
             });
         } else if (virtualFileTree) {
             const findNode = (root: FileTreeNode, pathParts: string[]): FileTreeNode | null => {
@@ -286,14 +231,23 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
 
     useEffect(() => { loadItems(); }, [loadItems]);
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+                setContextMenu(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const sortedItems = useMemo(() => {
-        // FIX: Explicitly type sort arguments to resolve incorrect type inference.
         return [...items].sort((a: DisplayItem, b: DisplayItem) => {
             if (a.kind === 'directory' && b.kind !== 'directory') return -1;
             if (a.kind !== 'directory' && b.kind === 'directory') return 1;
 
-            if (sortBy === 'date') {
-                return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+            if (sortBy === 'date' && a.date && b.date) {
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
             }
             return a.name.localeCompare(b.name);
         });
@@ -325,6 +279,28 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
         } catch (error) { alert(`Could not load file: ${error instanceof Error ? error.message : "Unknown error"}`); }
         setIsLoading(false);
     };
+
+    const handleMoreClick = (e: React.MouseEvent, item: DisplayItem) => {
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY, item });
+    };
+    
+    const handleRename = async () => {
+        if (!renamingItem || !renameValue || renameValue === renamingItem.name) {
+            setRenamingItem(null);
+            return;
+        }
+        if (syncMode !== 'folder' || !directoryHandle) return;
+
+        try {
+            await fileSystemService.renameItem(directoryHandle, currentPath, renamingItem.name, renameValue);
+            await loadItems();
+        } catch (e) {
+            alert(`Failed to rename: ${e instanceof Error ? e.message : "Unknown error"}`);
+        } finally {
+            setRenamingItem(null);
+        }
+    };
     
     const handleCreateFolder = async () => {
         const folderName = prompt("Enter new folder name:");
@@ -346,7 +322,6 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
             try {
                 let currentDir = directoryHandle;
                 for (const part of currentPath) { currentDir = await currentDir.getDirectoryHandle(part); }
-                // FIX: Iterate directly over e.target.files (a FileList) to resolve a type inference issue where the loop variable was considered 'unknown'.
                 for (const file of e.target.files) {
                     const fileHandle = await currentDir.getFileHandle(file.name, { create: true });
                     const writable = await fileHandle.createWritable();
@@ -363,6 +338,19 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     return (
         <div className="flex-1 flex flex-col bg-slate-900 text-[var(--theme-text-primary)] font-inter">
             {previewFile && <FilePreviewModal content={previewFile.content} fileName={previewFile.name} onClose={() => setPreviewFile(null)} />}
+            
+            {contextMenu && (
+                <div ref={contextMenuRef} style={{ top: contextMenu.y, left: contextMenu.x }} className="fixed z-50 bg-slate-800 border border-slate-600 rounded-md shadow-lg p-1 animate-fade-in-down">
+                    <button onClick={() => {
+                        setRenamingItem(contextMenu.item);
+                        setRenameValue(contextMenu.item.name);
+                        setContextMenu(null);
+                    }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-slate-700 rounded-md">
+                        Rename
+                    </button>
+                </div>
+            )}
+
             <header className="flex-shrink-0 p-4 border-b border-[var(--theme-border)]/50 flex justify-between items-center gap-4">
                 <div className="flex items-center gap-4">
                     <button onClick={() => onNavigate('home')} className="flex items-center gap-2 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] font-semibold transition-colors -ml-2 p-2"><ChevronLeftIcon /><span className="hidden sm:inline">Back</span></button>
@@ -391,7 +379,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
                 <div className="flex items-center gap-2">
                     <select value={sortBy} onChange={e => setSortBy(e.target.value as 'name' | 'date')} className="bg-slate-700 text-sm rounded-md p-1.5 focus:ring-orange-500 border-none">
                         <option value="name">Sort by Name</option>
-                        <option value="date">Sort by Date</option>
+                        {syncMode !== 'folder' && <option value="date">Sort by Date</option>}
                     </select>
                     <div className="flex items-center bg-slate-700 rounded-md p-1">
                         <button onClick={() => setViewMode('grid')} className={`p-1 rounded ${viewMode === 'grid' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}><GridIcon/></button>
@@ -405,11 +393,33 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
                 : sortedItems.length > 0 ? (
                     viewMode === 'grid' ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
-                            {sortedItems.map((item: DisplayItem) => <GridItem key={item.name} item={item} onClick={() => handleItemClick(item)} photos={photos} videos={videos} currentPath={currentPath} />)}
+                            {sortedItems.map((item: DisplayItem) => (
+                                <GridItem key={item.name} item={item} photos={photos} videos={videos} currentPath={currentPath}
+                                    syncMode={syncMode}
+                                    renamingItem={renamingItem}
+                                    renameValue={renameValue}
+                                    setRenameValue={setRenameValue}
+                                    handleRename={handleRename}
+                                    setRenamingItem={setRenamingItem}
+                                    onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
+                                    onMoreClick={(e) => handleMoreClick(e, item)}
+                                />
+                            ))}
                         </div>
                     ) : (
-                        <div className="space-y-1">
-                             {sortedItems.map((item: DisplayItem) => <ListItem key={item.name} item={item} onClick={() => handleItemClick(item)} />)}
+                         <div className="space-y-1">
+                             {sortedItems.map((item: DisplayItem) => (
+                                <ListItem key={item.name} item={item} 
+                                    syncMode={syncMode}
+                                    renamingItem={renamingItem}
+                                    renameValue={renameValue}
+                                    setRenameValue={setRenameValue}
+                                    handleRename={handleRename}
+                                    setRenamingItem={setRenamingItem}
+                                    onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
+                                    onMoreClick={(e) => handleMoreClick(e, item)}
+                                />
+                             ))}
                         </div>
                     )
                 ) : (
@@ -419,6 +429,81 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
                     </div>
                 )}
             </main>
+        </div>
+    );
+};
+
+// --- Sub-components for Grid and List Items ---
+
+const GridItem: React.FC<{ 
+    item: DisplayItem; onItemClick: () => void; onMoreClick: (e: React.MouseEvent) => void; photos: Photo[]; videos: Video[]; currentPath: string[]; syncMode?: FileBrowserProps['syncMode'];
+    renamingItem: DisplayItem | null; renameValue: string; setRenameValue: (val: string) => void; handleRename: () => void; setRenamingItem: (item: DisplayItem | null) => void;
+}> = React.memo(({ item, onItemClick, onMoreClick, photos, videos, currentPath, syncMode, renamingItem, renameValue, setRenameValue, handleRename, setRenamingItem }) => {
+    const itemPath = [...currentPath, item.name].join('/');
+    const isRenaming = renamingItem?.name === item.name;
+
+    const previewMedia = useMemo(() => {
+        if (item.kind === 'directory') {
+            const firstPhoto = photos.find(p => p.folder.startsWith(itemPath));
+            if (firstPhoto) return { type: 'photo', media: firstPhoto };
+            const firstVideo = videos.find(v => v.folder.startsWith(itemPath));
+            if (firstVideo) return { type: 'video', media: firstVideo };
+        }
+        if (item.itemKind === 'photo') return { type: 'photo', media: photos.find(p => p.id === item.id) };
+        if (item.itemKind === 'video') return { type: 'video', media: videos.find(v => v.id === item.id) };
+        return null;
+    }, [item, photos, videos, itemPath]);
+    
+    const iconColor = item.kind === 'directory' ? 'text-amber-400' : item.itemKind === 'photo' ? 'text-purple-400' : item.itemKind === 'video' ? 'text-pink-400' : 'text-sky-400';
+
+    return (
+        <div className="group aspect-[4/5] flex flex-col bg-slate-800/50 rounded-lg overflow-hidden border border-slate-700/50 hover:border-orange-500/50 hover:bg-slate-800 transition-all duration-200 focus-within:ring-2 focus-within:ring-orange-500 ring-offset-2 ring-offset-slate-900 relative" onClick={onItemClick}>
+            <div className="flex-grow w-full bg-slate-900/50 relative overflow-hidden flex items-center justify-center">
+                {previewMedia?.type === 'photo' && previewMedia.media && <BrowserPhotoThumbnail photo={previewMedia.media as Photo} className={`transition-transform duration-300 group-hover:scale-105 ${item.kind === 'directory' ? 'opacity-30 blur-sm' : ''}`} />}
+                {previewMedia?.type === 'video' && previewMedia.media && <div className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${item.kind === 'directory' ? 'opacity-30 blur-sm' : ''}`}><VideoThumbnail video={previewMedia.media as Video} /></div>}
+                {!previewMedia && item.kind === 'directory' && <FolderIcon className="w-16 h-16 text-amber-400 opacity-80 drop-shadow-lg" />}
+                {!previewMedia && (item.itemKind === 'text' || item.itemKind === 'json') && <FileTextIcon className="w-12 h-12 text-sky-400 opacity-60" />}
+                {item.kind === 'directory' && previewMedia && <FolderIcon className="w-16 h-16 text-amber-400 opacity-90 drop-shadow-lg absolute" />}
+                {!previewMedia && item.kind === 'file' && item.itemKind === 'photo' && <PhotoIcon className="w-12 h-12 text-purple-400" />}
+                {!previewMedia && item.kind === 'file' && item.itemKind === 'video' && <VideoIcon className="w-12 h-12 text-pink-400" />}
+            </div>
+            <div className="flex-shrink-0 p-2 text-left bg-slate-800/80 border-t border-slate-700/50">
+                <div className="flex items-center gap-2">
+                    <div className={iconColor + ' flex-shrink-0'}>{item.kind === 'directory' ? <FolderIcon className="w-4 h-4" /> : item.itemKind === 'photo' ? <PhotoIcon className="w-4 h-4" /> : item.itemKind === 'video' ? <VideoIcon className="w-4 h-4" /> : <FileTextIcon className="w-4 h-4" />}</div>
+                    {isRenaming ? (
+                        <input type="text" value={renameValue} autoFocus onFocus={(e) => e.target.select()} onChange={e => setRenameValue(e.target.value)} onKeyDown={e => {if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenamingItem(null);}} onBlur={handleRename} onClick={e => e.stopPropagation()} className="w-full bg-slate-600 text-white text-sm font-semibold rounded p-0.5 -m-0.5" />
+                    ) : (
+                        <p className="text-sm font-semibold text-white truncate group-hover:text-orange-300 transition-colors">{item.name}</p>
+                    )}
+                </div>
+                <p className="text-xs text-slate-400 mt-1">{item.type}</p>
+            </div>
+            {syncMode === 'folder' && !isRenaming && (
+                <button onClick={onMoreClick} className="absolute top-1 right-1 p-1.5 bg-black/40 rounded-full text-white/70 hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity z-10"><MoreVerticalIcon /></button>
+            )}
+        </div>
+    );
+});
+
+const ListItem: React.FC<{ 
+    item: DisplayItem; onItemClick: () => void; onMoreClick: (e: React.MouseEvent) => void; syncMode?: FileBrowserProps['syncMode'];
+    renamingItem: DisplayItem | null; renameValue: string; setRenameValue: (val: string) => void; handleRename: () => void; setRenamingItem: (item: DisplayItem | null) => void;
+}> = ({ item, onItemClick, onMoreClick, syncMode, renamingItem, renameValue, setRenameValue, handleRename, setRenamingItem }) => {
+    const iconColor = item.kind === 'directory' ? 'text-amber-400' : item.itemKind === 'photo' ? 'text-purple-400' : item.itemKind === 'video' ? 'text-pink-400' : 'text-sky-400';
+    const isRenaming = renamingItem?.name === item.name;
+    return (
+        <div onClick={onItemClick} className="w-full flex items-center gap-4 p-2 rounded-md hover:bg-slate-800 transition-colors cursor-pointer group">
+            <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center ${iconColor}`}>{item.kind === 'directory' ? <FolderIcon /> : item.itemKind === 'photo' ? <PhotoIcon /> : item.itemKind === 'video' ? <VideoIcon /> : <FileTextIcon/>}</div>
+            {isRenaming ? (
+                <input type="text" value={renameValue} autoFocus onFocus={(e) => e.target.select()} onChange={e => setRenameValue(e.target.value)} onKeyDown={e => {if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenamingItem(null);}} onBlur={handleRename} onClick={e => e.stopPropagation()} className="w-full bg-slate-600 text-white font-semibold rounded p-1" />
+            ) : (
+                <span className="font-semibold flex-grow text-left truncate">{item.name}</span>
+            )}
+            <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden md:block">{item.date ? formatRelativeTime(item.date) : '--'}</span>
+            <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden sm:block">{item.type}</span>
+            {syncMode === 'folder' && !isRenaming && (
+                <button onClick={onMoreClick} className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 opacity-0 group-hover:opacity-100"><MoreVerticalIcon /></button>
+            )}
         </div>
     );
 };
