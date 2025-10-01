@@ -1,21 +1,25 @@
+
 import React, { useState } from 'react';
-import { SiteSettings } from '../constants';
+import { SiteSettings, CREATOR_DETAILS, CreatorDetails, CREATOR_PIN } from '../constants';
 import { BuildingIcon } from './icons/BuildingIcon';
 import { UserIcon } from './icons/UserIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { UserRole } from '../App';
 import { ShieldIcon } from './icons/ShieldIcon';
+import { SaveIcon } from './icons/SaveIcon';
+import { Spinner } from './icons/Spinner';
 
 interface SiteSettingsEditorProps {
     siteSettings: SiteSettings;
+    creatorDetails: CreatorDetails;
     onUpdateSettings: (newSettings: SiteSettings) => Promise<void>;
     userRole: UserRole;
     onInitiatePinReset: () => void;
 }
 
-const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; disabled?: boolean }> = ({ title, icon, children, disabled }) => (
-    <div className={`bg-white/5 backdrop-blur-sm p-6 rounded-lg border border-[var(--theme-border)]/50 transition-opacity relative ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; }> = ({ title, icon, children }) => (
+    <div className={`bg-white/5 backdrop-blur-sm p-6 rounded-lg border border-[var(--theme-border)]/50 transition-opacity relative`}>
         <div className="flex items-center gap-3">
             <div className="text-[var(--theme-orange)]">{icon}</div>
             <h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">{title}</h3>
@@ -23,7 +27,6 @@ const SectionCard: React.FC<{ title: string; icon: React.ReactNode; children: Re
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {children}
         </div>
-         {disabled && <div className="absolute inset-0 bg-transparent" title="Only the creator can edit these details."></div>}
     </div>
 );
 
@@ -76,10 +79,13 @@ const ImageUploader: React.FC<{ label: string; id: string; src: string | null; o
 };
 
 
-export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSettings, onUpdateSettings, userRole, onInitiatePinReset }) => {
+export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSettings, creatorDetails: initialCreatorDetails, onUpdateSettings, userRole, onInitiatePinReset }) => {
     const [formData, setFormData] = useState<SiteSettings>(siteSettings);
+    const [creatorDetails, setCreatorDetails] = useState<CreatorDetails>(initialCreatorDetails);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGlobalSaving, setIsGlobalSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [globalSaveSuccess, setGlobalSaveSuccess] = useState(false);
 
     const isCreator = userRole === 'creator';
 
@@ -88,18 +94,49 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSett
         setFormData(prev => ({...prev, [id]: value }));
     };
 
-    const handleCreatorFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { id, value } = e.target;
-        const creatorField = id.replace('creator-', '');
-        setFormData(prev => ({ ...prev, creator: { ...prev.creator, [creatorField]: value } }));
-    };
-    
     const handleImageChange = (field: keyof SiteSettings) => (dataUrl: string | null) => {
         setFormData(prev => ({...prev, [field]: dataUrl }));
     };
     
-    const handleCreatorImageChange = (field: keyof SiteSettings['creator']) => (dataUrl: string | null) => {
-        setFormData(prev => ({...prev, creator: { ...prev.creator, [field]: dataUrl } }));
+    const handleCreatorFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setCreatorDetails(prev => ({...prev, [id]: value }));
+    };
+    
+    const handleCreatorImageChange = (field: keyof CreatorDetails) => (dataUrl: string | null) => {
+        setCreatorDetails(prev => ({...prev, [field]: dataUrl }));
+    };
+
+    const handleSaveGlobalDetails = async () => {
+        if (!window.confirm("This will update the creator details for ALL users of this application immediately. Are you sure you want to proceed?")) return;
+        
+        const pin = prompt("Please enter the Creator PIN to authorize this global change:");
+        if (pin !== CREATOR_PIN) {
+            alert("Incorrect PIN. Global update cancelled.");
+            return;
+        }
+
+        setIsGlobalSaving(true);
+        setGlobalSaveSuccess(false);
+        try {
+            const response = await fetch('/api/update-creator-details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ details: creatorDetails, pin }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'An unknown error occurred.');
+            }
+            setGlobalSaveSuccess(true);
+            setTimeout(() => setGlobalSaveSuccess(false), 4000);
+            alert("Global details updated successfully! The changes will be visible on next app reload.");
+        } catch (error) {
+            console.error("Failed to save global details:", error);
+            alert(`Failed to save global details: ${error instanceof Error ? error.message : "Unknown error"}`);
+        } finally {
+            setIsGlobalSaving(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -131,7 +168,30 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSett
                         placeholder="How the app should greet you"
                     />
                 </SectionCard>
-                <SectionCard title="Company Details" icon={<BuildingIcon />}>
+                
+                {isCreator && (
+                    <SectionCard title="Creator Details (Global)" icon={<UserIcon />}>
+                        <InputField id="name" label="Creator Name" value={creatorDetails.name} onChange={handleCreatorFormChange} />
+                        <InputField id="slogan" label="Creator Slogan" value={creatorDetails.slogan} onChange={handleCreatorFormChange} />
+                        <ImageUploader id="creatorLogoSrc" label="Creator Logo" src={creatorDetails.logoSrc} onImageChange={handleCreatorImageChange('logoSrc')} />
+                        <InputField id="tel" label="Telephone" value={creatorDetails.tel} onChange={handleCreatorFormChange} />
+                        <InputField id="email" label="Email" value={creatorDetails.email} onChange={handleCreatorFormChange} />
+                        <InputField id="whatsapp" label="WhatsApp Link 1" value={creatorDetails.whatsapp} onChange={handleCreatorFormChange} />
+                        <InputField id="whatsapp2" label="WhatsApp Link 2 (Optional)" value={creatorDetails.whatsapp2 || ''} onChange={handleCreatorFormChange} />
+                        <div className="md:col-span-2 mt-4 pt-4 border-t border-[var(--theme-border)]/50 flex items-center justify-between">
+                             <p className="text-sm text-[var(--theme-text-secondary)]">These details are shown globally. Saving will update them for everyone, instantly.</p>
+                             <div className="flex items-center gap-4">
+                                {globalSaveSuccess && <p className="text-sm text-green-400">Updated!</p>}
+                                <button type="button" onClick={handleSaveGlobalDetails} disabled={isGlobalSaving} className="bg-sky-600 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-gray-500">
+                                    {isGlobalSaving ? <Spinner /> : <SaveIcon />}
+                                    {isGlobalSaving ? "Saving..." : "Save Global Details"}
+                                </button>
+                            </div>
+                        </div>
+                    </SectionCard>
+                )}
+
+                <SectionCard title="Company Details (Local)" icon={<BuildingIcon />}>
                     <InputField id="companyName" label="Company Name" value={formData.companyName} onChange={handleFormChange} fullWidth />
                     <InputField id="slogan" label="Slogan" value={formData.slogan} onChange={handleFormChange} fullWidth />
                     <ImageUploader id="logoSrc" label="Company Logo" src={formData.logoSrc} onImageChange={handleImageChange('logoSrc')} description="Recommended: Square (e.g., 256x256px)." />
@@ -147,17 +207,6 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSett
                     <InputField id="tel" label="Telephone" value={formData.tel} onChange={handleFormChange} />
                     <InputField id="email" label="Email" value={formData.email} onChange={handleFormChange} />
                     <InputField id="website" label="Website URL" value={formData.website} onChange={handleFormChange} fullWidth />
-                </SectionCard>
-
-                <SectionCard title="Creator Info" icon={<UserIcon />} disabled={!isCreator}>
-                    <InputField id="creator-name" label="Creator Name" value={formData.creator.name} onChange={handleCreatorFormChange} fullWidth />
-                    <InputField id="creator-slogan" label="Creator Slogan" value={formData.creator.slogan} onChange={handleCreatorFormChange} fullWidth />
-                    <ImageUploader id="creator-logoSrc" label="Creator Logo" src={formData.creator.logoSrc} onImageChange={handleCreatorImageChange('logoSrc')} description="Recommended: Square (e.g., 256x256px)." />
-                    <div></div>
-                    <InputField id="creator-tel" label="Creator Telephone" value={formData.creator.tel} onChange={handleCreatorFormChange} />
-                    <InputField id="creator-email" label="Creator Email" value={formData.creator.email} onChange={handleCreatorFormChange} />
-                    <InputField id="creator-whatsapp" label="Creator WhatsApp 1" value={formData.creator.whatsapp} onChange={handleCreatorFormChange} placeholder="Full URL or phone number" />
-                    <InputField id="creator-whatsapp2" label="Creator WhatsApp 2" value={formData.creator.whatsapp2 || ''} onChange={handleCreatorFormChange} placeholder="Full URL or phone number" />
                 </SectionCard>
 
                 <SectionCard title="Security" icon={<ShieldIcon />}>
@@ -176,14 +225,15 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSett
             
             <footer className="sticky bottom-0 -mx-6 -mb-6 mt-6 bg-[var(--theme-dark-bg)]/80 backdrop-blur-sm p-4 border-t border-[var(--theme-border)]/50">
                 <div className="flex justify-end items-center gap-4">
-                    {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Settings saved!</p>}
+                    {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Local settings saved!</p>}
                     <button type="submit" disabled={isSaving} className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed">
                         {isSaving ? (
                             <><svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Saving...</>
-                        ) : "Save All Changes" }
+                        ) : "Save Local Settings" }
                     </button>
                 </div>
             </footer>
        </form>
     );
 };
+      

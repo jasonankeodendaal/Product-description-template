@@ -26,7 +26,7 @@ export const exportLogToPDF = async (
     doc.text("Timesheet & Activity Report", 14, 30);
     doc.setFontSize(14);
     doc.setTextColor(100);
-    doc.text(`User: ${siteSettings.creator.name}`, 14, 38);
+    doc.text(`User: ${siteSettings.userName}`, 14, 38);
 
     // Work Summary
     doc.setFontSize(16);

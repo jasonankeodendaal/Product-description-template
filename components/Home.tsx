@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../App';
-import { SiteSettings } from '../constants';
+import { SiteSettings, CreatorDetails } from '../constants';
 import { ClockWidget } from './widgets/ClockWidget';
 import { WeatherWidget, WeatherData } from './widgets/WeatherWidget';
 import { HomeTile } from './HomeTile';
@@ -31,6 +32,7 @@ interface HomeProps {
     logEntries: LogEntry[];
     onSaveLogEntry: (type: LogEntry['type']) => Promise<void>;
     siteSettings: SiteSettings;
+    creatorDetails: CreatorDetails;
     onOpenDashboard: () => void;
     calendarEvents: CalendarEvent[];
     getWeatherInfo: (location: { city?: string; lat?: number; lon?: number }, customApiUrl?: string | null, customApiAuthKey?: string | null) => Promise<any>;
@@ -95,7 +97,7 @@ const ClockCalendarWidget: React.FC<{ onOpenCalendar: () => void; events: Calend
                     {upcomingEvents.length > 0 ? (
                         upcomingEvents.map(event => (
                             <div key={event.id} className="flex items-center gap-2 text-xs">
-                                <span className="text-gray-300 font-mono text-[11px]">{formatEventTime(event.startDateTime)}</span>
+                                <span className="text-gray-300 font-mono text-xs">{formatEventTime(event.startDateTime)}</span>
                                 <p className="text-white truncate">{event.title}</p>
                             </div>
                         ))
@@ -129,7 +131,7 @@ export const Home: React.FC<HomeProps> = (props) => {
              {showWelcome && (
                 <WelcomeScreen
                     userRole={props.userRole}
-                    creatorName={props.siteSettings.creator.name}
+                    creatorName={props.creatorDetails.name}
                     userName={props.siteSettings.userName || 'User'}
                     onDismiss={handleDismissWelcome}
                 />
@@ -198,3 +200,4 @@ export const Home: React.FC<HomeProps> = (props) => {
         </div>
     );
 };
+      

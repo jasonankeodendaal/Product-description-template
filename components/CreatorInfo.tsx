@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CreatorDetails } from '../constants';
 import { PhoneIcon } from './icons/PhoneIcon';
@@ -6,12 +7,13 @@ import { XIcon } from './icons/XIcon';
 import { WhatsappIcon } from './icons/WhatsappIcon';
 
 interface CreatorInfoProps {
-  creator: CreatorDetails;
   onClose: () => void;
+  creatorDetails: CreatorDetails;
 }
 
-export const CreatorInfo: React.FC<CreatorInfoProps> = ({ creator, onClose }) => {
+export const CreatorInfo: React.FC<CreatorInfoProps> = ({ onClose, creatorDetails }) => {
   const [isClosing, setIsClosing] = useState(false);
+  const creator = creatorDetails;
 
   const handleClose = () => {
     setIsClosing(true);
@@ -86,3 +88,4 @@ export const CreatorInfo: React.FC<CreatorInfoProps> = ({ creator, onClose }) =>
     </div>
   );
 };
+      

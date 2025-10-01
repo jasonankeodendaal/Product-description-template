@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
-import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN, GITHUB_APK_URL } from './constants';
+import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
 import { GenerationResult } from './components/OutputPanel';
@@ -211,6 +212,7 @@ const migrateNote = (note: any): Note => {
 
 const App: React.FC = () => {
     // --- State ---
+    const [creatorDetails, setCreatorDetails] = useState<CreatorDetails>(CREATOR_DETAILS); // Initialize with fallback
     const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
     const [templates, setTemplates] = useState<Template[]>([]);
     const [recordings, setRecordings] = useState<Recording[]>([]);
@@ -267,6 +269,10 @@ const App: React.FC = () => {
     
     // --- New State for Reconnection Flow ---
     const [reconnectPrompt, setReconnectPrompt] = useState<{ handle: FileSystemDirectoryHandle; visible: boolean } | null>(null);
+    
+    // --- New State for Smart Orientation Lock ---
+    const [isLandscapeLocked, setIsLandscapeLocked] = useState(false);
+    const [isOrientationApiSupported, setIsOrientationApiSupported] = useState(false);
 
 
     // Effect to recalculate storage whenever data changes
@@ -292,6 +298,56 @@ const App: React.FC = () => {
             }
         };
     }, [activeTimer]);
+
+    // --- Smart Orientation Lock Logic ---
+    useEffect(() => {
+        const isSupported = 'orientation' in screen && 'lock' in screen.orientation;
+        setIsOrientationApiSupported(isSupported);
+        
+        if (!isSupported) return;
+
+        const handleOrientationChange = () => {
+            // If the orientation changes to portrait, the lock is no longer active.
+            if (screen.orientation.type.startsWith('portrait')) {
+                setIsLandscapeLocked(false);
+            }
+        };
+
+        screen.orientation.addEventListener('change', handleOrientationChange);
+        return () => screen.orientation.removeEventListener('change', handleOrientationChange);
+    }, []);
+
+    const handleToggleOrientation = useCallback(async () => {
+        if (!isOrientationApiSupported) {
+            alert("Screen orientation control is not supported on this device.");
+            return;
+        }
+        
+        try {
+            if (!isLandscapeLocked) {
+                // Attempt to lock to landscape
+                // FIX: Cast screen.orientation to `any` to bypass a TypeScript error. The `lock` method is part of a draft specification
+                // and not in the default TS DOM types. A runtime check for this feature is performed in a useEffect hook.
+                await (screen.orientation as any).lock('landscape-primary');
+                setIsLandscapeLocked(true);
+            } else {
+                // Unlock
+                // FIX: Cast screen.orientation to `any` to bypass a TypeScript error for the `unlock` method, which is also part of a draft spec.
+                (screen.orientation as any).unlock();
+                setIsLandscapeLocked(false);
+            }
+        } catch (err) {
+            // This catch block is crucial. It triggers if the OS prevents the lock.
+            console.error("Failed to lock orientation:", err);
+            if (err instanceof DOMException && err.name === 'NotSupportedError') {
+                 alert("Could not lock orientation. Please make sure your device's auto-rotate is enabled.");
+            } else {
+                 alert("An error occurred while trying to lock the screen orientation.");
+            }
+            setIsLandscapeLocked(false); // Ensure our state is correct
+        }
+    }, [isLandscapeLocked, isOrientationApiSupported]);
+
 
     // --- PWA Installation Logic ---
     useEffect(() => {
@@ -440,6 +496,26 @@ const App: React.FC = () => {
 
     // --- Data Loading and Initialization ---
     useEffect(() => {
+        // Fetch live creator details from Gist
+        const fetchCreatorDetails = async () => {
+            if (!GIST_ID) {
+                console.warn("GIST_ID is not configured. Falling back to local creator details.");
+                return;
+            }
+            try {
+                // Use a cache-busting query param to ensure we get the latest version
+                const response = await fetch(`https://gist.githubusercontent.com/${GIST_ID}/raw/creator_details.json?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error('Failed to fetch creator details from Gist.');
+                const data = await response.json();
+                setCreatorDetails(data);
+                console.log("Successfully loaded live creator details.");
+            } catch (error) {
+                console.error("Could not fetch live creator details:", error, "Using local fallback.");
+            }
+        };
+
+        fetchCreatorDetails();
+
         // Handle URL-based view navigation from PWA shortcuts
         const urlParams = new URLSearchParams(window.location.search);
         const requestedView = urlParams.get('view') as View;
@@ -1109,6 +1185,7 @@ const App: React.FC = () => {
             onSetPin={(pin, _) => handleSetNewPinAfterReset(pin)} 
             mode="reset" 
             siteSettings={siteSettings}
+            creatorDetails={creatorDetails}
             showInstallButton={!isAppInstalled}
             onInstallClick={handleInstallClick}
         />;
@@ -1119,6 +1196,7 @@ const App: React.FC = () => {
             onSetPin={handleSetUserPin} 
             mode="setup" 
             siteSettings={siteSettings}
+            creatorDetails={creatorDetails}
             showInstallButton={!isAppInstalled}
             onInstallClick={handleInstallClick}
         />;
@@ -1133,6 +1211,7 @@ const App: React.FC = () => {
             onUnlock={handleLogin} 
             userPin={siteSettings.userPin} 
             siteSettings={siteSettings} 
+            creatorDetails={creatorDetails}
             showInstallButton={!isAppInstalled}
             onInstallClick={handleInstallClick}
         />;
@@ -1151,6 +1230,7 @@ const App: React.FC = () => {
                         logEntries={logEntries}
                         onSaveLogEntry={(type) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
                         siteSettings={siteSettings}
+                        creatorDetails={creatorDetails}
                         onOpenDashboard={() => setIsDashboardOpen(true)}
                         calendarEvents={calendarEvents}
                         getWeatherInfo={getWeatherInfo}
@@ -1272,8 +1352,8 @@ const App: React.FC = () => {
                     onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                     showInstallButton={!isAppInstalled}
                     onInstallClick={handleInstallClick}
-                    onToggleOrientation={() => {}}
-                    isLandscapeLocked={false}
+                    onToggleOrientation={handleToggleOrientation}
+                    isLandscapeLocked={isLandscapeLocked}
                     userRole={userRole}
                     isApiConnected={isApiConnected}
                 />
@@ -1292,8 +1372,8 @@ const App: React.FC = () => {
                         onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
                         showInstallButton={!isAppInstalled}
                         onInstallClick={handleInstallClick}
-                        onToggleOrientation={() => {}}
-                        isLandscapeLocked={false}
+                        onToggleOrientation={handleToggleOrientation}
+                        isLandscapeLocked={isLandscapeLocked}
                     />
                     {renderView()}
                 </div>
@@ -1344,6 +1424,7 @@ const App: React.FC = () => {
                     logEntries={logEntries}
                     calendarEvents={calendarEvents}
                     siteSettings={siteSettings}
+                    creatorDetails={creatorDetails}
                     onUpdateSettings={handleUpdateSettings}
                     onRestore={onRestore}
                     directoryHandle={directoryHandle}
@@ -1383,7 +1464,7 @@ const App: React.FC = () => {
                 </div>
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
-            {isCreatorInfoOpen && <CreatorInfo creator={siteSettings.creator} onClose={() => setIsCreatorInfoOpen(false)} />}
+            {isCreatorInfoOpen && <CreatorInfo onClose={() => setIsCreatorInfoOpen(false)} creatorDetails={creatorDetails} />}
             {isInstallOptionsModalOpen && (
                 <InstallOptionsModal 
                     onClose={() => setIsInstallOptionsModalOpen(false)}
@@ -1399,3 +1480,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+      

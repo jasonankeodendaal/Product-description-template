@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { UserRole } from '../App';
-import { CREATOR_PIN, SiteSettings } from '../constants';
+import { CREATOR_PIN, CreatorDetails, SiteSettings } from '../constants';
 import { AuthBrandingPanel } from './AuthBrandingPanel';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { UserIcon } from './icons/UserIcon';
@@ -10,11 +11,12 @@ interface AuthModalProps {
   onUnlock: (role: UserRole) => void;
   userPin?: string;
   siteSettings: SiteSettings;
+  creatorDetails: CreatorDetails;
   showInstallButton: boolean;
   onInstallClick: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSettings, showInstallButton, onInstallClick }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSettings, creatorDetails, showInstallButton, onInstallClick }) => {
   const [view, setView] = useState<'selection' | 'userLogin' | 'creatorLogin'>('selection');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -170,7 +172,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSet
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-start md:items-center justify-center p-4 auth-modal-container overflow-y-auto pt-16 md:pt-4 pb-8" aria-modal="true" role="dialog">
       <div className="bg-slate-800 w-full max-w-4xl rounded-xl shadow-2xl border border-slate-700/50 relative animate-modal-scale-in flex flex-col md:flex-row overflow-hidden md:min-h-[550px]">
-        <AuthBrandingPanel creator={siteSettings.creator} />
+        <AuthBrandingPanel creatorDetails={creatorDetails} />
         <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center relative auth-form-panel">
           {renderContent()}
         </div>
@@ -182,3 +184,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSet
     </div>
   );
 };
+      

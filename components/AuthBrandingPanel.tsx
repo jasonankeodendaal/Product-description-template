@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { CreatorDetails } from '../constants';
 import { PhoneIcon } from './icons/PhoneIcon';
@@ -5,7 +6,7 @@ import { MailIcon } from './icons/MailIcon';
 import { WhatsappIcon } from './icons/WhatsappIcon';
 
 interface AuthBrandingPanelProps {
-    creator: CreatorDetails;
+    creatorDetails: CreatorDetails;
 }
 
 const ContactButton: React.FC<{ href: string; icon: React.ReactNode; text: string; }> = ({ href, icon, text }) => (
@@ -20,7 +21,8 @@ const ContactButton: React.FC<{ href: string; icon: React.ReactNode; text: strin
     </a>
 );
 
-export const AuthBrandingPanel: React.FC<AuthBrandingPanelProps> = ({ creator }) => {
+export const AuthBrandingPanel: React.FC<AuthBrandingPanelProps> = ({ creatorDetails }) => {
+    const creator = creatorDetails;
     return (
         <div className="auth-branding-panel flex w-full md:w-1/2 bg-gray-900/50 p-6 md:p-12 flex-col justify-center gap-10 relative overflow-hidden text-center min-h-[220px] md:min-h-0">
             <div className="absolute inset-0 -z-10 bg-grid-orange-500/10 [mask-image:radial-gradient(ellipse_at_center,white_10%,transparent_70%)]"></div>
@@ -50,3 +52,4 @@ export const AuthBrandingPanel: React.FC<AuthBrandingPanelProps> = ({ creator })
         </div>
     );
 };
+      

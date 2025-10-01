@@ -59,15 +59,15 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, on
 
     return (
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col">
-            <div className="flex justify-between items-center mb-0.5">
+            <div className="flex justify-between items-center mb-0.5 flex-shrink-0">
                  <h3 className="text-white font-bold text-xs">Timesheet</h3>
                  <button onClick={() => onNavigate('timesheet')} className="text-xs font-semibold text-gray-300 hover:text-white hover:underline">View Log →</button>
             </div>
-             <div className="text-center my-0.5">
+             <div className="text-center my-0.5 flex-shrink-0">
                 <p className="text-xl md:text-2xl font-bold text-white tracking-tighter">{workedHours}</p>
                 <p className="text-xs text-gray-400 font-semibold">Today's Hours</p>
             </div>
-            <div className="grid grid-cols-2 gap-1.5 my-0.5">
+            <div className="grid grid-cols-2 gap-1.5 my-0.5 flex-shrink-0">
                 <button
                     onClick={() => onSaveLogEntry('Clock In')}
                     disabled={isClockedIn}
@@ -85,7 +85,7 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, on
                     <span className="font-semibold text-xs">Clock Out</span>
                 </button>
             </div>
-            <div className="flex-grow space-y-1 overflow-y-auto no-scrollbar pr-2 -mr-2 text-[10px]">
+            <div className="flex-grow space-y-1 overflow-y-auto no-scrollbar pr-2 -mr-2 text-xs">
                 {recentLogs.length > 0 ? recentLogs.map(entry => (
                     <div key={entry.id} className="flex justify-between items-center px-1 py-0.5 bg-white/5 rounded">
                         <span className={`font-medium truncate max-w-[60%] ${entry.type === 'Clock In' ? 'text-emerald-400' : entry.type === 'Clock Out' ? 'text-rose-400' : 'text-gray-300'}`}>

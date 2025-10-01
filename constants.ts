@@ -1,5 +1,4 @@
 
-
 export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
 Periscope telephoto zoom – ultra-long zoom without losing quality.
 High-resolution sensors (200MP+) – super detailed photos.
@@ -13,6 +12,10 @@ Seamless AR & 3D capture – ready for AR apps, 3D scanning, and effects.`;
 
 export const GITHUB_APK_URL = 'https://github.com/jasonankeodendaal/Product-description-template/raw/main/release/app-release.apk';
 
+// The ID of the secret GitHub Gist containing creator_details.json
+// This should be set as an environment variable in your hosting provider (e.g., Vercel).
+export const GIST_ID = process.env.GIST_ID;
+
 export interface CreatorDetails {
   name:string;
   slogan: string;
@@ -23,6 +26,18 @@ export interface CreatorDetails {
   whatsapp2?: string;
 }
 
+// This object now serves as a **fallback** for offline use or if the live fetch from the Gist fails.
+// The primary source of truth is fetched at runtime from the Gist specified by GIST_ID.
+export const CREATOR_DETAILS: CreatorDetails = {
+  name: 'JSTYP.me',
+  slogan: "Jason's solution to your problems, Yes me!!",
+  logoSrc: 'https://i.postimg.cc/6y4PVtQf/Creator-logo.png',
+  tel: '0695989427',
+  email: 'odendaaljason454@gmail.com',
+  whatsapp: 'https://wa.link/nohogl',
+  whatsapp2: 'https://wa.link/j3b9yn',
+};
+
 export interface SiteSettings {
   companyName: string;
   slogan: string;
@@ -32,7 +47,6 @@ export interface SiteSettings {
   tel: string;
   email: string;
   website: string;
-  creator: CreatorDetails;
   customApiEndpoint?: string | null;
   customApiAuthKey?: string | null;
   syncMode?: 'local' | 'folder' | 'api' | 'ftp';
@@ -54,21 +68,12 @@ export const CREATOR_PIN = '1723j';
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',
   slogan: "Jason's solution to your problems, Yes me!!",
-  logoSrc: 'https://i.postimg.cc/jCTZNwWk/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png',
+  logoSrc: 'https://i.postimg.cc/jCTZNwWk/7fa0611c-f980-4f3d-b723-a06f0bb547a2.png',
   heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
   backgroundImageSrc: 'https://i.postimg.cc/9F0C3r4M/futuristic-background.jpg',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
   website: '',
-  creator: {
-    name: 'JSTYP.me',
-    slogan: "Jason's solution to your problems, Yes me!!",
-    logoSrc: 'https://i.postimg.cc/6y4PVtQf/Creator-logo.png',
-    tel: '0695989427',
-    email: 'odendaaljason454@gmail.com',
-    whatsapp: 'https://wa.link/nohogl',
-    whatsapp2: 'https://wa.link/j3b9yn',
-  },
   customApiEndpoint: null,
   customApiAuthKey: null,
   syncMode: 'local',
@@ -149,3 +154,4 @@ What’s in the Box:
 Description:
 The Defy DMF451 Chest Freezer offers 195 litres of storage in a sleek satin metallic finish. Its multimode function allows you to switch between freezer, chiller, or fridge modes to suit your needs, while the A-rated energy efficiency helps save on electricity costs. The durable aluminium interior and lockable lid make it a practical and secure choice for any home.
 `;
+      

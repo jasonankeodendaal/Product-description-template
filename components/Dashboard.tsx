@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent, Video } from '../App';
 import { XIcon } from './icons/XIcon';
 import { DataManagement } from './DataManagement';
 import { SiteSettingsEditor } from './SiteSettingsEditor';
-import { SiteSettings } from '../constants';
+import { SiteSettings, CreatorDetails } from '../constants';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { InfoIcon } from './icons/InfoIcon';
@@ -35,6 +36,7 @@ interface DashboardProps {
   logEntries: LogEntry[];
   calendarEvents: CalendarEvent[];
   siteSettings: SiteSettings;
+  creatorDetails: CreatorDetails;
   onUpdateSettings: (newSettings: SiteSettings) => Promise<void>;
   onRestore: (data: File) => void;
   directoryHandle: FileSystemDirectoryHandle | null;
@@ -88,7 +90,7 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
         case 'about':
             return <AboutThisApp onNavigateToSetup={() => setDashboardView('setup')} />;
         case 'publishing':
-            return <AppPublishingGuide siteSettings={props.siteSettings} />;
+            return <AppPublishingGuide siteSettings={props.siteSettings} creatorDetails={props.creatorDetails} />;
         default:
             return (
                 <div className="space-y-6">
@@ -143,3 +145,4 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
     </div>
   );
 };
+      

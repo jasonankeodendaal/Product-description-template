@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { GITHUB_APK_URL, SiteSettings } from '../constants';
+import { GITHUB_APK_URL, SiteSettings, CreatorDetails } from '../constants';
 import { AndroidIcon } from './icons/AndroidIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { XIcon } from './icons/XIcon';
@@ -34,7 +35,7 @@ const Alert: React.FC<{ type: 'info' | 'warning' | 'tip', children: React.ReactN
 };
 
 
-export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ siteSettings }) => {
+export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorDetails: CreatorDetails }> = ({ siteSettings, creatorDetails }) => {
     const [checkResults, setCheckResults] = useState<CheckResult[]>([]);
     const [failedChecks, setFailedChecks] = useState<CheckResult[]>([]);
     const [allChecksPassed, setAllChecksPassed] = useState(false);
@@ -52,7 +53,7 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
             if (siteSettings.logoSrc) urlsToCheck.push({ name: 'Site Logo', url: siteSettings.logoSrc });
             if (siteSettings.heroImageSrc) urlsToCheck.push({ name: 'Hero Image', url: siteSettings.heroImageSrc });
             if (siteSettings.backgroundImageSrc) urlsToCheck.push({ name: 'Background Image', url: siteSettings.backgroundImageSrc });
-            if (siteSettings.creator.logoSrc) urlsToCheck.push({ name: 'Creator Logo', url: siteSettings.creator.logoSrc });
+            if (creatorDetails.logoSrc) urlsToCheck.push({ name: 'Creator Logo', url: creatorDetails.logoSrc });
             
             // Add URLs from manifest.json
             try {
@@ -112,7 +113,7 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
         };
         
         runChecks();
-    }, [siteSettings]);
+    }, [siteSettings, creatorDetails]);
 
     const pwaBuilderUrl = `https://www.pwabuilder.com/reportcard?site=${window.location.origin}`;
 
@@ -196,3 +197,4 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings }> = ({ s
         </div>
     );
 };
+      

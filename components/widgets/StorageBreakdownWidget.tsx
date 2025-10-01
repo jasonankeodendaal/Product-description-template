@@ -57,17 +57,17 @@ export const StorageBreakdownWidget: React.FC<StorageBreakdownWidgetProps> = ({ 
     const strokeDashoffset = circumference - (usagePercent / 100) * circumference;
 
     return (
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-                <h3 className="text-white font-bold text-lg">Storage</h3>
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 sm:p-4 h-full shadow-lg border border-white/10 flex flex-col justify-between">
+            <div className="flex justify-between items-start flex-shrink-0">
+                <h3 className="text-white font-bold text-sm sm:text-lg">Storage</h3>
                 <div className={`flex items-center gap-2 text-xs font-semibold ${syncInfo.color}`}>
                     {syncInfo.icon}
-                    <span>{syncInfo.text}</span>
+                    <span className="hidden sm:inline">{syncInfo.text}</span>
                 </div>
             </div>
 
-            <div className="flex-grow flex items-center justify-center gap-6 my-4">
-                <div className="relative w-40 h-40">
+            <div className="flex-grow flex items-center justify-center my-2">
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32">
                     <svg className="w-full h-full" viewBox="0 0 120 120">
                         <circle
                             className="text-gray-700"
@@ -93,26 +93,26 @@ export const StorageBreakdownWidget: React.FC<StorageBreakdownWidgetProps> = ({ 
                             style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
                         />
                     </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-3xl font-bold text-white">{`${Math.round(usagePercent)}%`}</span>
-                        <span className="text-xs text-gray-400">Quota Used</span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span className="text-2xl sm:text-3xl font-bold text-white">{`${Math.round(usagePercent)}%`}</span>
+                        <span className="text-[10px] sm:text-xs text-gray-400">Quota</span>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-shrink-0 space-y-2">
+            <div className="flex-shrink-0 space-y-1">
                 <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-300">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-300">
                         App Data: <span className="text-white font-bold">{formatBytes(appUsage)}</span>
                     </p>
                     {storageEstimate && (
-                         <p className="text-xs text-gray-400">
-                            Browser Total: {formatBytes(storageEstimate.usage)} / {formatBytes(storageEstimate.quota)}
+                         <p className="text-[10px] sm:text-xs text-gray-400">
+                            Browser: {formatBytes(storageEstimate.usage)} / {formatBytes(storageEstimate.quota)}
                         </p>
                     )}
                 </div>
                 {breakdown.length > 0 && appUsage > 0 && (
-                    <div className="w-full bg-black/20 rounded-full h-2 flex overflow-hidden">
+                    <div className="w-full bg-black/20 rounded-full h-1.5 sm:h-2 flex overflow-hidden">
                         {breakdown.map(item => (
                             <div
                                 key={item.name}

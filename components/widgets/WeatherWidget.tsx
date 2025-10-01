@@ -57,7 +57,7 @@ export const WeatherIcon: React.FC<{ icon: WeatherData['current']['icon'], class
 };
 
 const DetailItem: React.FC<{ icon: React.ReactNode; label: string; value: string; }> = ({ icon, label, value }) => (
-    <div className="flex items-center justify-between text-[10px] sm:text-xs">
+    <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-1">
             <div className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0">{icon}</div>
             <span className="font-semibold text-gray-300">{label}:</span>
@@ -187,9 +187,9 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ getWeatherInfo, si
                     <p className="text-rose-400 text-xs text-center p-1">{error}</p>
                 ) : weather ? (
                     <div className="w-full flex flex-col items-center">
-                        <div className="w-8 h-8 sm:w-12 sm:h-12 text-white my-1"><WeatherIcon icon={weather.current.icon} /></div>
-                        <p className="text-3xl sm:text-4xl font-bold text-white">{Math.round(weather.current.temperatureCelsius)}°</p>
-                        <p className="text-gray-300 font-semibold text-[10px] sm:text-xs capitalize truncate">{weather.current.condition}</p>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 text-white my-0.5"><WeatherIcon icon={weather.current.icon} /></div>
+                        <p className="text-2xl sm:text-3xl font-bold text-white">{Math.round(weather.current.temperatureCelsius)}°</p>
+                        <p className="text-gray-300 font-semibold text-xs capitalize truncate">{weather.current.condition}</p>
                     </div>
                 ) : (
                     <p className="text-gray-400 text-sm">No weather data.</p>
