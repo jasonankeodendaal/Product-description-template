@@ -1149,6 +1149,7 @@ const App: React.FC = () => {
                         userRole={userRole}
                         onOpenOnboarding={handleOpenOnboarding}
                         onOpenCalendar={() => setIsCalendarModalOpen(true)}
+                        isApiConnected={isApiConnected}
                     />
                 );
             case 'generator':

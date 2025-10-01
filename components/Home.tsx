@@ -39,6 +39,7 @@ interface HomeProps {
     userRole: UserRole;
     onOpenOnboarding: () => void;
     onOpenCalendar: () => void;
+    isApiConnected: boolean;
 }
 
 // Combined widget for mobile view
@@ -152,7 +153,7 @@ export const Home: React.FC<HomeProps> = (props) => {
                         <ClockCalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
                     </HomeTile>
                     <HomeTile className="col-span-1 aspect-square md:hidden" style={{ animationDelay: '100ms' }}>
-                        <StorageBreakdownWidget storageUsage={props.storageUsage} />
+                        <StorageBreakdownWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} isApiConnected={props.isApiConnected} />
                     </HomeTile>
                      <HomeTile className="col-span-1 aspect-square md:hidden" style={{ animationDelay: '150ms' }}>
                         <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} onOpenForecast={handleOpenForecast} />
@@ -166,7 +167,7 @@ export const Home: React.FC<HomeProps> = (props) => {
                         <ClockWidget />
                     </HomeTile>
                     <HomeTile className="hidden md:block md:col-span-3 md:row-span-2" style={{ animationDelay: '100ms' }}>
-                        <StorageBreakdownWidget storageUsage={props.storageUsage} />
+                        <StorageBreakdownWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} isApiConnected={props.isApiConnected} />
                     </HomeTile>
                     <HomeTile className="hidden md:block md:col-span-4" style={{ animationDelay: '150ms' }}>
                         <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} onOpenForecast={handleOpenForecast} />

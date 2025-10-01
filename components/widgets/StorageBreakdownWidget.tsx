@@ -1,9 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { useRecharts } from '../../hooks/useRecharts';
-import { Spinner } from '../icons/Spinner';
+import React, { useState, useEffect } from 'react';
 import { StorageUsage } from '../../utils/storageUtils';
+import { SiteSettings } from '../../constants';
+import { HardDriveIcon } from '../icons/HardDriveIcon';
+import { FolderSyncIcon } from '../icons/FolderSyncIcon';
+import { CloudIcon } from '../icons/CloudIcon';
 
-const formatBytes = (bytes: number, decimals = 2): string => {
+interface StorageBreakdownWidgetProps {
+    storageUsage: StorageUsage;
+    siteSettings: SiteSettings;
+    isApiConnected: boolean;
+}
+
+const formatBytes = (bytes: number, decimals = 1): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
@@ -12,112 +20,108 @@ const formatBytes = (bytes: number, decimals = 2): string => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-const AnimatedValue: React.FC<{ value: number }> = ({ value }) => {
-    const [displayValue, setDisplayValue] = useState(0);
-
-    useEffect(() => {
-        let start = 0;
-        const end = value;
-        if (start === end) return;
-
-        let startTime: number | null = null;
-        const duration = 1000; // 1 second animation
-
-        const animationFrame = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            const progress = Math.min((timestamp - startTime) / duration, 1);
-            const current = Math.floor(progress * (end - start) + start);
-            setDisplayValue(current);
-            if (progress < 1) {
-                requestAnimationFrame(animationFrame);
-            } else {
-                setDisplayValue(end); // Ensure it ends on the exact value
-            }
-        };
-        const handle = requestAnimationFrame(animationFrame);
-
-        return () => cancelAnimationFrame(handle);
-    }, [value]);
-
-    return <span>{formatBytes(displayValue)}</span>;
+const getSyncInfo = (syncMode: SiteSettings['syncMode'], isConnected: boolean) => {
+    switch (syncMode) {
+        case 'folder':
+            return { icon: <FolderSyncIcon />, text: 'Local Folder', color: 'text-green-400' };
+        case 'api':
+            return { icon: <CloudIcon isConnected={isConnected} />, text: isConnected ? 'API Sync' : 'API Offline', color: isConnected ? 'text-green-400' : 'text-yellow-400' };
+        default:
+            return { icon: <HardDriveIcon />, text: 'Browser Storage', color: 'text-sky-400' };
+    }
 };
 
+export const StorageBreakdownWidget: React.FC<StorageBreakdownWidgetProps> = ({ storageUsage, siteSettings, isApiConnected }) => {
+    const [storageEstimate, setStorageEstimate] = useState<{ usage: number; quota: number } | null>(null);
 
-interface StorageBreakdownWidgetProps {
-    storageUsage: StorageUsage;
-}
+    useEffect(() => {
+        if (navigator.storage && navigator.storage.estimate) {
+            navigator.storage.estimate().then(estimate => {
+                setStorageEstimate({
+                    usage: estimate.usage || 0,
+                    quota: estimate.quota || 0,
+                });
+            });
+        }
+    }, []);
 
-export const StorageBreakdownWidget: React.FC<StorageBreakdownWidgetProps> = ({ storageUsage }) => {
-    // FIX: The useRecharts hook returns a status object. Destructure its properties.
-    const { lib: Recharts, loading, error } = useRecharts();
+    const { total: appUsage, breakdown } = storageUsage;
+    const syncInfo = getSyncInfo(siteSettings.syncMode, isApiConnected);
 
-    // FIX: Check loading, error, and library existence before attempting to render the chart.
-    if (loading || error || !Recharts) {
-        return (
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col items-center justify-center">
-                <Spinner />
-                <p className="text-white/70 mt-2 text-sm">{loading ? 'Loading chart...' : 'Chart failed to load.'}</p>
-            </div>
-        );
-    }
+    const usagePercent = storageEstimate && storageEstimate.quota > 0
+        ? (storageEstimate.usage / storageEstimate.quota) * 100
+        : 0;
 
-    // FIX: Destructure chart components from the loaded library object.
-    const { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } = Recharts;
-    const { total, breakdown } = storageUsage;
-    const hasData = total > 0;
+    const radius = 52;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (usagePercent / 100) * circumference;
 
     return (
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col">
-            <h3 className="text-white font-bold text-lg mb-2">Storage Breakdown</h3>
-            <div className="flex-grow flex flex-col md:flex-row items-center justify-around gap-4">
-                {hasData ? (
-                    <>
-                        <div className="w-full md:w-1/2 h-28">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={breakdown}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        innerRadius="60%"
-                                        outerRadius="100%"
-                                        paddingAngle={3}
-                                        dataKey="bytes"
-                                        nameKey="name"
-                                        stroke="none"
-                                        isAnimationActive={true}
-                                        animationDuration={800}
-                                    >
-                                        {breakdown.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        formatter={(value: number, name: string, props) => [formatBytes(value), `${props.payload.name} (${props.payload.count})`]}
-                                        contentStyle={{ backgroundColor: 'rgba(31, 41, 55, 0.8)', border: '1px solid #4B5563', borderRadius: '0.5rem' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="w-full md:w-1/2 space-y-2">
-                            <div className="text-center md:text-left">
-                                <span className="font-bold text-white text-2xl"><AnimatedValue value={total} /></span>
-                                <p className="text-gray-400 text-sm"> Total Used</p>
-                            </div>
-                            <div className="text-xs text-gray-300 space-y-1">
-                                {breakdown.map((item) => (
-                                    <div key={item.name} className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.fill }}></div>
-                                        <span className="flex-grow truncate">{item.name} ({item.count})</span>
-                                        <span className="font-mono flex-shrink-0">{formatBytes(item.bytes)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </>
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">No data stored yet.</div>
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+                <h3 className="text-white font-bold text-lg">Storage</h3>
+                <div className={`flex items-center gap-2 text-xs font-semibold ${syncInfo.color}`}>
+                    {syncInfo.icon}
+                    <span>{syncInfo.text}</span>
+                </div>
+            </div>
+
+            <div className="flex-grow flex items-center justify-center gap-6 my-4">
+                <div className="relative w-40 h-40">
+                    <svg className="w-full h-full" viewBox="0 0 120 120">
+                        <circle
+                            className="text-gray-700"
+                            strokeWidth="10"
+                            stroke="currentColor"
+                            fill="transparent"
+                            r={radius}
+                            cx="60"
+                            cy="60"
+                        />
+                        <circle
+                            className="text-orange-500"
+                            strokeWidth="10"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                            stroke="currentColor"
+                            fill="transparent"
+                            r={radius}
+                            cx="60"
+                            cy="60"
+                            transform="rotate(-90 60 60)"
+                            style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+                        />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-3xl font-bold text-white">{`${Math.round(usagePercent)}%`}</span>
+                        <span className="text-xs text-gray-400">Quota Used</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex-shrink-0 space-y-2">
+                <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-300">
+                        App Data: <span className="text-white font-bold">{formatBytes(appUsage)}</span>
+                    </p>
+                    {storageEstimate && (
+                         <p className="text-xs text-gray-400">
+                            Browser Total: {formatBytes(storageEstimate.usage)} / {formatBytes(storageEstimate.quota)}
+                        </p>
+                    )}
+                </div>
+                {breakdown.length > 0 && appUsage > 0 && (
+                    <div className="w-full bg-black/20 rounded-full h-2 flex overflow-hidden">
+                        {breakdown.map(item => (
+                            <div
+                                key={item.name}
+                                className="h-full"
+                                style={{ width: `${(item.bytes / appUsage) * 100}%`, backgroundColor: item.fill }}
+                                title={`${item.name}: ${formatBytes(item.bytes)}`}
+                            />
+                        ))}
+                    </div>
                 )}
             </div>
         </div>

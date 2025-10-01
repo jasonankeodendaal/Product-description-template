@@ -1,16 +1,8 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Authentication Check
-  if (process.env.API_SECRET_KEY) {
-    const authHeader = req.headers.authorization;
-    const expectedAuthKey = `Bearer ${process.env.API_SECRET_KEY}`;
-    if (authHeader !== expectedAuthKey) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-  }
-
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method Not Allowed' });

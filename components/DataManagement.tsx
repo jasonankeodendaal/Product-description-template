@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { createBackup } from '../utils/dataUtils';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../App';
@@ -268,8 +269,8 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                     <SectionCard title="Backend & API Settings" description="Configure your API Key for AI features and an optional custom sync server." icon={<CodeIcon />}>
                          <div className="space-y-4">
                             <div>
-                                <h4 className="font-semibold text-orange-400 mb-1">Authentication Key (Required)</h4>
-                                <p className="text-sm text-gray-400 mb-3">To fix <strong className="text-red-400">'Unauthorized'</strong> errors, provide the secret key configured on your server (e.g., Vercel `API_SECRET_KEY`).</p>
+                                <h4 className="font-semibold text-orange-400 mb-1">Authentication Key (for Custom API)</h4>
+                                <p className="text-sm text-gray-400 mb-3">If your custom API server requires authentication, provide the secret key here. This is not needed for the app's built-in AI features.</p>
                                 <InputField 
                                     id="customApiAuthKey" 
                                     label="Auth Key" 

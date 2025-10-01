@@ -1,3 +1,4 @@
+
 import { GenerationResult, GroundingChunk } from "../components/OutputPanel";
 import { blobToBase64 } from "../utils/dataUtils";
 
@@ -5,9 +6,6 @@ import { blobToBase64 } from "../utils/dataUtils";
 const handleFetchErrors = async (response: Response) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: `Request failed with status ${response.status}` }));
-    if (response.status === 401) {
-        throw new Error('Unauthorized. Please check your Auth Key in Dashboard > Data Management > API Settings.');
-    }
     throw new Error(errorData.error || 'An unknown network error occurred.');
   }
   return response.json();
@@ -38,11 +36,8 @@ export async function generateProductDescription(
     });
     
     if (!response.ok) {
-      // Handle initial error before streaming starts (e.g., 401 Unauthorized)
+      // Handle initial error before streaming starts
       const errorData = await response.json().catch(() => ({ error: `Request failed with status ${response.status}` }));
-      if (response.status === 401) {
-        throw new Error('Unauthorized. Please check your Auth Key in Dashboard > Data Management > API Settings.');
-      }
       throw new Error(errorData.error || 'An unknown network error occurred.');
     }
     
