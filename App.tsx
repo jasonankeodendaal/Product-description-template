@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
@@ -34,6 +33,8 @@ import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
+import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
+import { XIcon } from './components/icons/XIcon';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -263,6 +264,10 @@ const App: React.FC = () => {
     
     // App Update State
     const [showUpdateToast, setShowUpdateToast] = useState(false);
+    
+    // --- New State for Reconnection Flow ---
+    const [reconnectPrompt, setReconnectPrompt] = useState<{ handle: FileSystemDirectoryHandle; visible: boolean } | null>(null);
+
 
     // Effect to recalculate storage whenever data changes
     useEffect(() => {
@@ -384,6 +389,54 @@ const App: React.FC = () => {
         await db.saveLogEntry(newEntry);
         if (directoryHandle) await fileSystemService.saveLogEntryToDirectory(directoryHandle, newEntry);
     }, [directoryHandle, logEntries]);
+    
+     const loadLocalData = useCallback(async () => {
+        const [dbRecordings, dbPhotos, dbVideos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
+            db.getAllRecordings(),
+            db.getAllPhotos(),
+            db.getAllVideos(),
+            db.getAllNotes(),
+            db.getAllNoteRecordings(),
+            db.getAllLogEntries(),
+            db.getAllCalendarEvents(),
+        ]);
+        setRecordings(dbRecordings);
+        setPhotos(dbPhotos);
+        setVideos(dbVideos);
+        setNotes(dbNotes.map(migrateNote));
+        setNoteRecordings(dbNoteRecordings);
+        setLogEntries(dbLogEntries);
+        setCalendarEvents(dbCalendarEvents);
+    }, []);
+
+    const handleReconnect = async () => {
+        if (!reconnectPrompt) return;
+        const handle = reconnectPrompt.handle;
+        setReconnectPrompt(null); // Hide prompt immediately
+
+        try {
+            const permissionState = await (handle as any).requestPermission({ mode: 'readwrite' });
+            if (permissionState === 'granted') {
+                setDirectoryHandle(handle);
+                await handleUpdateSettings({ ...siteSettings, syncMode: 'folder' });
+                await syncFromDirectory(handle);
+            } else {
+                throw new Error("Permission denied.");
+            }
+        } catch (err) {
+            console.warn('Reconnection failed:', err);
+            await db.clearDirectoryHandle();
+            await handleUpdateSettings({ ...siteSettings, syncMode: 'local' });
+            await loadLocalData(); // Fallback to local
+        }
+    };
+
+    const handleDeclineReconnect = async () => {
+        setReconnectPrompt(null);
+        await db.clearDirectoryHandle();
+        await handleUpdateSettings({ ...siteSettings, syncMode: 'local' });
+        await loadLocalData();
+    };
 
     // --- Data Loading and Initialization ---
     useEffect(() => {
@@ -432,52 +485,29 @@ const App: React.FC = () => {
                 let folderSyncSuccess = false;
 
                 if (handle) {
-                    let permissionState = await (handle as any).queryPermission({ mode: 'readwrite' });
-                    let hasPermission = permissionState === 'granted';
-
-                    if (permissionState === 'prompt') {
-                        try {
-                            permissionState = await (handle as any).requestPermission({ mode: 'readwrite' });
-                            hasPermission = permissionState === 'granted';
-                        } catch (err) {
-                            console.warn('Folder permission request was dismissed or failed.', err);
-                            hasPermission = false;
-                        }
-                    }
-
-                    if (hasPermission) {
+                    // This is the new reconnection flow
+                    const permissionState = await (handle as any).queryPermission({ mode: 'readwrite' });
+                    if (permissionState === 'granted') {
                         setDirectoryHandle(handle);
-                        settings = { ...settings, syncMode: 'folder' };
+                        await handleUpdateSettings({ ...settings, syncMode: 'folder' });
                         await syncFromDirectory(handle);
                         folderSyncSuccess = true;
+                    } else if (permissionState === 'prompt') {
+                        // Show our custom prompt instead of the browser's one immediately
+                        setReconnectPrompt({ handle, visible: true });
+                        // Don't set folderSyncSuccess, let user decide
                     } else {
+                        // Permission was denied previously
                         await db.clearDirectoryHandle();
-                        settings.syncMode = 'local';
-                        console.log("Folder permission not granted. Falling back to local storage.");
+                        await handleUpdateSettings({ ...settings, syncMode: 'local' });
+                        await loadLocalData();
                     }
-                }
-                
-                if (!folderSyncSuccess) {
+                } else {
+                    // No handle stored, check for API sync or default to local
                     if (settings.syncMode === 'api' && settings.customApiEndpoint && settings.customApiAuthKey) {
                         await handleApiConnect(settings.customApiEndpoint, settings.customApiAuthKey, true);
                     } else {
-                        // This is the fallback for local storage
-                        const [dbRecordings, dbPhotos, dbVideos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
-                            db.getAllRecordings(),
-                            db.getAllPhotos(),
-                            db.getAllVideos(),
-                            db.getAllNotes(),
-                            db.getAllNoteRecordings(),
-                            db.getAllLogEntries(),
-                            db.getAllCalendarEvents(),
-                        ]);
-                        setRecordings(dbRecordings);
-                        setPhotos(dbPhotos);
-                        setVideos(dbVideos);
-                        setNotes(dbNotes.map(migrateNote));
-                        setNoteRecordings(dbNoteRecordings);
-                        setLogEntries(dbLogEntries);
-                        setCalendarEvents(dbCalendarEvents);
+                        await loadLocalData();
                     }
                 }
                 setSiteSettings(settings);
@@ -490,7 +520,7 @@ const App: React.FC = () => {
             }
         };
         initializeApp();
-    }, []);
+    }, [loadLocalData]);
     
     
     // --- Reminder Service ---
@@ -867,24 +897,9 @@ const App: React.FC = () => {
             setSiteSettings(newSettings);
             localStorage.setItem('siteSettings', JSON.stringify(newSettings));
 
-            const [dbRecordings, dbPhotos, dbVideos, dbNotes, dbNoteRecordings, dbLogEntries, dbCalendarEvents] = await Promise.all([
-                db.getAllRecordings(),
-                db.getAllPhotos(),
-                db.getAllVideos(),
-                db.getAllNotes(),
-                db.getAllNoteRecordings(),
-                db.getAllLogEntries(),
-                db.getAllCalendarEvents(),
-            ]);
-            setRecordings(dbRecordings);
-            setPhotos(dbPhotos);
-            setVideos(dbVideos);
-            setNotes(dbNotes.map(migrateNote));
-            setNoteRecordings(dbNoteRecordings);
-            setLogEntries(dbLogEntries);
-            setCalendarEvents(dbCalendarEvents);
+            await loadLocalData();
         }
-    }, [siteSettings]);
+    }, [siteSettings, loadLocalData]);
 
     const handleClearLocalData = useCallback(async () => {
         if (window.confirm("WARNING: This will permanently delete all recordings, photos, videos, notes, logs, and calendar events from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
@@ -1288,6 +1303,32 @@ const App: React.FC = () => {
                  currentView={currentView} 
                  onNavigate={setCurrentView}
             />
+            
+            {reconnectPrompt?.visible && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-[var(--theme-card-bg)] w-full max-w-md rounded-xl shadow-2xl border border-[var(--theme-border)]/50 p-6 text-center animate-modal-scale-in">
+                        <FolderOpenIcon className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-white">Reconnect to Folder?</h2>
+                        <p className="text-slate-400 mt-2">
+                            Would you like to reconnect to your last used folder, <strong className="text-white">"{reconnectPrompt.handle.name}"</strong>?
+                        </p>
+                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={handleDeclineReconnect}
+                                className="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                            >
+                                Use Browser Storage
+                            </button>
+                            <button
+                                onClick={handleReconnect}
+                                className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                            >
+                                Reconnect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
             
