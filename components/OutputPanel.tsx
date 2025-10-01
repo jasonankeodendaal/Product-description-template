@@ -37,6 +37,7 @@ interface OutputPanelProps {
   photos: Photo[];
   onSavePhoto: (photo: Photo) => Promise<void>;
   onUpdatePhoto: (photo: Photo) => Promise<void>;
+  onDeletePhoto: (photo: Photo) => Promise<void>;
   onEditImage: (photo: Photo) => void;
   videos: Video[];
   onSaveVideo: (video: Video) => Promise<void>;
@@ -114,7 +115,7 @@ const parseOutputToStructuredData = (text: string): Record<string, string> => {
     return data;
 };
 
-const LinkedPhotoThumbnail: React.FC<{ photo: Photo; onOpenSquarer: (photo: Photo) => void; }> = ({ photo, onOpenSquarer }) => {
+const LinkedPhotoThumbnail: React.FC<{ photo: Photo; onOpenSquarer: (photo: Photo) => void; onDelete: (photo: Photo) => void; }> = ({ photo, onOpenSquarer, onDelete }) => {
     const [url, setUrl] = useState<string | null>(null);
     useEffect(() => {
         const objectUrl = URL.createObjectURL(photo.imageBlob);
@@ -135,6 +136,18 @@ const LinkedPhotoThumbnail: React.FC<{ photo: Photo; onOpenSquarer: (photo: Phot
                     <span>Square</span>
                 </button>
             </div>
+             <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Are you sure you want to permanently delete "${photo.name}"? This action cannot be undone.`)) {
+                        onDelete(photo);
+                    }
+                }}
+                className="absolute top-0.5 right-0.5 p-0.5 bg-black/60 rounded-full text-white/80 hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                title="Delete Photo"
+            >
+                <XIcon className="w-4 h-4" />
+            </button>
         </div>
     );
 };
@@ -247,7 +260,7 @@ const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video
 };
 
 
-export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, videos, onSaveVideo }) => {
+export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo }) => {
     const [isCopied, setIsCopied] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
     const [isUploading, setIsUploading] = useState(false);
@@ -478,7 +491,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
             <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
                 <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Images</h3>
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                    {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} onOpenSquarer={setSquaringPhoto} />)}
+                    {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} onOpenSquarer={setSquaringPhoto} onDelete={onDeletePhoto} />)}
                     <input
                         type="file"
                         ref={fileInputRef}

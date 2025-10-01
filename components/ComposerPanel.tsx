@@ -25,6 +25,7 @@ interface ComposerPanelProps {
     siteSettings: SiteSettings;
     onAddToInput: (text: string) => void;
     onDeletePhoto: (photo: Photo) => Promise<void>;
+    onClear: () => void;
 }
 
 type AssetTab = 'recordings' | 'notes' | 'photos' | 'videos';
@@ -83,7 +84,7 @@ const VideoFrameExtractorModal: React.FC<{
 export const ComposerPanel: React.FC<ComposerPanelProps> = ({
     value, onChange, onGenerate, isLoading, templates, selectedTemplateId,
     onTemplateChange, tone, onToneChange, recordings, notes, photos,
-    siteSettings, onAddToInput, onDeletePhoto
+    siteSettings, onAddToInput, onDeletePhoto, onClear
 }) => {
     const [activeTab, setActiveTab] = useState<AssetTab>('photos');
     const [describingPhotoId, setDescribingPhotoId] = useState<string | null>(null);
@@ -225,6 +226,7 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                 onTemplateChange={onTemplateChange}
                 tone={tone}
                 onToneChange={onToneChange}
+                onClear={onClear}
             />
             <div className="bg-[var(--theme-card-bg)] backdrop-blur-xl p-4 md:p-6 rounded-lg shadow-lg border border-[var(--theme-border)]">
                 <h2 className="text-xl font-semibold mb-4 text-[var(--theme-green)]">2. Add From Library</h2>

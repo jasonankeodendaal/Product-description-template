@@ -104,6 +104,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                         siteSettings={siteSettings}
                         onAddToInput={(text) => onUserInputChange(userInput + '\n' + text)}
                         onDeletePhoto={onDeletePhoto}
+                        onClear={() => onUserInputChange('')}
                     />
                     <OutputPanel 
                         output={generatedOutput} 
@@ -115,6 +116,7 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                         onSavePhoto={onSavePhoto}
                         onEditImage={onEditImage}
                         onUpdatePhoto={onUpdatePhoto}
+                        onDeletePhoto={onDeletePhoto}
                         videos={videos}
                         onSaveVideo={onSaveVideo}
                         onDeleteVideo={onDeleteVideo}

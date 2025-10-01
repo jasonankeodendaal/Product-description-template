@@ -127,6 +127,26 @@ const getFileTypeAndKind = (name: string, kind: 'directory' | 'file'): { type: s
     }
 };
 
+const BrowserPhotoThumbnail: React.FC<{ photo: Photo; className?: string }> = React.memo(({ photo, className }) => {
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (photo.imageBlob) {
+            const url = URL.createObjectURL(photo.imageBlob);
+            setImageUrl(url);
+            return () => URL.revokeObjectURL(url);
+        }
+    }, [photo.imageBlob]);
+
+    if (!imageUrl) {
+        return <div className={`w-full h-full bg-slate-700 animate-pulse ${className || ''}`}></div>;
+    }
+
+    return (
+        <img src={imageUrl} alt={photo.name} className={`w-full h-full object-cover ${className || ''}`} />
+    );
+});
+
 const VideoThumbnail: React.FC<{ video: Video }> = React.memo(({ video }) => {
     const [thumbUrl, setThumbUrl] = useState<string | null>(null);
     useEffect(() => {
@@ -134,7 +154,7 @@ const VideoThumbnail: React.FC<{ video: Video }> = React.memo(({ video }) => {
         generateVideoThumbnail(video.videoBlob, 0.5)
             .then(url => { if (isMounted) setThumbUrl(url); })
             .catch(err => console.error("Could not generate thumbnail", err));
-        return () => { isMounted = false; if (thumbUrl) URL.revokeObjectURL(thumbUrl); };
+        return () => { isMounted = false; };
     }, [video.videoBlob]);
 
     return (
@@ -169,11 +189,16 @@ const GridItem: React.FC<{ item: DisplayItem; onClick: () => void; photos: Photo
     return (
         <button onClick={onClick} className="group aspect-[4/5] flex flex-col bg-slate-800/50 rounded-lg overflow-hidden border border-slate-700/50 hover:border-orange-500/50 hover:bg-slate-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 ring-offset-2 ring-offset-slate-900">
             <div className="flex-grow w-full bg-slate-900/50 relative overflow-hidden flex items-center justify-center">
-                {previewMedia?.type === 'photo' && previewMedia.media && <img src={URL.createObjectURL((previewMedia.media as Photo).imageBlob)} alt="preview" className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${item.kind === 'directory' ? 'opacity-30 blur-sm' : ''}`} />}
-                {previewMedia?.type === 'video' && previewMedia.media && <VideoThumbnail video={previewMedia.media as Video} />}
+                {/* Thumbnails for files and folder previews */}
+                {previewMedia?.type === 'photo' && previewMedia.media && <BrowserPhotoThumbnail photo={previewMedia.media as Photo} className={`transition-transform duration-300 group-hover:scale-105 ${item.kind === 'directory' ? 'opacity-30 blur-sm' : ''}`} />}
+                {previewMedia?.type === 'video' && previewMedia.media && <div className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${item.kind === 'directory' ? 'opacity-30 blur-sm' : ''}`}><VideoThumbnail video={previewMedia.media as Video} /></div>}
                 
-                {item.kind === 'directory' && <FolderIcon className="w-16 h-16 text-amber-400 opacity-80 drop-shadow-lg" />}
+                {/* Fallback Icons for items without a visual preview */}
+                {!previewMedia && item.kind === 'directory' && <FolderIcon className="w-16 h-16 text-amber-400 opacity-80 drop-shadow-lg" />}
                 {!previewMedia && item.kind === 'file' && (item.itemKind === 'text' || item.itemKind === 'json' ? <FileTextIcon className="w-12 h-12 text-sky-400 opacity-60" /> : <FileTextIcon className="w-12 h-12 text-gray-500 opacity-60" />)}
+                
+                {/* Folder Icon Overlay for folders that have a preview */}
+                {item.kind === 'directory' && previewMedia && <FolderIcon className="w-16 h-16 text-amber-400 opacity-90 drop-shadow-lg absolute" />}
             </div>
             <div className="flex-shrink-0 p-2 text-left bg-slate-800/80 border-t border-slate-700/50">
                 <div className="flex items-center gap-2">
@@ -187,6 +212,7 @@ const GridItem: React.FC<{ item: DisplayItem; onClick: () => void; photos: Photo
         </button>
     );
 });
+
 
 const ListItem: React.FC<{ item: DisplayItem; onClick: () => void; }> = ({ item, onClick }) => {
     const iconColor = item.kind === 'directory' ? 'text-amber-400' :

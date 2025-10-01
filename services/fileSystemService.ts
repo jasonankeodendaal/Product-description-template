@@ -28,88 +28,208 @@ const getOrCreateDirectory = async (parentHandle: FileSystemDirectoryHandle, nam
     return await parentHandle.getDirectoryHandle(name, { create: true });
 }
 
+// --- New Constants & Helpers ---
+const JSON_BACKUPS_DIR = 'JSON_Backups';
+
 // --- Generic Checks ---
 const directoryHasData = async (dirHandle: FileSystemDirectoryHandle): Promise<boolean> => {
     for await (const entry of dirHandle.values()) return true;
     return false;
 }
 
-// --- Settings ---
+// --- Settings & Templates (remain in root) ---
 const saveSettings = async (dirHandle: FileSystemDirectoryHandle, settings: SiteSettings) => writeFile(dirHandle, 'settings.json', JSON.stringify(settings, null, 2));
 const loadSettings = async (dirHandle: FileSystemDirectoryHandle): Promise<SiteSettings | null> => JSON.parse(await readFile(dirHandle, 'settings.json') || 'null');
-
-// --- Templates ---
 const saveTemplates = async (dirHandle: FileSystemDirectoryHandle, templates: Template[]) => writeFile(dirHandle, 'templates.json', JSON.stringify(templates, null, 2));
 const loadTemplates = async (dirHandle: FileSystemDirectoryHandle): Promise<Template[] | null> => JSON.parse(await readFile(dirHandle, 'templates.json') || 'null');
 
-// --- Recordings ---
-const saveRecordingToDirectory = async (dirHandle: FileSystemDirectoryHandle, recording: Recording) => {
-    const recsDir = await getOrCreateDirectory(dirHandle, 'recordings');
-    const metadata: Omit<Recording, 'audioBlob' | 'isTranscribing'> = { ...recording };
-    delete (metadata as any).audioBlob;
-    delete (metadata as any).isTranscribing;
-    await writeFile(recsDir, `${recording.id}.json`, JSON.stringify(metadata, null, 2));
-    await writeFile(recsDir, `${recording.id}.webm`, recording.audioBlob);
+// --- Paired Media + JSON Entities (Recordings, Photos, etc.) ---
+
+const savePairedEntity = async (dirHandle: FileSystemDirectoryHandle, entity: {id: string; folder?: string}, mediaBlob: Blob, mediaExt: string, metadata: object) => {
+    const dataPath = entity.folder || '';
+    const dataDir = await getOrCreateNestedDirectory(dirHandle, dataPath);
+    await writeFile(dataDir, `${entity.id}.${mediaExt}`, mediaBlob);
+
+    const jsonBackupRoot = await getOrCreateDirectory(dirHandle, JSON_BACKUPS_DIR);
+    const jsonDir = await getOrCreateNestedDirectory(jsonBackupRoot, dataPath);
+    await writeFile(jsonDir, `${entity.id}.json`, JSON.stringify(metadata, null, 2));
 };
 
-const deleteRecordingFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
-    const recsDir = await getOrCreateDirectory(dirHandle, 'recordings');
-    try { await recsDir.removeEntry(`${id}.json`); } catch(e) {}
-    try { await recsDir.removeEntry(`${id}.webm`); } catch(e) {}
-};
-
-const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<{ recordings: Recording[], errors: string[] }> => {
-    const recordings: Recording[] = [];
-    const errors: string[] = [];
+const deletePairedEntity = async (dirHandle: FileSystemDirectoryHandle, entity: {id: string; folder?: string}, mediaExt: string) => {
+    const dataPath = entity.folder || '';
+    // Delete media file from primary location
     try {
-        const recsDir = await dirHandle.getDirectoryHandle('recordings');
-        for await (const entry of recsDir.values()) {
+        const dataDir = await getNestedDirectory(dirHandle, dataPath);
+        if (dataDir) await dataDir.removeEntry(`${entity.id}.${mediaExt}`);
+    } catch(e) {}
+    
+    // Delete JSON from new location
+    try {
+        const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
+        const jsonDir = await getNestedDirectory(jsonBackupRoot, dataPath);
+        if (jsonDir) await jsonDir.removeEntry(`${entity.id}.json`);
+    } catch (e) {}
+
+    // Delete JSON from old location (for migration cleanup)
+    try {
+        const dataDir = await getNestedDirectory(dirHandle, dataPath);
+        if (dataDir) await dataDir.removeEntry(`${entity.id}.json`);
+    } catch(e) {}
+};
+
+// --- JSON-Only Entities (Notes, Logs, etc.) ---
+const saveJsonOnlyEntity = async (dirHandle: FileSystemDirectoryHandle, entityPluralName: string, entity: { id: string }) => {
+    const jsonBackupRoot = await getOrCreateDirectory(dirHandle, JSON_BACKUPS_DIR);
+    const jsonEntityDir = await getOrCreateDirectory(jsonBackupRoot, entityPluralName);
+    await writeFile(jsonEntityDir, `${entity.id}.json`, JSON.stringify(entity, null, 2));
+};
+
+const deleteJsonOnlyEntity = async (dirHandle: FileSystemDirectoryHandle, entityPluralName: string, id: string) => {
+    // Delete from new location
+    try {
+        const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
+        const jsonEntityDir = await jsonBackupRoot.getDirectoryHandle(entityPluralName);
+        await jsonEntityDir.removeEntry(`${id}.json`);
+    } catch (e) {}
+    // Delete from old location
+    try {
+        const entityDir = await dirHandle.getDirectoryHandle(entityPluralName);
+        await entityDir.removeEntry(`${id}.json`);
+    } catch (e) {}
+};
+
+const loadJsonOnlyEntities = async <T extends {id: string}>(dirHandle: FileSystemDirectoryHandle, entityNamePlural: string): Promise<T[]> => {
+    const entityMap = new Map<string, T>();
+
+    const processDir = async (dir: FileSystemDirectoryHandle) => {
+        for await (const entry of dir.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
                     const file = await (entry as FileSystemFileHandle).getFile();
-                    const metadata = JSON.parse(await file.text());
-                    const audioHandle = await recsDir.getFileHandle(`${metadata.id}.webm`);
-                    const audioBlob = await audioHandle.getFile();
-                    recordings.push({ ...metadata, audioBlob });
+                    const entity = JSON.parse(await file.text());
+                    if (entity.id && !entityMap.has(entity.id)) {
+                        entityMap.set(entity.id, entity);
+                    }
+                } catch(e) { console.warn(`Failed to load entity from ${entry.name}`, e); }
+            }
+        }
+    }
+    // Try new structure first
+    try {
+        const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
+        const jsonEntityDir = await jsonBackupRoot.getDirectoryHandle(entityNamePlural);
+        await processDir(jsonEntityDir);
+    } catch (e) {}
+    // Then try old structure
+    try {
+        const entityDir = await dirHandle.getDirectoryHandle(entityNamePlural);
+        await processDir(entityDir);
+    } catch (e) {}
+    
+    return Array.from(entityMap.values());
+};
+
+// --- Recordings ---
+const saveRecordingToDirectory = async (dirHandle: FileSystemDirectoryHandle, recording: Recording) => {
+    const { audioBlob, isTranscribing, ...metadata } = recording;
+    await savePairedEntity(dirHandle, { id: recording.id, folder: 'recordings'}, audioBlob, 'webm', metadata);
+};
+
+const deleteRecordingFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
+    await deletePairedEntity(dirHandle, { id, folder: 'recordings' }, 'webm');
+};
+
+const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<{ recordings: Recording[], errors: string[] }> => {
+    const recordingsMap = new Map<string, Recording>();
+    const errors: string[] = [];
+
+    // Load from new structure
+    try {
+        const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
+        const jsonRecsDir = await jsonBackupRoot.getDirectoryHandle('recordings');
+        const mediaDir = await dirHandle.getDirectoryHandle('recordings');
+        for await (const entry of jsonRecsDir.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
+                    const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
+                    if (!recordingsMap.has(metadata.id)) {
+                        const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
+                        const audioBlob = await audioHandle.getFile();
+                        recordingsMap.set(metadata.id, { ...metadata, audioBlob });
+                    }
                 } catch (e) { errors.push(`Failed to load recording ${entry.name}: ${e}`); }
             }
         }
-    } catch (e) { /* recordings dir doesn't exist, return empty */ }
-    return { recordings, errors };
+    } catch(e) {}
+    
+    // Load from old structure
+    try {
+        const mediaDir = await dirHandle.getDirectoryHandle('recordings');
+        for await (const entry of mediaDir.values()) {
+             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
+                    const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
+                    if (!recordingsMap.has(metadata.id)) {
+                        const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
+                        const audioBlob = await audioHandle.getFile();
+                        recordingsMap.set(metadata.id, { ...metadata, audioBlob });
+                    }
+                } catch (e) { errors.push(`Failed to load legacy recording ${entry.name}: ${e}`); }
+            }
+        }
+    } catch(e) {}
+
+    return { recordings: Array.from(recordingsMap.values()), errors };
 };
 
 // --- Note Recordings ---
 const saveNoteRecordingToDirectory = async (dirHandle: FileSystemDirectoryHandle, recording: NoteRecording) => {
-    const recsDir = await getOrCreateDirectory(dirHandle, 'note_recordings');
-    const metadata: Omit<NoteRecording, 'audioBlob'> = { ...recording };
-    delete (metadata as any).audioBlob;
-    await writeFile(recsDir, `${recording.id}.json`, JSON.stringify(metadata, null, 2));
-    await writeFile(recsDir, `${recording.id}.webm`, recording.audioBlob);
+    const { audioBlob, ...metadata } = recording;
+    await savePairedEntity(dirHandle, { id: recording.id, folder: 'note_recordings' }, audioBlob, 'webm', metadata);
 };
-
 const deleteNoteRecordingFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
-    const recsDir = await getOrCreateDirectory(dirHandle, 'note_recordings');
-    try { await recsDir.removeEntry(`${id}.json`); } catch(e) {}
-    try { await recsDir.removeEntry(`${id}.webm`); } catch(e) {}
+    await deletePairedEntity(dirHandle, { id, folder: 'note_recordings' }, 'webm');
 };
-
 const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<NoteRecording[]> => {
-    const recordings: NoteRecording[] = [];
+    // Similar combined loading logic as recordings
+    const recordingsMap = new Map<string, NoteRecording>();
     try {
-        const recsDir = await dirHandle.getDirectoryHandle('note_recordings');
-        for await (const entry of recsDir.values()) {
+        const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
+        const jsonRecsDir = await jsonBackupRoot.getDirectoryHandle('note_recordings');
+        const mediaDir = await dirHandle.getDirectoryHandle('note_recordings');
+        for await (const entry of jsonRecsDir.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
-                    const file = await (entry as FileSystemFileHandle).getFile();
-                    const metadata = JSON.parse(await file.text());
-                    const audioHandle = await recsDir.getFileHandle(`${metadata.id}.webm`);
-                    const audioBlob = await audioHandle.getFile();
-                    recordings.push({ ...metadata, audioBlob });
-                } catch (e) { console.error(`Failed to load note recording ${entry.name}: ${e}`); }
+                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
+                    const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
+                    if (!recordingsMap.has(metadata.id)) {
+                        const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
+                        const audioBlob = await audioHandle.getFile();
+                        recordingsMap.set(metadata.id, { ...metadata, audioBlob });
+                    }
+                } catch (e) {}
             }
         }
-    } catch (e) { /* note_recordings dir doesn't exist, return empty */ }
-    return recordings;
+    } catch(e) {}
+    try {
+        const mediaDir = await dirHandle.getDirectoryHandle('note_recordings');
+        for await (const entry of mediaDir.values()) {
+             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
+                    const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
+                    if (!recordingsMap.has(metadata.id)) {
+                        const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
+                        const audioBlob = await audioHandle.getFile();
+                        recordingsMap.set(metadata.id, { ...metadata, audioBlob });
+                    }
+                } catch (e) {}
+            }
+        }
+    } catch(e) {}
+    return Array.from(recordingsMap.values());
 };
 
 // --- Photos & Videos ---
@@ -131,206 +251,111 @@ const getNestedDirectory = async (root: FileSystemDirectoryHandle, path: string)
         }
         return current;
     } catch (e) {
-        return null; // A directory in the path doesn't exist
+        return null;
     }
 };
 
-
 const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
-    const productDir = await getOrCreateNestedDirectory(dirHandle, photo.folder || '_uncategorized');
-    const metadata: Omit<Photo, 'imageBlob'> = { ...photo };
-    delete (metadata as any).imageBlob;
+    const { imageBlob, ...metadata } = photo;
     const ext = photo.imageMimeType.split('/')[1] || 'png';
-    await writeFile(productDir, `${photo.id}.json`, JSON.stringify(metadata, null, 2));
-    await writeFile(productDir, `${photo.id}.${ext}`, photo.imageBlob);
+    await savePairedEntity(dirHandle, photo, imageBlob, ext, metadata);
 };
 
 const deletePhotoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
-    try {
-        const productDir = await getNestedDirectory(dirHandle, photo.folder || '_uncategorized');
-        if (!productDir) return; // Folder doesn't exist, so nothing to delete.
-        const ext = photo.imageMimeType.split('/')[1] || 'png';
-        try { await productDir.removeEntry(`${photo.id}.json`); } catch(e) {}
-        try { await productDir.removeEntry(`${photo.id}.${ext}`); } catch(e) {}
-    } catch (e) { /* Parent dirs might not exist, ignore */ }
+    const ext = photo.imageMimeType.split('/')[1] || 'png';
+    await deletePairedEntity(dirHandle, photo, ext);
 };
 
 const saveVideoToDirectory = async (dirHandle: FileSystemDirectoryHandle, video: Video) => {
-    const productDir = await getOrCreateNestedDirectory(dirHandle, video.folder || '_uncategorized');
-    const metadata: Omit<Video, 'videoBlob'> = { ...video };
-    delete (metadata as any).videoBlob;
+    const { videoBlob, ...metadata } = video;
     const ext = video.videoMimeType.split('/')[1] || 'mp4';
-    await writeFile(productDir, `${video.id}.json`, JSON.stringify(metadata, null, 2));
-    await writeFile(productDir, `${video.id}.${ext}`, video.videoBlob);
+    await savePairedEntity(dirHandle, video, videoBlob, ext, metadata);
 };
 
 const deleteVideoFromDirectory = async (dirHandle: FileSystemDirectoryHandle, video: Video) => {
-    try {
-        const productDir = await getNestedDirectory(dirHandle, video.folder || '_uncategorized');
-        if (!productDir) return;
-        const ext = video.videoMimeType.split('/')[1] || 'mp4';
-        try { await productDir.removeEntry(`${video.id}.json`); } catch(e) {}
-        try { await productDir.removeEntry(`${video.id}.${ext}`); } catch(e) {}
-    } catch(e) {}
+    const ext = video.videoMimeType.split('/')[1] || 'mp4';
+    await deletePairedEntity(dirHandle, video, ext);
 };
 
 const reservedDirs = ['recordings', 'notes', 'logs', 'note_recordings', 'calendar_events', 'videos'];
 
-const loadPhotosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Photo[]> => {
-    const photos: Photo[] = [];
-    const processDirectory = async (dir: FileSystemDirectoryHandle) => {
-        for await (const entry of dir.values()) {
-            if (entry.kind === 'directory') {
-                if (!reservedDirs.includes(entry.name)) {
-                    await processDirectory(entry as FileSystemDirectoryHandle);
-                }
-            } else if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-                try {
-                    const file = await (entry as FileSystemFileHandle).getFile();
-                    const text = await file.text();
-                    if (text.includes('"imageMimeType"')) {
-                        const metadata = JSON.parse(text);
-                        if (metadata.id && metadata.folder && metadata.date) {
-                            const ext = metadata.imageMimeType?.split('/')[1] || 'png';
-                            const imageHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
-                            const imageBlob = await imageHandle.getFile();
-                            photos.push({ ...metadata, imageBlob });
-                        }
-                    }
-                } catch (e) {
-                     if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
-                         console.error(`Could not process potential photo metadata file ${entry.name} in ${dir.name}:`, e);
-                    }
-                }
+const loadMediaFromDirectory = async <T extends Photo | Video>(dirHandle: FileSystemDirectoryHandle, mediaType: 'photo' | 'video'): Promise<T[]> => {
+    const mediaMap = new Map<string, T>();
+    const typeGuardString = mediaType === 'photo' ? '"imageMimeType"' : '"videoMimeType"';
+    const mimeTypeField = mediaType === 'photo' ? 'imageMimeType' : 'videoMimeType';
+    const blobField = mediaType === 'photo' ? 'imageBlob' : 'videoBlob';
+    const defaultExt = mediaType === 'photo' ? 'png' : 'mp4';
+
+    const processJsonEntry = async (entry: FileSystemFileHandle, jsonDir: FileSystemDirectoryHandle, dataRootDir: FileSystemDirectoryHandle) => {
+        try {
+            const file = await entry.getFile();
+            const text = await file.text();
+            if (!text.includes(typeGuardString)) return;
+
+            const metadata = JSON.parse(text);
+            if (!metadata.id || !metadata.folder || mediaMap.has(metadata.id)) return;
+            
+            const mediaFolderHandle = await getNestedDirectory(dataRootDir, metadata.folder);
+            if (mediaFolderHandle) {
+                const ext = metadata[mimeTypeField]?.split('/')[1] || defaultExt;
+                const mediaFileHandle = await mediaFolderHandle.getFileHandle(`${metadata.id}.${ext}`);
+                const mediaBlob = await mediaFileHandle.getFile();
+                mediaMap.set(metadata.id, { ...metadata, [blobField]: mediaBlob } as T);
             }
+        } catch(e) {
+            if (!(e instanceof DOMException && e.name === 'NotFoundError')) console.warn(`Could not process ${mediaType} metadata ${entry.name}:`, e);
         }
     };
-    await processDirectory(dirHandle);
-    return photos;
-}
 
-const loadVideosFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Video[]> => {
-    const videos: Video[] = [];
-     const processDirectory = async (dir: FileSystemDirectoryHandle) => {
-        for await (const entry of dir.values()) {
-            if (entry.kind === 'directory') {
-                if (!reservedDirs.includes(entry.name)) {
-                    await processDirectory(entry as FileSystemDirectoryHandle);
-                }
-            } else if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-                try {
-                    const file = await (entry as FileSystemFileHandle).getFile();
-                    const text = await file.text();
-                    if (text.includes('"videoMimeType"')) {
-                        const metadata = JSON.parse(text);
-                        if (metadata.id && metadata.folder && metadata.date) {
-                            const ext = metadata.videoMimeType?.split('/')[1] || 'mp4';
-                            const videoHandle = await dir.getFileHandle(`${metadata.id}.${ext}`);
-                            const videoBlob = await videoHandle.getFile();
-                            videos.push({ ...metadata, videoBlob });
-                        }
-                    }
-                } catch (e) {
-                     if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
-                         console.error(`Could not process potential video metadata file ${entry.name} in ${dir.name}:`, e);
-                    }
-                }
+    // 1. New structure
+    try {
+        const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
+        const scan = async (dir: FileSystemDirectoryHandle) => {
+            for await (const entry of dir.values()) {
+                // FIX: Check entry.kind and cast to the correct handle type before recursive call.
+                if (entry.kind === 'directory') await scan(entry as FileSystemDirectoryHandle);
+                // FIX: Check entry.kind and cast to the correct handle type before passing to function.
+                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir, dirHandle);
             }
-        }
-    };
-    await processDirectory(dirHandle);
-    return videos;
-}
-
-
-// --- Notes ---
-const saveNoteToDirectory = async (dirHandle: FileSystemDirectoryHandle, note: Note) => {
-    const notesDir = await getOrCreateDirectory(dirHandle, 'notes');
-    await writeFile(notesDir, `${note.id}.json`, JSON.stringify(note, null, 2));
+        };
+        await scan(jsonBackupRoot);
+    } catch(e) {}
+    
+    // 2. Old structure
+    try {
+        const scan = async (dir: FileSystemDirectoryHandle, path: string[]) => {
+            if (path.length === 0 && (reservedDirs.includes(dir.name) || dir.name === JSON_BACKUPS_DIR)) return;
+            for await (const entry of dir.values()) {
+                // FIX: Check entry.kind and cast to the correct handle type before recursive call.
+                if (entry.kind === 'directory') await scan(entry as FileSystemDirectoryHandle, [...path, entry.name]);
+                // FIX: Check entry.kind and cast to the correct handle type before passing to function.
+                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir, dir);
+            }
+        };
+        await scan(dirHandle, []);
+    } catch(e) {}
+    
+    return Array.from(mediaMap.values());
 };
 
-const deleteNoteFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
-    try {
-        const notesDir = await dirHandle.getDirectoryHandle('notes');
-        await notesDir.removeEntry(`${id}.json`);
-    } catch(e) {}
-}
-
-const loadNotesFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<Note[]> => {
-    const notes: Note[] = [];
-    try {
-        const notesDir = await dirHandle.getDirectoryHandle('notes');
-        for await (const entry of notesDir.values()) {
-            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-                try {
-                    const file = await (entry as FileSystemFileHandle).getFile();
-                    notes.push(JSON.parse(await file.text()));
-                } catch(e) { console.error(`Failed to load note ${entry.name}`, e); }
-            }
-        }
-    } catch(e) { /* notes dir doesn't exist */ }
-    return notes;
-}
-
-// --- Log Entries ---
-const saveLogEntryToDirectory = async (dirHandle: FileSystemDirectoryHandle, entry: LogEntry) => {
-    const logsDir = await getOrCreateDirectory(dirHandle, 'logs');
-    await writeFile(logsDir, `${entry.id}.json`, JSON.stringify(entry, null, 2));
-};
-
-const deleteLogEntryFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
-    try {
-        const logsDir = await dirHandle.getDirectoryHandle('logs');
-        await logsDir.removeEntry(`${id}.json`);
-    } catch(e) {}
-}
-
-const loadLogEntriesFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<LogEntry[]> => {
-    const entries: LogEntry[] = [];
-    try {
-        const logsDir = await dirHandle.getDirectoryHandle('logs');
-        for await (const entry of logsDir.values()) {
-            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-                try {
-                    const file = await (entry as FileSystemFileHandle).getFile();
-                    entries.push(JSON.parse(await file.text()));
-                } catch(e) { console.error(`Failed to load log entry ${entry.name}`, e); }
-            }
-        }
-    } catch(e) { /* logs dir doesn't exist */ }
-    return entries;
-}
-
-// --- Calendar Events ---
-const saveCalendarEventToDirectory = async (dirHandle: FileSystemDirectoryHandle, event: CalendarEvent) => {
-    const eventsDir = await getOrCreateDirectory(dirHandle, 'calendar_events');
-    await writeFile(eventsDir, `${event.id}.json`, JSON.stringify(event, null, 2));
-};
-
-const deleteCalendarEventFromDirectory = async (dirHandle: FileSystemDirectoryHandle, id: string) => {
-    try {
-        const eventsDir = await dirHandle.getDirectoryHandle('calendar_events');
-        await eventsDir.removeEntry(`${id}.json`);
-    } catch(e) {}
-}
-
-const loadCalendarEventsFromDirectory = async (dirHandle: FileSystemDirectoryHandle): Promise<CalendarEvent[]> => {
-    const events: CalendarEvent[] = [];
-    try {
-        const eventsDir = await dirHandle.getDirectoryHandle('calendar_events');
-        for await (const entry of eventsDir.values()) {
-            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
-                try {
-                    const file = await (entry as FileSystemFileHandle).getFile();
-                    events.push(JSON.parse(await file.text()));
-                } catch(e) { console.error(`Failed to load calendar event ${entry.name}`, e); }
-            }
-        }
-    } catch(e) { /* calendar_events dir doesn't exist */ }
-    return events;
-}
+const loadPhotosFromDirectory = (dirHandle: FileSystemDirectoryHandle): Promise<Photo[]> => loadMediaFromDirectory<Photo>(dirHandle, 'photo');
+const loadVideosFromDirectory = (dirHandle: FileSystemDirectoryHandle): Promise<Video[]> => loadMediaFromDirectory<Video>(dirHandle, 'video');
 
 
+// --- Notes, Logs, Calendar ---
+const saveNoteToDirectory = (dirHandle: FileSystemDirectoryHandle, note: Note) => saveJsonOnlyEntity(dirHandle, 'notes', note);
+const deleteNoteFromDirectory = (dirHandle: FileSystemDirectoryHandle, id: string) => deleteJsonOnlyEntity(dirHandle, 'notes', id);
+const loadNotesFromDirectory = (dirHandle: FileSystemDirectoryHandle): Promise<Note[]> => loadJsonOnlyEntities<Note>(dirHandle, 'notes');
+
+const saveLogEntryToDirectory = (dirHandle: FileSystemDirectoryHandle, entry: LogEntry) => saveJsonOnlyEntity(dirHandle, 'logs', entry);
+const deleteLogEntryFromDirectory = (dirHandle: FileSystemDirectoryHandle, id: string) => deleteJsonOnlyEntity(dirHandle, 'logs', id);
+const loadLogEntriesFromDirectory = (dirHandle: FileSystemDirectoryHandle): Promise<LogEntry[]> => loadJsonOnlyEntities<LogEntry>(dirHandle, 'logs');
+
+const saveCalendarEventToDirectory = (dirHandle: FileSystemDirectoryHandle, event: CalendarEvent) => saveJsonOnlyEntity(dirHandle, 'calendar_events', event);
+const deleteCalendarEventFromDirectory = (dirHandle: FileSystemDirectoryHandle, id: string) => deleteJsonOnlyEntity(dirHandle, 'calendar_events', id);
+const loadCalendarEventsFromDirectory = (dirHandle: FileSystemDirectoryHandle): Promise<CalendarEvent[]> => loadJsonOnlyEntities<CalendarEvent>(dirHandle, 'calendar_events');
+
+// --- Bulk Save ---
 const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data: { recordings: Recording[], photos: Photo[], videos: Video[], notes: Note[], noteRecordings: NoteRecording[], logEntries: LogEntry[], calendarEvents: CalendarEvent[] }) => {
     for (const rec of data.recordings) await saveRecordingToDirectory(dirHandle, rec);
     for (const photo of data.photos) await savePhotoToDirectory(dirHandle, photo);
@@ -341,25 +366,22 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
     for (const event of data.calendarEvents) await saveCalendarEventToDirectory(dirHandle, event);
 }
 
+// --- Product Description Specific ---
 const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item: ParsedProductData, structuredData: Record<string, string>) => {
     const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
-
     const brandFolder = sanitize(item.brand) || 'Unbranded';
-    
-    // Use sanitized SKU if available, otherwise fallback to a sanitized product name.
     const productIdentifier = sanitize(item.sku) || sanitize(item.name);
-    
-    // As a last resort if both SKU and name are empty, use a timestamp
     const skuFolder = productIdentifier || `product_${Date.now()}`;
-    
     const productPath = `Generated_Content/${brandFolder}/${skuFolder}`;
-    const productDirHandle = await getOrCreateNestedDirectory(dirHandle, productPath);
 
-    // Save the main description text file
+    // Save main description text file
+    const productDirHandle = await getOrCreateNestedDirectory(dirHandle, productPath);
     await writeFile(productDirHandle, `description.txt`, item.fullText);
     
-    // Also save the structured data as a JSON file for easy machine reading
-    await writeFile(productDirHandle, 'details.json', JSON.stringify(structuredData, null, 2));
+    // Save structured data to JSON backup folder
+    const jsonBackupRoot = await getOrCreateDirectory(dirHandle, JSON_BACKUPS_DIR);
+    const jsonProductDirHandle = await getOrCreateNestedDirectory(jsonBackupRoot, productPath);
+    await writeFile(jsonProductDirHandle, 'details.json', JSON.stringify(structuredData, null, 2));
 }
 
 // --- New Functions for File Browser ---
@@ -382,6 +404,10 @@ const listDirectoryContents = async (rootHandle: FileSystemDirectoryHandle, path
         const contents = [];
         for await (const entry of dirHandle.values()) {
             contents.push({ name: entry.name, kind: entry.kind });
+        }
+        // Also check for virtual JSON backup folder
+        if(pathParts.length === 0 && (await rootHandle.getDirectoryHandle(JSON_BACKUPS_DIR).then(() => true).catch(() => false))) {
+            contents.push({ name: JSON_BACKUPS_DIR, kind: 'directory' });
         }
         return contents.sort((a, b) => {
             if (a.kind === b.kind) return a.name.localeCompare(b.name);
