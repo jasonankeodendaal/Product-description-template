@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Photo, Video, View } from '../App';
 import { fileSystemService } from '../services/fileSystemService';
@@ -43,7 +42,21 @@ interface DisplayItem {
     itemKind?: 'directory' | 'photo' | 'video' | 'text' | 'json' | 'unknown';
 }
 
-const FilePreviewModal: React.FC<{ content: string | Blob; fileName: string; onClose: () => void; }> = ({ content, fileName, onClose }) => {
+
+const PreviewPaneIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" {...props}>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <line x1="15" y1="3" x2="15" y2="21" />
+    </svg>
+);
+
+
+const PreviewPane: React.FC<{
+    selectedItem: DisplayItem | null;
+    content: string | Blob | null;
+    isLoading: boolean;
+    onClose: () => void;
+}> = ({ selectedItem, content, isLoading, onClose }) => {
     const [objectUrl, setObjectUrl] = useState<string | null>(null);
     const [isCopied, setIsCopied] = useState(false);
 
@@ -53,19 +66,10 @@ const FilePreviewModal: React.FC<{ content: string | Blob; fileName: string; onC
             setObjectUrl(url);
             return () => URL.revokeObjectURL(url);
         }
+        setObjectUrl(null);
     }, [content]);
 
-    const handleDownload = () => {
-        if (!objectUrl) return;
-        const link = document.createElement('a');
-        link.href = objectUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const handleCopy = () => {
+     const handleCopy = () => {
         if (typeof content === 'string') {
             navigator.clipboard.writeText(content);
             setIsCopied(true);
@@ -73,9 +77,9 @@ const FilePreviewModal: React.FC<{ content: string | Blob; fileName: string; onC
         }
     };
 
-    const renderContent = () => {
+    const renderFileContent = () => {
         if (typeof content === 'string') {
-            const isJson = fileName.endsWith('.json');
+            const isJson = selectedItem?.name.endsWith('.json');
             try {
                 const formattedContent = isJson ? JSON.stringify(JSON.parse(content), null, 2) : content;
                 return <pre className="whitespace-pre-wrap text-sm p-4 bg-black/20 rounded-md">{formattedContent}</pre>;
@@ -83,38 +87,44 @@ const FilePreviewModal: React.FC<{ content: string | Blob; fileName: string; onC
                 return <pre className="whitespace-pre-wrap text-sm p-4 bg-black/20 rounded-md">{content}</pre>;
             }
         }
-        if (objectUrl) {
-            if (content.type.startsWith('image/')) return <img src={objectUrl} alt={fileName} className="max-w-full max-h-full object-contain" />;
+        if (objectUrl && content instanceof Blob) {
+            if (content.type.startsWith('image/')) return <img src={objectUrl} alt={selectedItem?.name} className="max-w-full max-h-full object-contain" />;
             if (content.type.startsWith('video/')) return <video src={objectUrl} controls autoPlay className="max-w-full max-h-full" />;
         }
-        return <p>Unsupported file type for preview.</p>;
+        return <p className="text-gray-500">Preview not available for this file type.</p>;
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-[var(--theme-card-bg)] w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
-                <header className="flex-shrink-0 p-4 border-b border-[var(--theme-border)] flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-[var(--theme-text-primary)] truncate">{fileName}</h2>
-                    <button onClick={onClose} className="p-2 -mr-2 text-[var(--theme-text-secondary)] hover:text-white"><XIcon /></button>
-                </header>
-                <div className="flex-grow p-6 overflow-auto flex items-center justify-center">
-                    {renderContent()}
-                </div>
+        <div className="h-full flex flex-col">
+            <header className="p-3 border-b border-[var(--theme-border)]/50 flex justify-between items-center flex-shrink-0">
+                <h3 className="font-bold text-white truncate pr-2">{selectedItem?.name || 'Preview'}</h3>
+                <button onClick={onClose} className="p-1 text-gray-400 hover:text-white"><XIcon/></button>
+            </header>
+            <div className="flex-1 p-4 overflow-auto flex items-center justify-center">
+                {isLoading ? (
+                    <Spinner />
+                ) : selectedItem && content ? (
+                    renderFileContent()
+                ) : (
+                    <div className="text-center text-gray-500">
+                        <FileTextIcon className="w-16 h-16 mx-auto opacity-30" />
+                        <p className="mt-2 text-sm">Select a file to preview its content.</p>
+                    </div>
+                )}
+            </div>
+             {selectedItem && content && (
                 <footer className="p-3 bg-black/20 border-t border-[var(--theme-border)]/50 flex justify-end gap-3">
-                    {typeof content === 'string' ? (
+                    {typeof content === 'string' && (
                         <button onClick={handleCopy} className="flex items-center gap-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-4 rounded-md text-sm">
                             {isCopied ? <CheckIcon /> : <CopyIcon />} {isCopied ? 'Copied!' : 'Copy Content'}
                         </button>
-                    ) : (
-                        <button onClick={handleDownload} className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2 px-4 rounded-md text-sm">
-                            <DownloadIcon /> Download File
-                        </button>
                     )}
                 </footer>
-            </div>
+            )}
         </div>
     );
 };
+
 
 const getFileTypeAndKind = (name: string, kind: 'directory' | 'file'): { type: string, itemKind: DisplayItem['itemKind']} => {
     if (kind === 'directory') return { type: 'Folder', itemKind: 'directory' };
@@ -176,7 +186,6 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     const [currentPath, setCurrentPath] = useState<string[]>([]);
     const [items, setItems] = useState<DisplayItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [previewFile, setPreviewFile] = useState<{ name: string; content: string | Blob } | null>(null);
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
@@ -185,13 +194,24 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     const [renameValue, setRenameValue] = useState('');
     const contextMenuRef = useRef<HTMLDivElement>(null);
 
+    // --- Preview Pane State & Logic ---
+    const [selectedItem, setSelectedItem] = useState<DisplayItem | null>(null);
+    const [previewContent, setPreviewContent] = useState<string | Blob | null>(null);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+    const [isPreviewPaneVisible, setIsPreviewPaneVisible] = useState(true);
+    const [previewPanelWidth, setPreviewPanelWidth] = useState(450); // default width
+    const isResizing = useRef(false);
+
 
     const virtualFileTree = useMemo(() => {
         if (syncMode === 'local' || syncMode === 'api' || syncMode === 'ftp') return buildFileTree(photos, videos);
         return null;
     }, [syncMode, photos, videos]);
 
-    const navigateTo = (path: string[]) => setCurrentPath(path);
+    const navigateTo = (path: string[]) => {
+        setCurrentPath(path);
+        setSelectedItem(null); // Clear selection when navigating
+    };
     
     const loadItems = useCallback(async () => {
         setIsLoading(true);
@@ -234,6 +254,80 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     }, [currentPath, syncMode, directoryHandle, virtualFileTree]);
 
     useEffect(() => { loadItems(); }, [loadItems]);
+    
+    useEffect(() => {
+        if (!selectedItem || !isPreviewPaneVisible) {
+            setPreviewContent(null);
+            return;
+        }
+
+        const fetchContent = async () => {
+            setIsPreviewLoading(true);
+            setPreviewContent(null);
+            try {
+                const fullPath = [...currentPath, selectedItem.name].join('/');
+                let content: string | Blob | undefined;
+                if (syncMode === 'folder' && directoryHandle) {
+                    content = await fileSystemService.readFileContentByPath(directoryHandle, fullPath);
+                } else {
+                    const fileId = selectedItem.id;
+                    const photo = photos.find(p => p.id === fileId);
+                    if (photo) content = photo.imageBlob;
+                    else {
+                        const video = videos.find(v => v.id === fileId);
+                        if (video) content = video.videoBlob;
+                    }
+                }
+                if (content === undefined) {
+                    setPreviewContent(`Preview not available for this file in ${syncMode} mode.`);
+                } else {
+                    setPreviewContent(content);
+                }
+            } catch (error) {
+                setPreviewContent(`Error loading preview: ${error instanceof Error ? error.message : "Unknown error"}`);
+            } finally {
+                setIsPreviewLoading(false);
+            }
+        };
+
+        fetchContent();
+    }, [selectedItem, isPreviewPaneVisible, currentPath, syncMode, directoryHandle, photos, videos]);
+
+    // --- Resizer Logic ---
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isResizing.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    }, []);
+
+    const handleMouseUp = useCallback(() => {
+        if (isResizing.current) {
+            isResizing.current = false;
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = 'auto';
+        }
+    }, []);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!isResizing.current) return;
+        const newWidth = window.innerWidth - e.clientX;
+        const minWidth = 320;
+        const maxWidth = window.innerWidth * 0.7;
+        if (newWidth > minWidth && newWidth < maxWidth) {
+            setPreviewPanelWidth(newWidth);
+        }
+    }, []);
+
+    useEffect(() => {
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [handleMouseMove, handleMouseUp]);
+
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -312,30 +406,11 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     }, [items, sortBy]);
 
     const handleItemClick = (item: DisplayItem) => {
-        if (item.kind === 'directory') navigateTo([...currentPath, item.name]);
-        else handleFilePreview([...currentPath, item.name].join('/'));
-    };
-
-    const handleFilePreview = async (fullPath: string) => {
-        setIsLoading(true);
-        try {
-            let content: string | Blob | undefined;
-            const fileName = fullPath.split('/').pop()!;
-            if (syncMode === 'folder' && directoryHandle) {
-                content = await fileSystemService.readFileContentByPath(directoryHandle, fullPath);
-            } else {
-                const fileId = fileName.split('.')[0];
-                const photo = photos.find(p => p.id === fileId);
-                if (photo) content = photo.imageBlob;
-                else {
-                    const video = videos.find(v => v.id === fileId);
-                    if (video) content = video.videoBlob;
-                    else alert("Preview for this file type is only available in Local Folder Sync mode.");
-                }
-            }
-            if (content) setPreviewFile({ name: fileName, content });
-        } catch (error) { alert(`Could not load file: ${error instanceof Error ? error.message : "Unknown error"}`); }
-        setIsLoading(false);
+        if (item.kind === 'directory') {
+            navigateTo([...currentPath, item.name]);
+        } else {
+            setSelectedItem(item);
+        }
     };
 
     const handleMoreClick = (e: React.MouseEvent, item: DisplayItem) => {
@@ -394,8 +469,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
     };
 
     return (
-        <div className="flex-1 flex flex-col bg-slate-900 text-[var(--theme-text-primary)] font-inter">
-            {previewFile && <FilePreviewModal content={previewFile.content} fileName={previewFile.name} onClose={() => setPreviewFile(null)} />}
+        <div className="flex-1 flex flex-col bg-transparent text-[var(--theme-text-primary)] font-inter overflow-hidden">
             
             {contextMenu && (
                 <div ref={contextMenuRef} style={{ top: contextMenu.y, left: contextMenu.x }} className="fixed z-50 bg-slate-800 border border-slate-600 rounded-md shadow-lg p-1 animate-fade-in-down flex flex-col gap-1">
@@ -430,76 +504,98 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
                 </div>
             </header>
 
-            <div className="p-2 flex-shrink-0 border-b border-[var(--theme-border)]/50 flex justify-between items-center gap-2">
-                <div className="text-sm font-semibold text-gray-400 flex items-center flex-wrap">
-                    <button onClick={() => navigateTo([])} className="hover:text-white p-1 rounded-md">Root</button>
-                    {currentPath.map((part, index) => (
-                        <React.Fragment key={index}>
-                            <ChevronRightIcon className="w-5 h-5 flex-shrink-0" />
-                            <button onClick={() => navigateTo(currentPath.slice(0, index + 1))} className="hover:text-white p-1 rounded-md">{part.replace(/_/g, ' ')}</button>
-                        </React.Fragment>
-                    ))}
-                </div>
-                <div className="flex items-center gap-2">
-                    <select value={sortBy} onChange={e => setSortBy(e.target.value as 'name' | 'date')} className="bg-slate-700 text-sm rounded-md p-1.5 focus:ring-orange-500 border-none">
-                        <option value="name">Sort by Name</option>
-                        {syncMode !== 'folder' && <option value="date">Sort by Date</option>}
-                    </select>
-                    <div className="flex items-center bg-slate-700 rounded-md p-1">
-                        <button onClick={() => setViewMode('grid')} className={`p-1 rounded ${viewMode === 'grid' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}><GridIcon/></button>
-                        <button onClick={() => setViewMode('list')} className={`p-1 rounded ${viewMode === 'list' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}><ListIcon/></button>
-                    </div>
-                </div>
-            </div>
-
-            <main className="flex-1 overflow-y-auto p-4">
-                {isLoading ? <div className="h-full flex items-center justify-center"><Spinner className="w-8 h-8 text-orange-400" /></div>
-                : sortedItems.length > 0 ? (
-                    viewMode === 'grid' ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
-                            {sortedItems.map((item: DisplayItem) => (
-                                <GridItem key={item.name} item={item} photos={photos} videos={videos} currentPath={currentPath}
-                                    syncMode={syncMode}
-                                    renamingItem={renamingItem}
-                                    renameValue={renameValue}
-                                    setRenameValue={setRenameValue}
-                                    handleRename={handleRename}
-                                    setRenamingItem={setRenamingItem}
-                                    onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
-                                    onMoreClick={(e) => handleMoreClick(e, item)}
-                                    onDeleteClick={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
-                                />
+            <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="p-2 flex-shrink-0 border-b border-[var(--theme-border)]/50 flex justify-between items-center gap-2">
+                        <div className="text-sm font-semibold text-gray-400 flex items-center flex-wrap">
+                            <button onClick={() => navigateTo([])} className="hover:text-white p-1 rounded-md">Root</button>
+                            {currentPath.map((part, index) => (
+                                <React.Fragment key={index}>
+                                    <ChevronRightIcon className="w-5 h-5 flex-shrink-0" />
+                                    <button onClick={() => navigateTo(currentPath.slice(0, index + 1))} className="hover:text-white p-1 rounded-md">{part.replace(/_/g, ' ')}</button>
+                                </React.Fragment>
                             ))}
                         </div>
-                    ) : (
-                         <div className="space-y-1">
-                             {sortedItems.map((item: DisplayItem) => (
-                                <ListItem key={item.name} item={item} 
-                                    syncMode={syncMode}
-                                    renamingItem={renamingItem}
-                                    renameValue={renameValue}
-                                    setRenameValue={setRenameValue}
-                                    handleRename={handleRename}
-                                    setRenamingItem={setRenamingItem}
-                                    onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
-                                    onMoreClick={(e) => handleMoreClick(e, item)}
-                                    onDeleteClick={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
-                                />
-                             ))}
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setIsPreviewPaneVisible(p => !p)} className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-md ${isPreviewPaneVisible ? 'bg-orange-500/20 text-orange-400' : 'text-gray-400 hover:bg-slate-700'}`}>
+                                <PreviewPaneIcon />
+                                <span className="hidden sm:inline">Preview</span>
+                            </button>
+                            <select value={sortBy} onChange={e => setSortBy(e.target.value as 'name' | 'date')} className="bg-slate-700 text-sm rounded-md p-1.5 focus:ring-orange-500 border-none">
+                                <option value="name">Sort by Name</option>
+                                {syncMode !== 'folder' && <option value="date">Sort by Date</option>}
+                            </select>
+                            <div className="flex items-center bg-slate-700 rounded-md p-1">
+                                <button onClick={() => setViewMode('grid')} className={`p-1 rounded ${viewMode === 'grid' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}><GridIcon/></button>
+                                <button onClick={() => setViewMode('list')} className={`p-1 rounded ${viewMode === 'list' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}><ListIcon/></button>
+                            </div>
                         </div>
-                    )
-                ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 text-center">
-                        <FolderIcon className="w-16 h-16 mb-4" />
-                        <p className="font-semibold text-lg">This folder is empty</p>
                     </div>
+
+                    <main className="flex-1 overflow-y-auto p-4">
+                        {isLoading ? <div className="h-full flex items-center justify-center"><Spinner className="w-8 h-8 text-orange-400" /></div>
+                        : sortedItems.length > 0 ? (
+                            viewMode === 'grid' ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+                                    {sortedItems.map((item: DisplayItem) => (
+                                        <GridItem key={item.name} item={item} photos={photos} videos={videos} currentPath={currentPath}
+                                            syncMode={syncMode}
+                                            renamingItem={renamingItem}
+                                            renameValue={renameValue}
+                                            setRenameValue={setRenameValue}
+                                            handleRename={handleRename}
+                                            setRenamingItem={setRenamingItem}
+                                            onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
+                                            onMoreClick={(e) => handleMoreClick(e, item)}
+                                            onDeleteClick={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    {sortedItems.map((item: DisplayItem) => (
+                                        <ListItem key={item.name} item={item} 
+                                            syncMode={syncMode}
+                                            renamingItem={renamingItem}
+                                            renameValue={renameValue}
+                                            setRenameValue={setRenameValue}
+                                            handleRename={handleRename}
+                                            setRenamingItem={setRenamingItem}
+                                            onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
+                                            onMoreClick={(e) => handleMoreClick(e, item)}
+                                            onDeleteClick={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
+                                        />
+                                    ))}
+                                </div>
+                            )
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-500 text-center">
+                                <FolderIcon className="w-16 h-16 mb-4" />
+                                <p className="font-semibold text-lg">This folder is empty</p>
+                            </div>
+                        )}
+                    </main>
+                </div>
+
+                {isPreviewPaneVisible && (
+                    <>
+                        <div
+                            className="w-1.5 cursor-col-resize bg-slate-700/50 hover:bg-orange-500 transition-colors flex-shrink-0"
+                            onMouseDown={handleMouseDown}
+                        />
+                        <aside
+                            className="flex-shrink-0 h-full overflow-hidden bg-slate-950/50 flex flex-col"
+                            style={{ width: previewPanelWidth }}
+                        >
+                            <PreviewPane selectedItem={selectedItem} content={previewContent} isLoading={isPreviewLoading} onClose={() => setIsPreviewPaneVisible(false)} />
+                        </aside>
+                    </>
                 )}
-            </main>
+
+            </div>
         </div>
     );
 };
-
-// --- Sub-components for Grid and List Items ---
 
 const GridItem: React.FC<{ 
     item: DisplayItem; onItemClick: () => void; onMoreClick: (e: React.MouseEvent) => void; onDeleteClick: (e: React.MouseEvent) => void; photos: Photo[]; videos: Video[]; currentPath: string[]; syncMode?: FileBrowserProps['syncMode'];

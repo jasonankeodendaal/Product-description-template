@@ -196,7 +196,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
     const handleToggleSelectAll = () => allSelected ? setSelectedIds(new Set()) : handleSelectAll();
 
     return (
-        <div className="flex-1 flex flex-col bg-[#0D1117] overflow-hidden">
+        <div className="flex-1 flex flex-col bg-transparent overflow-hidden">
             <input type="file" ref={cameraInputRef} className="sr-only" onChange={(e) => handleFileUpload(e.target.files)} accept="image/*" capture="environment" />
             {selectedPhoto && <PhotoDetailModal photo={selectedPhoto} onUpdate={onUpdate} onDelete={handleDeletePhoto} onClose={() => setSelectedPhoto(null)} />}
            
