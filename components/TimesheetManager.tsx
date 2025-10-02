@@ -47,6 +47,14 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
 
+    const allEntryDates = useMemo(() => {
+        const dateSet = new Set<string>();
+        logEntries.forEach(entry => {
+            dateSet.add(formatIsoToDate(entry.timestamp));
+        });
+        return Array.from(dateSet).sort((a, b) => b.localeCompare(a)); // Sort descending
+    }, [logEntries]);
+
     const { dailyStats, weeklyTotalMs, selectedDayEntries } = useMemo(() => {
         // Group entries by date
         const groupedEntries = new Map<string, LogEntry[]>();
@@ -144,8 +152,14 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
     
     const goToToday = () => setSelectedDate(new Date());
 
+    const handleDateSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const dateString = e.target.value;
+        const [year, month, day] = dateString.split('-').map(Number);
+        setSelectedDate(new Date(year, month - 1, day));
+        setIsCalendarOpen(false); // also close calendar if open
+    };
+
     const selectedDateKey = formatIsoToDate(selectedDate.toISOString());
-    const selectedDayStats = dailyStats.get(selectedDateKey) || { ms: 0, taskCount: 0 };
     const isToday = selectedDateKey === formatIsoToDate(new Date().toISOString());
 
 
@@ -207,8 +221,8 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                     <div className="bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-lg p-6">
                          <h3 className="text-lg font-semibold text-center mb-4">Summary</h3>
                          <div className="flex justify-around items-center">
-                            <StatCard title="Hours Logged" value={formatMsToHM(selectedDayStats.ms)} />
-                            <StatCard title="Tasks" value={selectedDayStats.taskCount.toString()} />
+                            <StatCard title="Hours Logged" value={formatMsToHM((dailyStats.get(selectedDateKey) || {ms: 0}).ms)} />
+                            <StatCard title="Tasks" value={(dailyStats.get(selectedDateKey) || {taskCount: 0}).taskCount.toString()} />
                             <StatCard title="This Week" value={formatMsToHM(weeklyTotalMs)} />
                          </div>
                     </div>
@@ -219,10 +233,31 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                     <div className="p-2 border-b border-[var(--theme-border)] flex flex-col sm:flex-row justify-between items-center gap-2">
                          <div className="relative flex items-center gap-2" ref={calendarRef}>
                             <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronLeftIcon /></button>
-                             <button onClick={() => setIsCalendarOpen(p => !p)} className="text-center p-2 rounded-lg hover:bg-slate-700 flex items-center gap-2">
+                            
+                            <select
+                                value={formatIsoToDate(selectedDate.toISOString())}
+                                onChange={handleDateSelectChange}
+                                className="appearance-none bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-base font-semibold text-white rounded-lg pl-3 pr-8 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none transition-colors cursor-pointer"
+                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+                                aria-label="Select a date with entries"
+                            >
+                                {allEntryDates.length > 0 ? (
+                                    allEntryDates.map(dateStr => (
+                                        <option key={dateStr} value={dateStr}>
+                                            {new Date(dateStr.replace(/-/g, '/')).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value={formatIsoToDate(selectedDate.toISOString())}>
+                                        {selectedDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </option>
+                                )}
+                            </select>
+
+                            <button onClick={() => setIsCalendarOpen(p => !p)} className="p-2 hover:bg-slate-700 rounded-full">
                                 <CalendarIcon className="w-5 h-5 text-orange-400" />
-                                <h3 className="text-lg font-semibold w-full sm:w-52">{selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric'})}</h3>
                             </button>
+
                             <button onClick={() => handleDateChange(1)} disabled={isToday} className="p-2 hover:bg-slate-700 rounded-full disabled:opacity-30 disabled:cursor-not-allowed"><ChevronRightIcon /></button>
                              {!isToday && <button onClick={goToToday} className="text-sm font-semibold text-orange-400 hover:underline">Today</button>}
 
