@@ -507,23 +507,42 @@ const stripHtml = (html: string) => {
     return doc.body.textContent?.replace(/&nbsp;/g, ' ').trim() || "";
 };
 
-const NoteCard: React.FC<{ note: Note; onSelect: (note: Note) => void; isSelected: boolean }> = ({ note, onSelect, isSelected }) => {
+const NoteCard: React.FC<{ 
+    note: Note; 
+    onSelect: (note: Note) => void; 
+    onDelete: (note: Note) => void;
+    isSelected: boolean; 
+}> = ({ note, onSelect, onDelete, isSelected }) => {
+
+    const handleDeleteClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDelete(note);
+    };
+
     return (
-        <button
+        <div
             onClick={() => onSelect(note)}
-            className={`w-full text-left p-3 rounded-lg border-2 transition-all duration-200 ${
+            className={`relative group w-full text-left p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
                 isSelected
                     ? `bg-[var(--theme-card-bg)] border-[var(--theme-orange)]`
                     : `bg-[var(--theme-bg)]/50 border-transparent hover:bg-[var(--theme-card-bg)]/80 hover:border-[var(--theme-border)]`
             }`}
         >
-            <h3 className="font-bold truncate text-[var(--theme-text-primary)]">{note.title}</h3>
+            <h3 className="font-bold truncate text-[var(--theme-text-primary)] pr-8">{note.title}</h3>
             <p className="text-sm text-[var(--theme-text-secondary)] line-clamp-2 mt-1">{stripHtml(note.content)}</p>
             <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-[var(--theme-text-secondary)]">{new Date(note.date).toLocaleDateString()}</span>
                 <div className={`w-3 h-3 rounded-full ${colorMap[note.color]?.bg || 'bg-gray-500'}`}></div>
             </div>
-        </button>
+
+            <button
+                onClick={handleDeleteClick}
+                className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                aria-label={`Delete note ${note.title}`}
+            >
+                <TrashIcon className="w-4 h-4" />
+            </button>
+        </div>
     );
 };
 
@@ -568,8 +587,19 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
     }, [props.notes, selectedNote]);
 
     const handleDelete = async (id: string) => {
-        await props.onDelete(id);
-        setSelectedNote(null);
+        if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
+            await props.onDelete(id);
+            setSelectedNote(null);
+        }
+    };
+
+    const handleDeleteFromList = (noteToDelete: Note) => {
+        if (window.confirm(`Are you sure you want to delete "${noteToDelete.title}"? This cannot be undone.`)) {
+            props.onDelete(noteToDelete.id);
+            if (selectedNote?.id === noteToDelete.id) {
+                setSelectedNote(null);
+            }
+        }
     };
     
      const filteredNotes = useMemo(() => {
@@ -596,7 +626,13 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                      <div className="flex-grow overflow-y-auto no-scrollbar p-2 space-y-2">
                         {filteredNotes.length > 0 ? (
                             filteredNotes.map(note => (
-                                <NoteCard key={note.id} note={note} onSelect={() => handleSelectNote(note)} isSelected={selectedNote?.id === note.id} />
+                                <NoteCard 
+                                    key={note.id} 
+                                    note={note} 
+                                    onSelect={() => handleSelectNote(note)} 
+                                    isSelected={selectedNote?.id === note.id}
+                                    onDelete={handleDeleteFromList}
+                                />
                             ))
                         ) : (
                             <div className="text-center p-8 text-[var(--theme-text-secondary)]">
