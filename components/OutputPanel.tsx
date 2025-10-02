@@ -283,9 +283,13 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         if (!structuredData) return null;
         const brand = structuredData['Brand'] || 'Unbranded';
         const sku = structuredData['SKU'] || '';
-        const name = structuredData['Name'] || '';
-        const productIdentifier = sku || name || `product_${Date.now()}`;
-        return `Generated_Content/${sanitize(brand)}/${sanitize(productIdentifier)}`;
+        
+        // Strictly require an SKU to create a unique folder path for variants.
+        if (!sku.trim()) {
+            return null;
+        }
+
+        return `Generated_Content/${sanitize(brand)}/${sanitize(sku)}`;
     }, [structuredData]);
 
 
@@ -338,7 +342,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     const handleImageUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0 || !structuredData) return;
         const folderPath = getProductFolderPath();
-        if (!folderPath) return;
+        if (!folderPath) {
+            alert("Cannot link images: Product SKU is missing from the generated description. Please ensure an SKU is present to properly organize variants.");
+            return;
+        }
 
         setIsUploading(true);
         for (const file of Array.from(files)) {
@@ -373,7 +380,10 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     const handleVideoUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0 || !structuredData) return;
         const folderPath = getProductFolderPath();
-        if (!folderPath) return;
+        if (!folderPath) {
+            alert("Cannot link videos: Product SKU is missing from the generated description. Please ensure an SKU is present to properly organize variants.");
+            return;
+        }
         
         setIsUploadingVideo(true);
         for (const file of Array.from(files)) {
@@ -486,7 +496,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         </div>
       </div>
 
-      {structuredData && (
+      {structuredData && getProductFolderPath() && (
         <>
             <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
                 <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Images</h3>

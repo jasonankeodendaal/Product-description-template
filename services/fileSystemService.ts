@@ -370,8 +370,12 @@ const saveAllDataToDirectory = async (dirHandle: FileSystemDirectoryHandle, data
 const saveProductDescription = async (dirHandle: FileSystemDirectoryHandle, item: ParsedProductData, structuredData: Record<string, string>) => {
     const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
     const brandFolder = sanitize(item.brand) || 'Unbranded';
-    const productIdentifier = sanitize(item.sku) || sanitize(item.name);
-    const skuFolder = productIdentifier || `product_${Date.now()}`;
+    
+    if (!item.sku || !item.sku.trim()) {
+        throw new Error("Cannot save to folder: SKU is missing. Please ensure the SKU is present in the product information to properly separate variants.");
+    }
+
+    const skuFolder = sanitize(item.sku);
     const productPath = `Generated_Content/${brandFolder}/${skuFolder}`;
 
     // Save main description text file
