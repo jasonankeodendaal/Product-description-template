@@ -13,6 +13,7 @@ import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { XIcon } from './icons/XIcon';
 import { CheckIcon } from './icons/CheckIcon';
+import { formatDateGroup } from '../utils/formatters';
 
 interface PhotoManagerProps {
     photos: Photo[];
@@ -58,10 +59,8 @@ const PhotoDetailModal: React.FC<{
     };
     
     const handleDelete = async () => {
-        if (window.confirm(`Are you sure you want to delete "${photo.name}"?`)) {
-            await onDelete(photo);
-            onClose();
-        }
+        await onDelete(photo);
+        onClose();
     };
 
     return (
@@ -106,6 +105,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
     const [uploadCount, setUploadCount] = useState(0);
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [viewGroup, setViewGroup] = useState<'date' | 'folder'>('date');
     
     useEffect(() => {
         if (selectedPhoto && !photos.find(p => p.id === selectedPhoto.id)) {
@@ -113,21 +113,47 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
         }
     }, [photos, selectedPhoto]);
 
-    const photosByFolder: Record<string, Photo[]> = useMemo(() => {
-        const sorted = [...photos].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const groupedPhotos = useMemo(() => {
+        const sorted = [...photos].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         const filtered = sorted.filter(p =>
             p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.notes.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.folder.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
         );
-        return filtered.reduce((acc, photo) => {
-            const folder = photo.folder || '_uncategorized';
-            if (!acc[folder]) acc[folder] = [];
-            acc[folder].push(photo);
-            return acc;
-        }, {} as Record<string, Photo[]>);
-    }, [photos, searchTerm]);
+
+        if (viewGroup === 'date') {
+            return filtered.reduce((acc, photo) => {
+                const group = formatDateGroup(photo.date);
+                if (!acc[group]) acc[group] = [];
+                acc[group].push(photo);
+                return acc;
+            }, {} as Record<string, Photo[]>);
+        } else { // 'folder'
+            return filtered.reduce((acc, photo) => {
+                const folder = photo.folder || '_uncategorized';
+                if (!acc[folder]) acc[folder] = [];
+                acc[folder].push(photo);
+                return acc;
+            }, {} as Record<string, Photo[]>);
+        }
+    }, [photos, searchTerm, viewGroup]);
+
+    const sortedGroupKeys = useMemo(() => {
+        const keys = Object.keys(groupedPhotos);
+        if (viewGroup === 'date') {
+            const groupOrder = ["Today", "Yesterday", "This Week", "Last Week", "This Month"];
+            return keys.sort((a, b) => {
+                const aIndex = groupOrder.indexOf(a);
+                const bIndex = groupOrder.indexOf(b);
+                if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+                if (aIndex !== -1) return -1;
+                if (bIndex !== -1) return 1;
+                return b.localeCompare(a); // Sort month-year strings descending
+            });
+        }
+        return keys.sort(); // Sort folder names alphabetically
+    }, [groupedPhotos, viewGroup]);
 
     const handleFileUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0) return;
@@ -146,7 +172,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
     }, [onSave]);
     
     const handleDeletePhoto = useCallback(async (photo: Photo) => {
-        if (window.confirm(`Are you sure you want to delete "${photo.name}"?`)) { await onDelete(photo); }
+        await onDelete(photo);
     }, [onDelete]);
 
     const toggleSelection = (id: string) => {
@@ -158,15 +184,13 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
     };
 
     const handleDeleteSelected = async () => {
-        if (window.confirm(`Are you sure you want to delete ${selectedIds.size} selected photos?`)) {
-            const photosToDelete = photos.filter(p => selectedIds.has(p.id));
-            await Promise.all(photosToDelete.map(p => onDelete(p)));
-            setSelectedIds(new Set());
-            setSelectionMode(false);
-        }
+        const photosToDelete = photos.filter(p => selectedIds.has(p.id));
+        await Promise.all(photosToDelete.map(p => onDelete(p)));
+        setSelectedIds(new Set());
+        setSelectionMode(false);
     };
 
-    const allVisiblePhotoIds = useMemo(() => Object.values(photosByFolder).flat().map(p => p.id), [photosByFolder]);
+    const allVisiblePhotoIds = useMemo(() => Object.values(groupedPhotos).flat().map(p => p.id), [groupedPhotos]);
     const handleSelectAll = () => setSelectedIds(new Set(allVisiblePhotoIds));
     const allSelected = allVisiblePhotoIds.length > 0 && selectedIds.size === allVisiblePhotoIds.length;
     const handleToggleSelectAll = () => allSelected ? setSelectedIds(new Set()) : handleSelectAll();
@@ -182,7 +206,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
                 } catch(e) { console.error("Failed to save captured photo:", e); alert("Failed to save captured photo."); } 
                 finally { setIsUploading(false); setUploadCount(0); }
             }}/>}
-            {selectedPhoto && <PhotoDetailModal photo={selectedPhoto} onUpdate={onUpdate} onDelete={onDelete} onClose={() => setSelectedPhoto(null)} />}
+            {selectedPhoto && <PhotoDetailModal photo={selectedPhoto} onUpdate={onUpdate} onDelete={handleDeletePhoto} onClose={() => setSelectedPhoto(null)} />}
            
             <header className="photo-manager-header">
                 <div className="relative flex-grow">
@@ -198,6 +222,10 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
                     />
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-full">
+                        <button onClick={() => setViewGroup('date')} className={`px-3 py-1 text-xs font-semibold rounded-full ${viewGroup === 'date' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}>Date</button>
+                        <button onClick={() => setViewGroup('folder')} className={`px-3 py-1 text-xs font-semibold rounded-full ${viewGroup === 'folder' ? 'bg-orange-500 text-black' : 'text-gray-300'}`}>Folder</button>
+                    </div>
                     <button 
                         onClick={() => { setSelectionMode(p => !p); setSelectedIds(new Set()); }} 
                         className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${selectionMode ? 'bg-orange-500/20 text-orange-400' : 'bg-white/10 text-white/80'}`}
@@ -215,12 +243,12 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
                         <p className="text-sm mt-1">Use the camera or upload buttons to add your first photo.</p>
                     </div>
                 ) : (
-                    Object.entries(photosByFolder).map(([folder, folderPhotos]) => (
-                        <section key={folder}>
-                            <h3 className="folder-grid-header">{folder.replace(/_/g, ' ')} ({folderPhotos.length})</h3>
+                    sortedGroupKeys.map(group => (
+                        <section key={group}>
+                            <h3 className="folder-grid-header">{group.replace(/_/g, ' ')} ({groupedPhotos[group].length})</h3>
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 px-4">
-                                {isUploading && folder === '_uncategorized' && Array.from({ length: uploadCount }).map((_, i) => <div key={`skel-${i}`} className="aspect-square bg-[var(--theme-card-bg)]/50 rounded-md animate-pulse"></div>)}
-                                {folderPhotos.map(photo => <PhotoThumbnail key={photo.id} photo={photo} onSelect={setSelectedPhoto} onDelete={handleDeletePhoto} isSelected={selectedIds.has(photo.id)} isSelectionActive={selectionMode} onToggleSelection={toggleSelection}/>)}
+                                {isUploading && (group === 'Today' || group === '_uncategorized') && Array.from({ length: uploadCount }).map((_, i) => <div key={`skel-${i}`} className="aspect-square bg-[var(--theme-card-bg)]/50 rounded-md animate-pulse"></div>)}
+                                {groupedPhotos[group].map(photo => <PhotoThumbnail key={photo.id} photo={photo} onSelect={setSelectedPhoto} onDelete={handleDeletePhoto} isSelected={selectedIds.has(photo.id)} isSelectionActive={selectionMode} onToggleSelection={toggleSelection}/>)}
                             </div>
                         </section>
                     ))

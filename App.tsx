@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
@@ -749,18 +750,12 @@ const App: React.FC = () => {
         // This is for virtual folders in local mode.
         const photosToDelete = photos.filter(p => p.folder.startsWith(folderPath));
         const videosToDelete = videos.filter(v => v.folder.startsWith(folderPath));
-        
-        if (photosToDelete.length > 0 || videosToDelete.length > 0) {
-            if (window.confirm(`This will delete ${photosToDelete.length} photos and ${videosToDelete.length} videos in this virtual folder and all subfolders. This cannot be undone. Proceed?`)) {
-                for (const photo of photosToDelete) {
-                    await handleDeletePhoto(photo);
-                }
-                for (const video of videosToDelete) {
-                    await handleDeleteVideo(video);
-                }
-            }
-        } else {
-            alert("This virtual folder is empty.");
+
+        for (const photo of photosToDelete) {
+            await handleDeletePhoto(photo);
+        }
+        for (const video of videosToDelete) {
+            await handleDeleteVideo(video);
         }
     }, [photos, videos, handleDeletePhoto, handleDeleteVideo]);
 

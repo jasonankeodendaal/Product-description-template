@@ -569,10 +569,8 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
     }, [props.notes, selectedNote]);
 
     const handleDelete = async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
-            await props.onDelete(id);
-            setSelectedNote(null);
-        }
+        await props.onDelete(id);
+        setSelectedNote(null);
     };
     
      const filteredNotes = useMemo(() => {

@@ -7,7 +7,7 @@ import { LiveWaveform } from './LiveWaveform';
 import { WaveformPlayer } from './WaveformPlayer';
 import { MicIcon } from './icons/MicIcon';
 import { TrashIcon } from './icons/TrashIcon';
-import { formatTime, formatRelativeTime } from '../utils/formatters';
+import { formatTime, formatRelativeTime, formatDateGroup } from '../utils/formatters';
 import { SaveIcon } from './icons/SaveIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { CameraIcon } from './icons/CameraIcon';
@@ -24,7 +24,7 @@ import { PauseIcon } from './icons/PauseIcon';
 import { PlayIcon } from './icons/PlayIcon';
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
-import { ChevronDownIcon } from './icons/ChevronDownIcon';
+import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 
 
 interface RecordingManagerProps {
@@ -37,7 +37,7 @@ interface RecordingManagerProps {
     siteSettings: SiteSettings;
 }
 
-const RecordingDetailView: React.FC<{
+const RecordingDetailContent: React.FC<{
     recording: Recording;
     onUpdate: (updatedRecording: Recording) => Promise<void>;
     onTranscribe: (recording: Recording) => void;
@@ -61,19 +61,15 @@ const RecordingDetailView: React.FC<{
     const handleSaveChanges = () => { if (JSON.stringify(localRecording) !== JSON.stringify(recording)) { onUpdate(localRecording); }};
     
     const handleUnlinkPhoto = useCallback((photoToUnlink: Photo) => {
-        if (window.confirm(`Are you sure you want to unlink "${photoToUnlink.name}"?`)) {
-            const updatedPhotoIds = localRecording.photoIds.filter(id => id !== photoToUnlink.id);
-            onUpdate({ ...localRecording, photoIds: updatedPhotoIds });
-        }
+        const updatedPhotoIds = localRecording.photoIds.filter(id => id !== photoToUnlink.id);
+        onUpdate({ ...localRecording, photoIds: updatedPhotoIds });
     }, [localRecording, onUpdate]);
 
     const handleUnlinkSelectedPhotos = useCallback(() => {
-        if (window.confirm(`Are you sure you want to unlink ${selectedPhotoIds.size} selected photos?`)) {
-            const updatedPhotoIds = localRecording.photoIds.filter(id => !selectedPhotoIds.has(id));
-            onUpdate({ ...localRecording, photoIds: updatedPhotoIds });
-            setSelectedPhotoIds(new Set());
-            setIsSelectionActive(false);
-        }
+        const updatedPhotoIds = localRecording.photoIds.filter(id => !selectedPhotoIds.has(id));
+        onUpdate({ ...localRecording, photoIds: updatedPhotoIds });
+        setSelectedPhotoIds(new Set());
+        setIsSelectionActive(false);
     }, [localRecording, onUpdate, selectedPhotoIds]);
 
     const togglePhotoSelection = (id: string) => {
@@ -165,16 +161,31 @@ const RecordingDetailView: React.FC<{
     )
 });
 
+
 export const RecordingManager: React.FC<RecordingManagerProps> = ({ recordings, onSave, onUpdate, onDelete, photos, onSavePhoto, siteSettings }) => {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
+    const [isDetailViewClosing, setIsDetailViewClosing] = useState(false);
     const { isRecording, isPaused, recordingTime, audioBlob, startRecording, stopRecording, pauseRecording, resumeRecording, analyserNode, setAudioBlob } = useRecorder();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [showRecorder, setShowRecorder] = useState(false);
+    
+    useEffect(() => {
+        // If the selected recording is deleted from the main list, close the detail view.
+        if (selectedRecording && !recordings.find(r => r.id === selectedRecording.id)) {
+            setSelectedRecording(null);
+        }
+    }, [recordings, selectedRecording]);
+    
+    const handleSelectRecording = (rec: Recording) => { setSelectedRecording(rec); };
 
-    const handleSelectRecording = useCallback((id: string) => {
-        setSelectedId(prev => (prev === id ? null : id));
-    }, []);
+    const handleCloseDetailView = () => {
+        setIsDetailViewClosing(true);
+        setTimeout(() => {
+            setSelectedRecording(null);
+            setIsDetailViewClosing(false);
+        }, 300); // Corresponds to animation duration
+    };
 
     const handleSaveAndClose = useCallback(async () => {
         if (!audioBlob) return;
@@ -184,17 +195,13 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({ recordings, 
         setIsSaving(false);
         setShowRecorder(false);
         setAudioBlob(null);
-        setSelectedId(savedRecording.id);
+        setSelectedRecording(savedRecording);
     }, [audioBlob, onSave, setAudioBlob]);
 
     const handleDeleteRecording = useCallback(async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this recording? This action cannot be undone.")) {
-            await onDelete(id);
-            if (selectedId === id) {
-                setSelectedId(null);
-            }
-        }
-    }, [onDelete, selectedId]);
+        await onDelete(id);
+        handleCloseDetailView();
+    }, [onDelete]);
     
     const handleTranscribe = useCallback(async (recording: Recording) => {
         const recordingToUpdate = { ...recording, isTranscribing: true };
@@ -209,47 +216,112 @@ export const RecordingManager: React.FC<RecordingManagerProps> = ({ recordings, 
         }
     }, [onUpdate, siteSettings]);
 
-    const filteredRecordings = useMemo(() => {
-        return recordings.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).filter(r => 
+    const groupedRecordings = useMemo(() => {
+        const filtered = recordings.filter(r => 
             r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (r.transcript && r.transcript.toLowerCase().includes(searchTerm.toLowerCase())) ||
             r.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
         );
+        
+        const sorted = filtered.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        return sorted.reduce((acc, recording) => {
+            const group = formatDateGroup(recording.date);
+            if (!acc[group]) acc[group] = [];
+            acc[group].push(recording);
+            return acc;
+        }, {} as Record<string, Recording[]>);
+
     }, [recordings, searchTerm]);
+
+    const sortedGroupKeys = useMemo(() => {
+        const keys = Object.keys(groupedRecordings);
+        const groupOrder = ["Today", "Yesterday", "This Week", "Last Week", "This Month"];
+        return keys.sort((a, b) => {
+            const aIndex = groupOrder.indexOf(a);
+            const bIndex = groupOrder.indexOf(b);
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            return b.localeCompare(a);
+        });
+    }, [groupedRecordings]);
     
     return (
-        <div className="flex flex-col flex-1 bg-transparent backdrop-blur-2xl overflow-hidden relative">
-            <div className="p-4 border-b border-[var(--theme-border)] flex-shrink-0">
-                <div className="relative"><SearchIcon className="absolute inset-y-0 left-3 h-5 w-5 text-[var(--theme-text-secondary)]" /><input type="text" placeholder="Search recordings..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-md pl-10 pr-4 py-2" /></div>
-            </div>
-            <div className="flex-grow overflow-y-auto no-scrollbar pb-24 p-4 space-y-3">
-                {filteredRecordings.length > 0 ? (
-                    filteredRecordings.map(rec => {
-                        const isSelected = selectedId === rec.id;
-                        return (
-                            <article key={rec.id} className="bg-[var(--theme-card-bg)] rounded-xl border border-white/10 shadow-lg overflow-hidden transition-all duration-300">
-                                <header onClick={() => handleSelectRecording(rec.id)} className="p-4 flex justify-between items-center cursor-pointer hover:bg-white/5">
-                                    <div className="flex items-center gap-4 min-w-0">
-                                        <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-[var(--theme-bg)] rounded-lg text-orange-400"><MicIcon /></div>
-                                        <div className="min-w-0">
-                                            <input type="text" value={rec.name} onChange={(e) => onUpdate({...rec, name: e.target.value})} onClick={e => e.stopPropagation()} className="font-semibold truncate bg-transparent w-full focus:outline-none focus:border-b focus:border-orange-500" />
-                                            <p className="text-sm text-[var(--theme-text-secondary)]">{formatRelativeTime(rec.date)}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {rec.transcript && <TranscriptIcon className="w-5 h-5 text-gray-400" />}
-                                        {rec.photoIds.length > 0 && <PhotoIcon className="w-5 h-5 text-gray-400" />}
-                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteRecording(rec.id) }} className="p-1 text-gray-500 hover:text-red-500"><TrashIcon className="w-4 h-4"/></button>
-                                        <ChevronDownIcon className={`w-6 h-6 text-gray-400 transition-transform ${isSelected ? 'rotate-180' : ''}`} />
-                                    </div>
-                                </header>
-                                {isSelected && <RecordingDetailView recording={rec} onUpdate={onUpdate} onTranscribe={handleTranscribe} photos={photos} onSavePhoto={onSavePhoto} />}
-                            </article>
-                        )
-                    })
-                ) : (<div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]"><MicIcon className="h-12 w-12 mb-4" /><h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">Your recordings will appear here</h3><p className="text-sm mt-1">Tap the plus button to capture your first voice note.</p></div>)}
+        <div className="flex flex-col md:flex-row flex-1 bg-transparent backdrop-blur-2xl overflow-hidden relative">
+            
+            {/* LEFT PANE (LIST) */}
+            <div className={`w-full md:w-2/5 lg:w-1/3 flex flex-col border-r-0 md:border-r md:border-[var(--theme-border)] transition-transform duration-300 ease-in-out ${selectedRecording ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}`}>
+                <div className="p-4 border-b border-[var(--theme-border)] flex-shrink-0">
+                    <div className="relative"><SearchIcon className="absolute inset-y-0 left-3 h-5 w-5 text-[var(--theme-text-secondary)]" /><input type="text" placeholder="Search recordings..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-md pl-10 pr-4 py-2" /></div>
+                </div>
+                <div className="flex-grow overflow-y-auto no-scrollbar pb-24">
+                    {sortedGroupKeys.length > 0 ? (
+                        sortedGroupKeys.map(group => (
+                            <section key={group} className="py-2">
+                                <h3 className="px-4 pb-2 text-sm font-bold text-orange-400">{group}</h3>
+                                <ul className="space-y-1 px-2">
+                                    {groupedRecordings[group].map(rec => (
+                                         <li key={rec.id}>
+                                            <button 
+                                                onClick={() => handleSelectRecording(rec)}
+                                                className={`w-full text-left p-3 rounded-lg flex justify-between items-center transition-colors ${selectedRecording?.id === rec.id ? 'bg-orange-500/20' : 'hover:bg-white/5'}`}
+                                            >
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold truncate">{rec.name}</p>
+                                                    <p className="text-sm text-gray-400">{formatRelativeTime(rec.date)}</p>
+                                                </div>
+                                                 <div className="flex items-center gap-2 flex-shrink-0 pl-2">
+                                                    {rec.transcript && <TranscriptIcon className="w-4 h-4 text-gray-400" />}
+                                                    {rec.photoIds.length > 0 && <PhotoIcon className="w-4 h-4 text-gray-400" />}
+                                                </div>
+                                            </button>
+                                         </li>
+                                    ))}
+                                </ul>
+                            </section>
+                        ))
+                    ) : (<div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]"><MicIcon className="h-12 w-12 mb-4" /><h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">No recordings found</h3><p className="text-sm mt-1">Tap the plus button to start.</p></div>)}
+                </div>
             </div>
 
+            {/* RIGHT PANE / MODAL */}
+            <div className={`fixed inset-0 z-10 md:static md:w-3/5 lg:w-2/3 flex flex-col bg-[var(--theme-card-bg)] transition-transform duration-300 ease-in-out ${selectedRecording ? 'translate-x-0' : 'translate-x-full md:translate-x-0'} ${isDetailViewClosing ? 'translate-x-full md:translate-x-0' : ''}`}>
+                {selectedRecording ? (
+                    <>
+                        <header className="p-2 pr-4 border-b border-[var(--theme-border)] flex-shrink-0 flex items-center justify-between">
+                            <div className="flex items-center gap-1 flex-grow min-w-0">
+                                <button onClick={handleCloseDetailView} className="p-2 text-gray-400 hover:text-white"><ChevronLeftIcon /></button>
+                                <input 
+                                    type="text"
+                                    value={selectedRecording.name}
+                                    onChange={(e) => onUpdate({...selectedRecording, name: e.target.value})}
+                                    className="text-lg font-bold bg-transparent border-b-2 border-transparent focus:border-orange-500 focus:outline-none w-full truncate"
+                                />
+                            </div>
+                            <button onClick={() => handleDeleteRecording(selectedRecording.id)} className="p-2 text-gray-400 hover:text-red-500"><TrashIcon /></button>
+                        </header>
+                         <div className="flex-1 overflow-y-auto">
+                            <RecordingDetailContent 
+                                recording={selectedRecording}
+                                onUpdate={onUpdate}
+                                onTranscribe={handleTranscribe}
+                                photos={photos}
+                                onSavePhoto={onSavePhoto}
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <div className="hidden md:flex flex-1 items-center justify-center text-center text-gray-500 p-8">
+                        <div>
+                            <MicIcon className="h-16 w-16 mx-auto" />
+                            <h3 className="mt-4 text-xl font-semibold text-white">Select a recording</h3>
+                            <p>Choose an item from the list to see its details.</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+            
             <div className="fixed bottom-20 right-4 z-30 lg:bottom-4 flex flex-col items-end gap-4">
                  {showRecorder && (
                     <div className="p-4 bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-2xl w-80 animate-fade-in-down">

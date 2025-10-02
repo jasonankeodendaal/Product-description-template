@@ -86,7 +86,10 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
     };
 
     const handleDelete = () => {
-        if (event && window.confirm("Are you sure you want to delete this event?")) { onDelete(event.id); onClose(); }
+        if (event) {
+            onDelete(event.id);
+            onClose();
+        }
     };
     
     const handleCapture = async (dataUrl: string) => {

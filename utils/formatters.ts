@@ -51,6 +51,59 @@ export const formatIsoToReadableDateTime = (isoString?: string): string => {
     });
 };
 
+export const formatDateGroup = (isoString: string): string => {
+    const date = new Date(isoString);
+    const now = new Date();
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+    if (date.getTime() >= startOfToday.getTime()) {
+        return "Today";
+    }
+    if (date.getTime() >= startOfYesterday.getTime()) {
+        return "Yesterday";
+    }
+
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay()); // Assuming Sunday is the start of the week
+    if (date.getTime() >= startOfWeek.getTime()) {
+        return "This Week";
+    }
+    
+    const startOfLastWeek = new Date(startOfWeek);
+    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+    if (date.getTime() >= startOfLastWeek.getTime()) {
+        return "Last Week";
+    }
+
+    if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()) {
+        return "This Month";
+    }
+
+    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+};
+
+export const getWeekRangeText = (date: Date): string => {
+    const start = new Date(date);
+    start.setDate(start.getDate() - start.getDay()); // Sunday
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6); // Saturday
+
+    const startMonth = start.toLocaleString('default', { month: 'short' });
+    const endMonth = end.toLocaleString('default', { month: 'short' });
+
+    if (start.getMonth() === end.getMonth()) {
+        return `${startMonth} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`;
+    }
+    return `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}, ${end.getFullYear()}`;
+};
+
+export const getMonthRangeText = (date: Date): string => {
+    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+};
+
 export const formatRelativeTime = (isoString: string): string => {
     const now = new Date();
     const past = new Date(isoString);

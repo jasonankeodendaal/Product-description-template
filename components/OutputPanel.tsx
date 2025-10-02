@@ -139,9 +139,7 @@ const LinkedPhotoThumbnail: React.FC<{ photo: Photo; onOpenSquarer: (photo: Phot
              <button
                 onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm(`Are you sure you want to permanently delete "${photo.name}"? This action cannot be undone.`)) {
-                        onDelete(photo);
-                    }
+                    onDelete(photo);
                 }}
                 className="absolute top-0.5 right-0.5 p-0.5 bg-black/60 rounded-full text-white/80 hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
                 title="Delete Photo"
