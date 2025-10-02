@@ -31,7 +31,7 @@ export interface CreatorDetails {
 export const CREATOR_DETAILS: CreatorDetails = {
   name: 'JSTYP.me',
   slogan: "Jason's solution to your problems, Yes me!!",
-  logoSrc: 'https://i.ibb.co/RkrJ44HK/Whats-App-Image-2025-06-25-at-15-31-54-removebg-preview.png',
+  logoSrc: 'https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
   whatsapp: 'https://wa.link/nohogl',
@@ -68,7 +68,7 @@ export const CREATOR_PIN = '1723j';
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',
   slogan: "Jason's solution to your problems, Yes me!!",
-  logoSrc: 'https://i.ibb.co/RkrJ44HK/Whats-App-Image-2025-06-25-at-15-31-54-removebg-preview.png',
+  logoSrc: 'https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png',
   heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
   backgroundImageSrc: 'https://i.ibb.co/hx8Zs4c3/881f8f35-aab6-451d-a33c-eb68278f65fc.jpg',
   tel: '0695989427',
