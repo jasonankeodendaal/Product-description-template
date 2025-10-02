@@ -261,6 +261,7 @@ const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video
 
 
 export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo }) => {
+    const [editableOutput, setEditableOutput] = useState('');
     const [isCopied, setIsCopied] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
     const [isUploading, setIsUploading] = useState(false);
@@ -269,13 +270,16 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoInputRef = useRef<HTMLInputElement>(null);
-    const outputText = output?.text || '';
-    const hasOutput = outputText.trim().length > 0;
+    const hasOutput = editableOutput.trim().length > 0;
+
+    useEffect(() => {
+        setEditableOutput(output?.text || '');
+    }, [output]);
 
     const structuredData = useMemo(() => {
-        if (!outputText) return null;
-        return parseOutputToStructuredData(outputText);
-    }, [outputText]);
+        if (!editableOutput) return null;
+        return parseOutputToStructuredData(editableOutput);
+    }, [editableOutput]);
     
     const sanitize = (str: string) => (str || '').replace(/[^a-zA-Z0-9-_\.]/g, '_').trim();
     
@@ -314,30 +318,34 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
     }, [isCopied]);
 
     const handleCopy = useCallback(() => {
-        if (!outputText) return;
-        navigator.clipboard.writeText(outputText);
+        if (!editableOutput) return;
+        navigator.clipboard.writeText(editableOutput);
         setIsCopied(true);
-    }, [outputText]);
+    }, [editableOutput]);
     
     const handleSave = useCallback(async () => {
-        if (!outputText || !structuredData) return;
+        if (!editableOutput) return;
+
+        const currentStructuredData = parseOutputToStructuredData(editableOutput);
+        if (!currentStructuredData) return;
+
         setSaveState('saving');
         
         const item: ParsedProductData = {
-            brand: structuredData['Brand'] || 'Unbranded',
-            sku: structuredData['SKU'] || '', // Pass empty if not found, service will handle folder name
-            name: structuredData['Name'] || 'Unnamed Product',
-            fullText: outputText,
+            brand: currentStructuredData['Brand'] || 'Unbranded',
+            sku: currentStructuredData['SKU'] || '',
+            name: currentStructuredData['Name'] || 'Unnamed Product',
+            fullText: editableOutput,
         };
 
         try {
-            await onSaveToFolder(item, structuredData);
+            await onSaveToFolder(item, currentStructuredData);
             setSaveState('saved');
             setTimeout(() => setSaveState('idle'), 2500);
         } catch (e) {
             setSaveState('idle'); // Error is alerted in App.tsx, just reset button state
         }
-    }, [outputText, structuredData, onSaveToFolder]);
+    }, [editableOutput, onSaveToFolder]);
 
     const handleImageUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0 || !structuredData) return;
@@ -480,14 +488,18 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         )}
       </div>
 
-      <div className="bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md p-4 flex-grow min-h-[300px] text-[var(--theme-text-primary)] overflow-y-auto flex flex-col">
+      <div className="bg-[var(--theme-bg)]/80 border border-[var(--theme-border)] rounded-md flex-grow min-h-[300px] text-[var(--theme-text-primary)] overflow-y-auto flex flex-col">
         <div className="flex-grow">
             {error ? (
                 <div className="text-[var(--theme-red)] p-4 rounded-md bg-[var(--theme-red)]/10 border border-[var(--theme-red)]/30" role="alert">{error}</div>
             ) : isLoading && !hasOutput ? (
                 <SkeletonLoader />
             ) : hasOutput ? (
-                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">{outputText}</pre>
+                <textarea
+                    value={editableOutput}
+                    onChange={(e) => setEditableOutput(e.target.value)}
+                    className="w-full h-full bg-transparent p-4 font-sans text-sm leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-[var(--theme-orange)] rounded-md"
+                />
             ) : (
                 <div className="h-full flex items-center justify-center text-[var(--theme-text-secondary)]/70">
                     Your generated product description will appear here.
