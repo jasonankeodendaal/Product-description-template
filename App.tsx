@@ -745,6 +745,25 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
     }, [directoryHandle]);
 
+    const handleDeleteFolderContents = useCallback(async (folderPath: string) => {
+        // This is for virtual folders in local mode.
+        const photosToDelete = photos.filter(p => p.folder.startsWith(folderPath));
+        const videosToDelete = videos.filter(v => v.folder.startsWith(folderPath));
+        
+        if (photosToDelete.length > 0 || videosToDelete.length > 0) {
+            if (window.confirm(`This will delete ${photosToDelete.length} photos and ${videosToDelete.length} videos in this virtual folder and all subfolders. This cannot be undone. Proceed?`)) {
+                for (const photo of photosToDelete) {
+                    await handleDeletePhoto(photo);
+                }
+                for (const video of videosToDelete) {
+                    await handleDeleteVideo(video);
+                }
+            }
+        } else {
+            alert("This virtual folder is empty.");
+        }
+    }, [photos, videos, handleDeletePhoto, handleDeleteVideo]);
+
 
     const handleSaveNote = useCallback(async (note: Note) => {
         setNotes(prevNotes => {
@@ -1329,6 +1348,9 @@ const App: React.FC = () => {
                     directoryHandle={directoryHandle}
                     syncMode={siteSettings.syncMode}
                     onNavigate={setCurrentView}
+                    onDeletePhoto={handleDeletePhoto}
+                    onDeleteVideo={handleDeleteVideo}
+                    onDeleteFolderVirtual={handleDeleteFolderContents}
                 />;
             case 'calendar':
                 // This view is now handled by a modal, so this case is effectively unused.
@@ -1480,4 +1502,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-      

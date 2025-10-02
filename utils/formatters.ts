@@ -62,6 +62,14 @@ export const formatRelativeTime = (isoString: string): string => {
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
+    
+    // Check if the date is today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (past.getTime() >= today.getTime()) {
+      return past.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     if (diffInDays === 1) return `Yesterday`;
     if (diffInDays < 7) return `${diffInDays}d ago`;
     

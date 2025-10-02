@@ -1,3 +1,4 @@
+
 import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../App";
 import { SiteSettings } from "../constants";
 
@@ -61,20 +62,26 @@ const deletePairedEntity = async (dirHandle: FileSystemDirectoryHandle, entity: 
     try {
         const dataDir = await getNestedDirectory(dirHandle, dataPath);
         if (dataDir) await dataDir.removeEntry(`${entity.id}.${mediaExt}`);
-    } catch(e) {}
+    } catch(e) {
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) console.warn(`Could not delete media file for ${entity.id}:`, e);
+    }
     
     // Delete JSON from new location
     try {
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const jsonDir = await getNestedDirectory(jsonBackupRoot, dataPath);
         if (jsonDir) await jsonDir.removeEntry(`${entity.id}.json`);
-    } catch (e) {}
+    } catch (e) {
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) console.warn(`Could not delete JSON backup for ${entity.id}:`, e);
+    }
 
     // Delete JSON from old location (for migration cleanup)
     try {
         const dataDir = await getNestedDirectory(dirHandle, dataPath);
         if (dataDir) await dataDir.removeEntry(`${entity.id}.json`);
-    } catch(e) {}
+    } catch(e) {
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) console.warn(`Could not delete legacy JSON for ${entity.id}:`, e);
+    }
 };
 
 // --- JSON-Only Entities (Notes, Logs, etc.) ---
@@ -477,6 +484,16 @@ const readFileContentByPath = async (rootHandle: FileSystemDirectoryHandle, path
     }
 };
 
+const deleteItemFromDirectory = async (
+    rootHandle: FileSystemDirectoryHandle,
+    path: string[],
+    itemName: string,
+    isRecursive: boolean
+): Promise<void> => {
+    const parentHandle = await getDirectoryHandleByPath(rootHandle, path);
+    await parentHandle.removeEntry(itemName, { recursive: isRecursive });
+};
+
 
 export const fileSystemService = {
     getDirectoryHandle,
@@ -511,4 +528,5 @@ export const fileSystemService = {
     listDirectoryContents,
     readFileContentByPath,
     renameItem,
+    deleteItemFromDirectory,
 };

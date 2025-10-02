@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Photo, Video, View } from '../App';
 import { fileSystemService } from '../services/fileSystemService';
@@ -20,14 +21,17 @@ import { GridIcon } from './icons/GridIcon';
 import { ListIcon } from './icons/ListIcon';
 import { formatRelativeTime } from '../utils/formatters';
 import { MoreVerticalIcon } from './icons/MoreVerticalIcon';
+import { TrashIcon } from './icons/TrashIcon';
 
 interface FileBrowserProps {
     photos: Photo[];
     videos: Video[];
     directoryHandle: FileSystemDirectoryHandle | null;
-    // FIX: Add 'ftp' to syncMode to match the SiteSettings type.
     syncMode?: 'local' | 'folder' | 'api' | 'ftp';
     onNavigate: (view: View) => void;
+    onDeletePhoto: (photo: Photo) => Promise<void>;
+    onDeleteVideo: (video: Video) => Promise<void>;
+    onDeleteFolderVirtual: (folderPath: string) => Promise<void>;
 }
 
 interface DisplayItem {
@@ -168,7 +172,7 @@ const VideoThumbnail: React.FC<{ video: Video }> = React.memo(({ video }) => {
     );
 });
 
-export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, directoryHandle, syncMode, onNavigate }) => {
+export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, directoryHandle, syncMode, onNavigate, onDeletePhoto, onDeleteVideo, onDeleteFolderVirtual }) => {
     const [currentPath, setCurrentPath] = useState<string[]>([]);
     const [items, setItems] = useState<DisplayItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -240,6 +244,60 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+    
+    const handleDeleteItem = useCallback(async (item: DisplayItem) => {
+        setContextMenu(null);
+
+        if (syncMode === 'folder' && directoryHandle) {
+            const isDir = item.kind === 'directory';
+            if (window.confirm(`Are you sure you want to permanently delete "${item.name}" from your local folder?${isDir ? ' This will delete all its contents.' : ''} This action cannot be undone.`)) {
+                try {
+                    setIsLoading(true);
+                    const deletedPath = [...currentPath, item.name].join('/');
+                    
+                    await fileSystemService.deleteItemFromDirectory(directoryHandle, currentPath, item.name, isDir);
+
+                    if (isDir) {
+                        const photosInDeleted = photos.filter(p => p.folder.startsWith(deletedPath));
+                        const videosInDeleted = videos.filter(v => v.folder.startsWith(deletedPath));
+                        for (const p of photosInDeleted) await onDeletePhoto(p);
+                        for (const v of videosInDeleted) await onDeleteVideo(v);
+                    } else {
+                        if (item.itemKind === 'photo' && item.id) {
+                            const photo = photos.find(p => p.id === item.id);
+                            if (photo) await onDeletePhoto(photo);
+                        } else if (item.itemKind === 'video' && item.id) {
+                            const video = videos.find(v => v.id === item.id);
+                            if (video) await onDeleteVideo(video);
+                        }
+                    }
+                    await loadItems();
+                } catch (e) {
+                    alert(`Failed to delete: ${e instanceof Error ? e.message : "Unknown error"}`);
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        } else { // Local/virtual mode
+            if (item.kind === 'directory') {
+                const folderPath = ['Generated_Content', ...currentPath, item.name].join('/');
+                await onDeleteFolderVirtual(folderPath);
+            } else {
+                if (window.confirm(`Are you sure you want to permanently delete "${item.name}"? This cannot be undone.`)) {
+                    if (item.itemKind === 'photo') {
+                        const photo = photos.find(p => p.id === item.id);
+                        if (photo) await onDeletePhoto(photo);
+                    } else if (item.itemKind === 'video') {
+                        const video = videos.find(v => v.id === item.id);
+                        if (video) await onDeleteVideo(video);
+                    } else {
+                        alert("This virtual file cannot be deleted individually. To remove it, delete the parent folder.");
+                    }
+                }
+            }
+        }
+    }, [directoryHandle, currentPath, syncMode, photos, videos, loadItems, onDeleteFolderVirtual, onDeletePhoto, onDeleteVideo]);
+
 
     const sortedItems = useMemo(() => {
         return [...items].sort((a: DisplayItem, b: DisplayItem) => {
@@ -340,13 +398,19 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
             {previewFile && <FilePreviewModal content={previewFile.content} fileName={previewFile.name} onClose={() => setPreviewFile(null)} />}
             
             {contextMenu && (
-                <div ref={contextMenuRef} style={{ top: contextMenu.y, left: contextMenu.x }} className="fixed z-50 bg-slate-800 border border-slate-600 rounded-md shadow-lg p-1 animate-fade-in-down">
-                    <button onClick={() => {
+                <div ref={contextMenuRef} style={{ top: contextMenu.y, left: contextMenu.x }} className="fixed z-50 bg-slate-800 border border-slate-600 rounded-md shadow-lg p-1 animate-fade-in-down flex flex-col gap-1">
+                    {syncMode === 'folder' && <button onClick={() => {
                         setRenamingItem(contextMenu.item);
                         setRenameValue(contextMenu.item.name);
                         setContextMenu(null);
                     }} className="w-full text-left px-3 py-1.5 text-sm hover:bg-slate-700 rounded-md">
                         Rename
+                    </button>}
+                    <button
+                        onClick={() => handleDeleteItem(contextMenu.item)}
+                        className="w-full text-left px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/20 rounded-md flex items-center gap-2"
+                    >
+                        <TrashIcon /> Delete
                     </button>
                 </div>
             )}
@@ -403,6 +467,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
                                     setRenamingItem={setRenamingItem}
                                     onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
                                     onMoreClick={(e) => handleMoreClick(e, item)}
+                                    onDeleteClick={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
                                 />
                             ))}
                         </div>
@@ -418,6 +483,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
                                     setRenamingItem={setRenamingItem}
                                     onItemClick={() => renamingItem?.name !== item.name && handleItemClick(item)}
                                     onMoreClick={(e) => handleMoreClick(e, item)}
+                                    onDeleteClick={(e) => { e.stopPropagation(); handleDeleteItem(item); }}
                                 />
                              ))}
                         </div>
@@ -436,9 +502,9 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ photos, videos, direct
 // --- Sub-components for Grid and List Items ---
 
 const GridItem: React.FC<{ 
-    item: DisplayItem; onItemClick: () => void; onMoreClick: (e: React.MouseEvent) => void; photos: Photo[]; videos: Video[]; currentPath: string[]; syncMode?: FileBrowserProps['syncMode'];
+    item: DisplayItem; onItemClick: () => void; onMoreClick: (e: React.MouseEvent) => void; onDeleteClick: (e: React.MouseEvent) => void; photos: Photo[]; videos: Video[]; currentPath: string[]; syncMode?: FileBrowserProps['syncMode'];
     renamingItem: DisplayItem | null; renameValue: string; setRenameValue: (val: string) => void; handleRename: () => void; setRenamingItem: (item: DisplayItem | null) => void;
-}> = React.memo(({ item, onItemClick, onMoreClick, photos, videos, currentPath, syncMode, renamingItem, renameValue, setRenameValue, handleRename, setRenamingItem }) => {
+}> = React.memo(({ item, onItemClick, onMoreClick, onDeleteClick, photos, videos, currentPath, syncMode, renamingItem, renameValue, setRenameValue, handleRename, setRenamingItem }) => {
     const itemPath = [...currentPath, item.name].join('/');
     const isRenaming = renamingItem?.name === item.name;
 
@@ -478,17 +544,20 @@ const GridItem: React.FC<{
                 </div>
                 <p className="text-xs text-slate-400 mt-1">{item.type}</p>
             </div>
-            {syncMode === 'folder' && !isRenaming && (
-                <button onClick={onMoreClick} className="absolute top-1 right-1 p-1.5 bg-black/40 rounded-full text-white/70 hover:bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity z-10"><MoreVerticalIcon /></button>
+             {!isRenaming && (
+                <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                    {syncMode === 'folder' && <button onClick={onMoreClick} className="p-1.5 bg-black/40 rounded-full text-white/70 hover:bg-black/80"><MoreVerticalIcon /></button>}
+                    <button onClick={onDeleteClick} className="p-1.5 bg-red-600/80 text-white rounded-full hover:bg-red-500"><TrashIcon className="w-4 h-4" /></button>
+                </div>
             )}
         </div>
     );
 });
 
 const ListItem: React.FC<{ 
-    item: DisplayItem; onItemClick: () => void; onMoreClick: (e: React.MouseEvent) => void; syncMode?: FileBrowserProps['syncMode'];
+    item: DisplayItem; onItemClick: () => void; onMoreClick: (e: React.MouseEvent) => void; onDeleteClick: (e: React.MouseEvent) => void; syncMode?: FileBrowserProps['syncMode'];
     renamingItem: DisplayItem | null; renameValue: string; setRenameValue: (val: string) => void; handleRename: () => void; setRenamingItem: (item: DisplayItem | null) => void;
-}> = ({ item, onItemClick, onMoreClick, syncMode, renamingItem, renameValue, setRenameValue, handleRename, setRenamingItem }) => {
+}> = ({ item, onItemClick, onMoreClick, onDeleteClick, syncMode, renamingItem, renameValue, setRenameValue, handleRename, setRenamingItem }) => {
     const iconColor = item.kind === 'directory' ? 'text-amber-400' : item.itemKind === 'photo' ? 'text-purple-400' : item.itemKind === 'video' ? 'text-pink-400' : 'text-sky-400';
     const isRenaming = renamingItem?.name === item.name;
     return (
@@ -501,9 +570,14 @@ const ListItem: React.FC<{
             )}
             <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden md:block">{item.date ? formatRelativeTime(item.date) : '--'}</span>
             <span className="text-sm text-slate-400 flex-shrink-0 w-32 hidden sm:block">{item.type}</span>
-            {syncMode === 'folder' && !isRenaming && (
-                <button onClick={onMoreClick} className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 opacity-0 group-hover:opacity-100"><MoreVerticalIcon /></button>
-            )}
+            <div className="flex items-center gap-1">
+                {syncMode === 'folder' && !isRenaming && (
+                    <button onClick={onMoreClick} className="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-slate-700 opacity-0 group-hover:opacity-100"><MoreVerticalIcon /></button>
+                )}
+                {!isRenaming && (
+                    <button onClick={onDeleteClick} className="p-1.5 text-red-500/70 hover:text-red-400 hover:bg-red-500/10 rounded-full opacity-0 group-hover:opacity-100"><TrashIcon className="w-5 h-5"/></button>
+                )}
+            </div>
         </div>
     );
 };

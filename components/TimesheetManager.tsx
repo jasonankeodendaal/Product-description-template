@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { LogEntry } from '../App';
-import { formatDurationHHMMSS, formatMsToHM, formatRelativeTime } from '../utils/formatters';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { LogEntry, View } from '../App';
+import { formatDurationHHMMSS, formatMsToHM, formatRelativeTime, formatIsoToDate } from '../utils/formatters';
 import { PrintIcon } from './icons/PrintIcon';
 import { ClockIcon } from './icons/ClockIcon';
 import { NotepadIcon } from './icons/NotepadIcon';
@@ -9,6 +9,10 @@ import { RecordingIcon } from './icons/RecordingIcon';
 import { ClockInIcon } from './icons/ClockInIcon';
 import { ClockOutIcon } from './icons/ClockOutIcon';
 import { Spinner } from './icons/Spinner';
+import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
+import { ChevronRightIcon } from './icons/ChevronRightIcon';
+import { CalendarIcon } from './icons/CalendarIcon';
+import { MiniCalendar } from './MiniCalendar';
 
 interface TimesheetManagerProps {
     logEntries: LogEntry[];
@@ -17,6 +21,7 @@ interface TimesheetManagerProps {
     onStartTimer: (task: string) => void;
     onStopTimer: () => void;
     onOpenPrintPreview: () => void;
+    onNavigate: (view: View) => void;
 }
 
 const logTypeDetails: { [key in LogEntry['type']]: { icon: React.FC; color: string; } } = {
@@ -35,44 +40,75 @@ const StatCard: React.FC<{ title: string; value: string; }> = ({ title, value })
     </div>
 );
 
-export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, activeTimer, timerDuration, onStartTimer, onStopTimer, onOpenPrintPreview }) => {
+export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, activeTimer, timerDuration, onStartTimer, onStopTimer, onOpenPrintPreview, onNavigate }) => {
     const [taskDescription, setTaskDescription] = useState('');
     const [filter, setFilter] = useState<'all' | 'manual' | 'auto'>('all');
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const calendarRef = useRef<HTMLDivElement>(null);
 
-    const { stats, filteredLogEntries } = useMemo(() => {
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const weekStart = new Date(todayStart - now.getDay() * 24 * 60 * 60 * 1000).getTime();
-
-        let todayMs = 0;
-        let weekMs = 0;
-        let todayTaskCount = 0;
-        
-        const manualTasks = logEntries.filter(e => e.type === 'Manual Task');
-        
-        manualTasks.forEach(entry => {
-            if (entry.startTime && entry.endTime) {
-                const start = new Date(entry.startTime).getTime();
-                const end = new Date(entry.endTime).getTime();
-                const duration = end - start;
-
-                if (start >= todayStart) {
-                    todayMs += duration;
-                    todayTaskCount++;
-                }
-                if (start >= weekStart) {
-                    weekMs += duration;
-                }
+    const { dailyStats, weeklyTotalMs, selectedDayEntries } = useMemo(() => {
+        // Group entries by date
+        const groupedEntries = new Map<string, LogEntry[]>();
+        logEntries.forEach(entry => {
+            const dateKey = formatIsoToDate(entry.timestamp);
+            if (!groupedEntries.has(dateKey)) {
+                groupedEntries.set(dateKey, []);
             }
+            groupedEntries.get(dateKey)!.push(entry);
         });
 
-        const newStats = {
-            today: formatMsToHM(todayMs),
-            week: formatMsToHM(weekMs),
-            tasks: todayTaskCount.toString(),
-        };
+        // Calculate stats for each day
+        const newDailyStats = new Map<string, { ms: number; taskCount: number }>();
+        const todayKey = formatIsoToDate(new Date().toISOString());
 
-        const newFilteredLogs = logEntries.filter(entry => {
+        for (const [dateKey, entries] of groupedEntries.entries()) {
+            let totalMs = 0;
+            let taskCount = 0;
+            let lastClockInTime: number | null = null;
+            
+            const sortedEntries = entries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+            sortedEntries.forEach(entry => {
+                if (entry.type === 'Manual Task') {
+                    taskCount++;
+                    if (entry.startTime && entry.endTime) {
+                        totalMs += new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime();
+                    }
+                } else if (entry.type === 'Clock In') {
+                    lastClockInTime = new Date(entry.timestamp).getTime();
+                } else if (entry.type === 'Clock Out' && lastClockInTime) {
+                    totalMs += new Date(entry.timestamp).getTime() - lastClockInTime;
+                    lastClockInTime = null;
+                }
+            });
+
+            if (lastClockInTime && dateKey === todayKey) {
+                 totalMs += new Date().getTime() - lastClockInTime;
+            }
+
+            newDailyStats.set(dateKey, { ms: totalMs, taskCount });
+        }
+
+        // Calculate stats for the selected week
+        const selectedDayOfWeek = selectedDate.getDay();
+        const weekStartDate = new Date(selectedDate);
+        weekStartDate.setDate(selectedDate.getDate() - selectedDayOfWeek);
+        weekStartDate.setHours(0, 0, 0, 0);
+
+        let newWeeklyTotalMs = 0;
+        for (let i = 0; i < 7; i++) {
+            const day = new Date(weekStartDate);
+            day.setDate(weekStartDate.getDate() + i);
+            const dateKey = formatIsoToDate(day.toISOString());
+            newWeeklyTotalMs += newDailyStats.get(dateKey)?.ms || 0;
+        }
+
+        // Filter entries for the selected day
+        const selectedDateKey = formatIsoToDate(selectedDate.toISOString());
+        const dayEntries = groupedEntries.get(selectedDateKey) || [];
+
+        const newFilteredLogs = dayEntries.filter(entry => {
             if (filter === 'all') return true;
             const isManual = entry.type === 'Manual Task' || entry.type === 'Clock In' || entry.type === 'Clock Out';
             if (filter === 'manual') return isManual;
@@ -80,17 +116,55 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
             return true;
         }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-        return { stats: newStats, filteredLogEntries: newFilteredLogs };
+        return { dailyStats: newDailyStats, weeklyTotalMs: newWeeklyTotalMs, selectedDayEntries: newFilteredLogs };
 
-    }, [logEntries, filter]);
+    }, [logEntries, filter, selectedDate]);
+    
+    const highlightedDays = useMemo(() => new Set(dailyStats.keys()), [dailyStats]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+                setIsCalendarOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleDateChange = (delta: number) => {
+        setSelectedDate(prev => {
+            const newDate = new Date(prev);
+            newDate.setDate(prev.getDate() + delta);
+            return newDate;
+        });
+    };
+    
+    const goToToday = () => setSelectedDate(new Date());
+
+    const selectedDateKey = formatIsoToDate(selectedDate.toISOString());
+    const selectedDayStats = dailyStats.get(selectedDateKey) || { ms: 0, taskCount: 0 };
+    const isToday = selectedDateKey === formatIsoToDate(new Date().toISOString());
+
 
     return (
         <div className="flex-1 flex flex-col bg-[var(--theme-bg)] backdrop-blur-2xl text-[var(--theme-text-primary)] font-inter">
             {/* Header */}
             <div className="flex-shrink-0 p-4 border-b border-[var(--theme-border)]/50 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold">Activity Log & Timesheet</h1>
-                    <p className="text-sm text-[var(--theme-text-secondary)]">Track manual tasks and view automated logs.</p>
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => onNavigate('home')}
+                        className="flex items-center gap-2 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] font-semibold transition-colors -ml-2 p-2"
+                    >
+                        <ChevronLeftIcon />
+                        <span className="hidden sm:inline">Back to Home</span>
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-bold">Activity Log & Timesheet</h1>
+                        <p className="text-sm text-[var(--theme-text-secondary)]">Track manual tasks and view automated logs.</p>
+                    </div>
                 </div>
                 <button onClick={onOpenPrintPreview} className="p-2 text-[var(--theme-text-secondary)] hover:bg-[var(--theme-card-bg)] rounded-full transition-colors">
                     <PrintIcon />
@@ -100,7 +174,6 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
             <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
                 {/* Left Column: Timer & Stats */}
                 <div className="lg:col-span-1 space-y-4">
-                    {/* Timer Control Card */}
                     <div className="bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-lg p-6 space-y-4">
                         <div className="text-center">
                             <p className="text-6xl font-bold tracking-tighter" style={{ fontFamily: 'monospace' }}>
@@ -116,48 +189,64 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                             onChange={(e) => setTaskDescription(e.target.value)}
                             disabled={!!activeTimer}
                             placeholder="What are you working on?"
-                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-md p-3 font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--theme-green)]"
+                            className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-md p-3 font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--theme-orange)]"
                         />
                          {activeTimer ? (
-                            <div className="flex gap-4">
-                                <button onClick={onStopTimer} className="w-full py-3 bg-[var(--theme-red)] text-white font-bold rounded-md uppercase tracking-wider hover:opacity-90 transition-opacity">Stop</button>
-                            </div>
+                            <button onClick={onStopTimer} className="w-full py-3 bg-[var(--theme-red)] text-white font-bold rounded-md uppercase tracking-wider hover:opacity-90 transition-opacity">Stop</button>
                         ) : (
                              <button 
                                 onClick={() => onStartTimer(taskDescription || 'Untitled Task')} 
                                 disabled={!taskDescription.trim()}
-                                className="w-full py-3 bg-[var(--theme-green)] text-black font-bold rounded-md uppercase tracking-wider disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                                className="w-full py-3 bg-[var(--theme-orange)] text-black font-bold rounded-md uppercase tracking-wider disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                             >
                                 Start
                             </button>
                         )}
                     </div>
 
-                    {/* Stats Card */}
                     <div className="bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-lg p-6">
                          <h3 className="text-lg font-semibold text-center mb-4">Summary</h3>
                          <div className="flex justify-around items-center">
-                            <StatCard title="Today" value={stats.today} />
-                            <StatCard title="Tasks Today" value={stats.tasks} />
-                            <StatCard title="This Week" value={stats.week} />
+                            <StatCard title="Hours Logged" value={formatMsToHM(selectedDayStats.ms)} />
+                            <StatCard title="Tasks" value={selectedDayStats.taskCount.toString()} />
+                            <StatCard title="This Week" value={formatMsToHM(weeklyTotalMs)} />
                          </div>
                     </div>
                 </div>
 
                 {/* Right Column: Activity Log */}
                 <div className="lg:col-span-2 bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-lg flex flex-col overflow-hidden">
-                    <div className="p-4 border-b border-[var(--theme-border)] flex justify-between items-center">
-                        <h3 className="text-lg font-semibold">Activity Log</h3>
+                    <div className="p-2 border-b border-[var(--theme-border)] flex flex-col sm:flex-row justify-between items-center gap-2">
+                         <div className="relative flex items-center gap-2" ref={calendarRef}>
+                            <button onClick={() => handleDateChange(-1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronLeftIcon /></button>
+                             <button onClick={() => setIsCalendarOpen(p => !p)} className="text-center p-2 rounded-lg hover:bg-slate-700 flex items-center gap-2">
+                                <CalendarIcon className="w-5 h-5 text-orange-400" />
+                                <h3 className="text-lg font-semibold w-full sm:w-52">{selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric'})}</h3>
+                            </button>
+                            <button onClick={() => handleDateChange(1)} disabled={isToday} className="p-2 hover:bg-slate-700 rounded-full disabled:opacity-30 disabled:cursor-not-allowed"><ChevronRightIcon /></button>
+                             {!isToday && <button onClick={goToToday} className="text-sm font-semibold text-orange-400 hover:underline">Today</button>}
+
+                            {isCalendarOpen && (
+                                <MiniCalendar
+                                    selectedDate={selectedDate}
+                                    onDateSelect={(date) => {
+                                        setSelectedDate(date);
+                                        setIsCalendarOpen(false);
+                                    }}
+                                    highlightedDays={highlightedDays}
+                                />
+                            )}
+                        </div>
                         <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
-                             <button onClick={() => setFilter('all')} className={`px-3 py-1 text-sm rounded-md ${filter === 'all' ? 'bg-[var(--theme-green)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>All</button>
-                             <button onClick={() => setFilter('manual')} className={`px-3 py-1 text-sm rounded-md ${filter === 'manual' ? 'bg-[var(--theme-green)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Manual</button>
-                             <button onClick={() => setFilter('auto')} className={`px-3 py-1 text-sm rounded-md ${filter === 'auto' ? 'bg-[var(--theme-green)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Automatic</button>
+                             <button onClick={() => setFilter('all')} className={`px-3 py-1 text-sm rounded-md ${filter === 'all' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>All</button>
+                             <button onClick={() => setFilter('manual')} className={`px-3 py-1 text-sm rounded-md ${filter === 'manual' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Manual</button>
+                             <button onClick={() => setFilter('auto')} className={`px-3 py-1 text-sm rounded-md ${filter === 'auto' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Automatic</button>
                         </div>
                     </div>
                     <div className="flex-grow overflow-y-auto">
-                        {filteredLogEntries.length > 0 ? (
+                        {selectedDayEntries.length > 0 ? (
                             <ul className="divide-y divide-[var(--theme-border)]/50">
-                                {filteredLogEntries.map(entry => {
+                                {selectedDayEntries.map(entry => {
                                     const details = logTypeDetails[entry.type];
                                     const Icon = details.icon;
                                     return (
@@ -180,9 +269,9 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                             </ul>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]">
-                                <Spinner />
-                                <h3 className="text-lg font-semibold text-[var(--theme-text-primary)] mt-4">No activity to show</h3>
-                                <p className="text-sm mt-1">Your logged activities will appear here.</p>
+                                <ClockIcon className="w-12 h-12 mb-4" />
+                                <h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">No Activity Logged</h3>
+                                <p className="text-sm mt-1">There are no entries for this day.</p>
                             </div>
                         )}
                     </div>
