@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+// FIX: SiteSettings is exported from constants.ts, not App.tsx, resolving an import error.
 import { Note, NoteRecording, Photo } from '../App';
+import { SiteSettings } from '../constants';
 import { useRecorder } from '../hooks/useRecorder';
 import { SearchIcon } from './icons/SearchIcon';
 import { PlusIcon } from './icons/PlusIcon';
@@ -31,12 +33,13 @@ import { CheckIcon } from './icons/CheckIcon';
 import { useDebounce } from '../hooks/useDebounce';
 import { LockIcon } from './icons/LockIcon';
 import { UnlockIcon } from './icons/UnlockIcon';
+import { NoteLockScreen } from './NoteLockScreen';
 
 // Props definition
 interface NotepadProps {
     notes: Note[];
     onSave: (note: Note) => Promise<void>;
-    onUpdate: (note: Note) => Promise<void>;
+    onUpdate: (note: Note, silent?: boolean) => Promise<void>;
     onDelete: (id: string) => Promise<void>;
     noteRecordings: NoteRecording[];
     onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
@@ -46,6 +49,7 @@ interface NotepadProps {
     onSavePhoto: (photo: Photo) => Promise<void>;
     onUpdatePhoto: (photo: Photo) => Promise<void>;
     performAiAction: (prompt: string, context: string) => Promise<any>;
+    siteSettings: SiteSettings;
 }
 
 // --- NoteSettingsSidebar Component (New) ---
@@ -135,23 +139,28 @@ const AudioPlayerModal: React.FC<{recording: NoteRecording, onClose: () => void}
     </div>
 );
 
-const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo, onClose }) => (
+const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo, onClose }) => {
+    const imageUrl = useMemo(() => URL.createObjectURL(photo.imageBlob), [photo.imageBlob]);
+    useEffect(() => () => URL.revokeObjectURL(imageUrl), [imageUrl]);
+    return (
      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in-down" onClick={onClose}>
         <div className="bg-[var(--theme-card-bg)] max-w-4xl w-full max-h-[90vh] rounded-xl shadow-2xl p-4 flex flex-col" onClick={e => e.stopPropagation()}>
-            <img src={URL.createObjectURL(photo.imageBlob)} alt={photo.name} className="flex-1 max-w-full max-h-[calc(90vh - 80px)] object-contain" />
+            <img src={imageUrl} alt={photo.name} className="flex-1 max-w-full max-h-[calc(90vh - 80px)] object-contain" />
             <div className="flex-shrink-0 flex justify-between items-center pt-2 mt-2 border-t border-white/10">
                 <p className="text-white font-semibold truncate">{photo.name}</p>
                 <button onClick={onClose} className="text-sm bg-orange-500 text-black font-bold py-1 px-3 rounded-md">Close</button>
             </div>
         </div>
     </div>
-);
+)};
 
 
-const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note; onClose: () => void; }> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos }) => {
+const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'>> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos }) => {
     const [localNote, setLocalNote] = useState(note);
-    const [isDirty, setIsDirty] = useState(false);
+    const lastSavedNote = useRef(note);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+    const debouncedNote = useDebounce(localNote, 1500); // 1.5 second auto-save delay
+    
     const contentRef = useRef<HTMLDivElement>(null);
     const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode, setAudioBlob } = useRecorder();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -164,25 +173,35 @@ const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note
     const [playingRecording, setPlayingRecording] = useState<NoteRecording | null>(null);
     const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
     const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
+    
+    // Auto-save logic
+    useEffect(() => {
+        // Only auto-save if the debounced note is different from the last saved version.
+        if (JSON.stringify(debouncedNote) !== JSON.stringify(lastSavedNote.current)) {
+            const handleAutoSave = async () => {
+                setSaveState('saving');
+                await onUpdate(debouncedNote, true); // true for silent update
+                lastSavedNote.current = debouncedNote;
+                setSaveState('saved');
+                setTimeout(() => setSaveState('idle'), 2000);
+            };
+            handleAutoSave();
+        }
+    }, [debouncedNote, onUpdate]);
 
+
+    // Reset state and populate editor when the note prop changes
     useEffect(() => {
         setLocalNote(note);
-        setIsDirty(false);
+        lastSavedNote.current = note;
         setSaveState('idle');
-        if (contentRef.current) {
+        if (contentRef.current && contentRef.current.innerHTML !== note.content) {
             contentRef.current.innerHTML = note.content;
         }
     }, [note]);
 
     const updateLocalNote = (updater: (prevNote: Note) => Note) => {
-        setLocalNote(prev => {
-            const newState = updater(prev);
-            if (JSON.stringify(newState) !== JSON.stringify(note)) {
-                setIsDirty(true);
-                setSaveState('idle');
-            }
-            return newState;
-        });
+        setLocalNote(prev => updater(prev));
     };
     
     const handleCloseSettings = () => {
@@ -191,20 +210,6 @@ const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note
             setIsSettingsOpen(false);
             setIsSettingsClosing(false);
         }, 300);
-    };
-
-    const handleSave = async () => {
-        if (!isDirty) return;
-        setSaveState('saving');
-        try {
-            await onUpdate(localNote);
-            setIsDirty(false);
-            setSaveState('saved');
-            setTimeout(() => setSaveState('idle'), 2000);
-        } catch (e) {
-            console.error("Failed to save note:", e);
-            setSaveState('idle');
-        }
     };
     
     const handleContentChange = useCallback(() => {
@@ -441,11 +446,10 @@ const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note
                    <input type="text" value={localNote.title} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-orange)] focus:outline-none w-full truncate" />
                </div>
                <div className="flex items-center gap-2 flex-shrink-0">
-                    {isDirty && (
-                       <button onClick={handleSave} disabled={saveState === 'saving'} className="text-sm font-semibold py-1.5 px-4 rounded-full flex items-center gap-1.5 transition-colors duration-200 bg-orange-600 text-white hover:bg-orange-500 disabled:bg-gray-500">
-                           {saveState === 'saving' ? <><Spinner className="w-4 h-4" /> Saving...</> : saveState === 'saved' ? <><CheckIcon /> Saved</> : 'Save'}
-                       </button>
-                   )}
+                    <div className="text-sm font-semibold transition-colors duration-200">
+                       {saveState === 'saving' && <span className="text-gray-400 flex items-center gap-1.5"><Spinner className="w-4 h-4" /> Saving...</span>}
+                       {saveState === 'saved' && <span className="text-green-400 flex items-center gap-1.5"><CheckIcon className="w-4 h-4"/> Saved</span>}
+                    </div>
                    <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-[var(--theme-text-secondary)] hover:text-white relative"><SettingsIcon /></button>
                    <button onClick={() => onDelete(localNote.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]"><TrashIcon /></button>
                </div>
@@ -528,8 +532,11 @@ const NoteCard: React.FC<{
                     : `bg-[var(--theme-bg)]/50 border-transparent hover:bg-[var(--theme-card-bg)]/80 hover:border-[var(--theme-border)]`
             }`}
         >
-            <h3 className="font-bold truncate text-[var(--theme-text-primary)] pr-8">{note.title}</h3>
-            <p className="text-sm text-[var(--theme-text-secondary)] line-clamp-2 mt-1">{stripHtml(note.content)}</p>
+            <h3 className="font-bold truncate text-[var(--theme-text-primary)] pr-8 flex items-center gap-2">
+                {note.isLocked && <LockIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+                {note.title}
+            </h3>
+            <p className="text-sm text-[var(--theme-text-secondary)] line-clamp-2 mt-1">{note.isLocked ? 'This note is locked.' : stripHtml(note.content)}</p>
             <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-[var(--theme-text-secondary)]">{new Date(note.date).toLocaleDateString()}</span>
                 <div className={`w-3 h-3 rounded-full ${colorMap[note.color]?.bg || 'bg-gray-500'}`}></div>
@@ -550,48 +557,47 @@ const NoteCard: React.FC<{
 export const Notepad: React.FC<NotepadProps> = (props) => {
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [unlockedNoteId, setUnlockedNoteId] = useState<string | null>(null);
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
-    const lastSavedNote = useRef<Note | null>(null);
 
-    const handleSelectNote = useCallback(async (noteToSelect: Note | null) => {
-        if (selectedNote && lastSavedNote.current && JSON.stringify(selectedNote) !== JSON.stringify(lastSavedNote.current)) {
-            await props.onUpdate(selectedNote);
+    const handleSelectNote = (note: Note) => {
+        if (note.isLocked && note.id !== unlockedNoteId) {
+            setSelectedNote(note); // Select it to trigger the lock screen
+        } else {
+            setSelectedNote(note);
+            setUnlockedNoteId(note.id); // Mark as unlocked for this session
         }
-        
-        setSelectedNote(noteToSelect);
-        lastSavedNote.current = noteToSelect;
-    }, [selectedNote, props.onUpdate]);
-    
-    const handleUpdate = useCallback(async (updatedNote: Note) => {
-        await props.onUpdate(updatedNote);
-        lastSavedNote.current = updatedNote;
-    }, [props.onUpdate]);
+    };
 
+    const handleUnlockSuccess = () => {
+        if (selectedNote) {
+            setUnlockedNoteId(selectedNote.id);
+        }
+    };
+
+    const handleCloseEditor = () => {
+        setSelectedNote(null);
+        // Do not reset unlockedNoteId here, so user doesn't have to re-enter PIN
+        // if they quickly go back and forth. It will reset on page reload.
+    };
+    
     const handleAddNewNote = useCallback(async () => {
         const newNote: Note = { id: crypto.randomUUID(), title: 'New Note', content: '<p></p>', category: 'General', tags: [], date: new Date().toISOString(), color: defaultColors[Math.floor(Math.random() * defaultColors.length)], paperStyle: 'paper-dark', fontStyle: 'font-sans', heroImage: null, dueDate: null, reminderDate: null, reminderFired: false, recordingIds: [], photoIds: [], isLocked: false };
         await props.onSave(newNote);
         handleSelectNote(newNote);
-    }, [props.onSave, handleSelectNote]);
+    }, [props.onSave]);
 
     useEffect(() => {
         if (selectedNote) {
             const updatedNoteFromList = props.notes.find(n => n.id === selectedNote.id);
             if (!updatedNoteFromList) {
-                setSelectedNote(null);
+                setSelectedNote(null); // The note was deleted
             } else if (JSON.stringify(updatedNoteFromList) !== JSON.stringify(selectedNote)) {
-                if(new Date(updatedNoteFromList.date) > new Date(selectedNote.date)){
-                    setSelectedNote(updatedNoteFromList);
-                }
+                // The note was updated elsewhere, refresh the editor view
+                setSelectedNote(updatedNoteFromList);
             }
         }
     }, [props.notes, selectedNote]);
-
-    const handleDelete = async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
-            await props.onDelete(id);
-            setSelectedNote(null);
-        }
-    };
 
     const handleDeleteFromList = (noteToDelete: Note) => {
         if (window.confirm(`Are you sure you want to delete "${noteToDelete.title}"? This cannot be undone.`)) {
@@ -607,21 +613,47 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
         if (!debouncedSearchTerm) return sorted;
         return sorted.filter(note =>
             note.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-            stripHtml(note.content).toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+            (!note.isLocked && stripHtml(note.content).toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
             note.tags.some(tag => tag.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
         );
     }, [props.notes, debouncedSearchTerm]);
     
+    const renderContent = () => {
+        if (selectedNote) {
+            // If note is locked and not yet session-unlocked, show lock screen.
+            if (selectedNote.isLocked && selectedNote.id !== unlockedNoteId) {
+                return <NoteLockScreen 
+                           noteTitle={selectedNote.title} 
+                           userPin={props.siteSettings.userPin || ''}
+                           onUnlock={handleUnlockSuccess} 
+                           onClose={handleCloseEditor}
+                       />;
+            }
+            // Otherwise, show the editor.
+            return <NoteEditor {...props} note={selectedNote} onClose={handleCloseEditor} />;
+        }
+
+        // Show placeholder on desktop if no note is selected
+        return (
+            <div className="hidden md:flex w-full h-full items-center justify-center text-center text-[var(--theme-text-secondary)] p-8">
+                <div>
+                    <NotepadIcon className="mx-auto h-16 w-16" />
+                    <h2 className="mt-4 text-xl font-semibold text-[var(--theme-text-primary)]">Your Digital Notepad</h2>
+                    <p className="mt-1 max-w-sm">Select a note from the list to view or edit it, or create a new one to capture your thoughts.</p>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="flex-1 flex flex-col bg-transparent backdrop-blur-2xl">
             <div className="flex-grow flex overflow-hidden">
-                <aside className={`w-full md:w-1/3 md:max-w-sm flex flex-col border-r border-transparent md:border-[var(--theme-border)] ${selectedNote ? 'hidden md:flex' : 'flex'}`}>
+                <aside className={`relative w-full md:w-1/3 md:max-w-sm flex flex-col border-r border-transparent md:border-[var(--theme-border)] ${selectedNote ? 'hidden md:flex' : 'flex'}`}>
                     <header className="p-4 flex-shrink-0 border-b border-[var(--theme-border)] flex items-center justify-between">
                          <div className="relative flex-grow">
                             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"><SearchIcon className="h-5 w-5 text-[var(--theme-text-secondary)]" /></div>
                             <input type="text" placeholder="Search notes..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg pl-10 pr-4 py-2"/>
                         </div>
-                        <button onClick={handleAddNewNote} className="ml-2 p-2 bg-[var(--theme-orange)] text-black rounded-full flex-shrink-0"><PlusIcon /></button>
                     </header>
                      <div className="flex-grow overflow-y-auto no-scrollbar p-2 space-y-2">
                         {filteredNotes.length > 0 ? (
@@ -629,7 +661,7 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                                 <NoteCard 
                                     key={note.id} 
                                     note={note} 
-                                    onSelect={() => handleSelectNote(note)} 
+                                    onSelect={handleSelectNote} 
                                     isSelected={selectedNote?.id === note.id}
                                     onDelete={handleDeleteFromList}
                                 />
@@ -642,26 +674,19 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                             </div>
                         )}
                     </div>
+                     <div className="absolute bottom-6 right-6 z-10">
+                        <button 
+                            onClick={handleAddNewNote} 
+                            className="p-4 bg-[var(--theme-orange)] text-black rounded-full flex-shrink-0 shadow-lg hover:opacity-90 transform transition-transform hover:scale-105"
+                            aria-label="Add new note"
+                        >
+                            <PlusIcon className="w-8 h-8"/>
+                        </button>
+                    </div>
                 </aside>
 
                 <main className={`flex-1 flex-col ${selectedNote ? 'flex' : 'hidden md:flex'}`}>
-                     {selectedNote ? (
-                        <NoteEditor
-                            {...props}
-                            note={selectedNote}
-                            onUpdate={handleUpdate}
-                            onDelete={handleDelete}
-                            onClose={() => handleSelectNote(null)}
-                        />
-                    ) : (
-                        <div className="hidden md:flex w-full h-full items-center justify-center text-center text-[var(--theme-text-secondary)] p-8">
-                            <div>
-                                <NotepadIcon className="mx-auto h-16 w-16" />
-                                <h2 className="mt-4 text-xl font-semibold text-[var(--theme-text-primary)]">Your Digital Notepad</h2>
-                                <p className="mt-1 max-w-sm">Select a note from the list to view or edit it, or create a new one to capture your thoughts.</p>
-                            </div>
-                        </div>
-                    )}
+                     {renderContent()}
                 </main>
             </div>
         </div>

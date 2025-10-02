@@ -159,7 +159,7 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                 );
             case 'photos':
                 return (
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {photos.slice(0, 8).map(photo => (
                             <div key={photo.id} className="relative group">
                                 <PhotoThumbnail 

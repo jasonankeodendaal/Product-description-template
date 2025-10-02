@@ -520,7 +520,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         <>
             <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
                 <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Images</h3>
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                     {linkedPhotos.map(photo => <LinkedPhotoThumbnail key={photo.id} photo={photo} onOpenSquarer={setSquaringPhoto} onDelete={onDeletePhoto} />)}
                     <input
                         type="file"
@@ -542,7 +542,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
             </div>
             <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
                 <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Videos</h3>
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
                     {linkedVideos.map(video => <LinkedVideoThumbnail key={video.id} video={video} onOpenPlayer={setPlayingVideo} onDelete={onDeleteVideo} />)}
                     <input
                         type="file"

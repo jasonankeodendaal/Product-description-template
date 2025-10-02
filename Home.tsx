@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../App';
 import { SiteSettings, CreatorDetails } from '../constants';
@@ -183,7 +185,7 @@ export const Home: React.FC<HomeProps> = (props) => {
                     
                     <div className="col-span-full mt-2 mb-1 pl-1 text-lg font-bold text-white/90">Tools & Actions</div>
 
-                    <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-2">
+                    <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
                         <HomeTile className="aspect-square" style={{ animationDelay: '300ms' }}><GeneratorTile onNavigate={props.onNavigate} /></HomeTile>
                         <HomeTile className="aspect-square" style={{ animationDelay: '350ms' }}><RecordingsTile onNavigate={props.onNavigate} count={props.recordings.length} /></HomeTile>
                         <HomeTile className="aspect-square" style={{ animationDelay: '400ms' }}><PhotosTile onNavigate={props.onNavigate} count={props.photos.length} /></HomeTile>

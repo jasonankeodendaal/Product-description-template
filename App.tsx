@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './Hero';
@@ -1379,6 +1377,7 @@ const App: React.FC = () => {
                     onSavePhoto={handleSavePhoto}
                     onUpdatePhoto={handleUpdatePhoto}
                     performAiAction={(prompt, context) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
+                    siteSettings={siteSettings}
                 />;
             case 'image-tool':
                 return <ImageTool 

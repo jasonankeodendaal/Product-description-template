@@ -42,7 +42,7 @@ export const NoteLockScreen: React.FC<NoteLockScreenProps> = ({ noteTitle, userP
     ));
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose} aria-modal="true">
+        <div className="w-full h-full bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose} aria-modal="true">
             <div onClick={e => e.stopPropagation()} className="bg-[#1C1C1E] w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-modal-scale-in">
                 <div className="w-12 h-12 mx-auto bg-orange-500/20 rounded-full flex items-center justify-center border-2 border-orange-500/30">
                     <LockIcon className="w-6 h-6 text-orange-400" />

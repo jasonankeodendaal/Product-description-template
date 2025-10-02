@@ -79,7 +79,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ siteSettings, onNavi
         <div className="container mx-auto px-4 flex justify-between items-center h-[76px]">
             <div className="flex items-center gap-3">
                 {siteSettings.logoSrc ? (
-                    <img src={siteSettings.logoSrc} alt="Company Logo" className="h-14 w-auto rounded-md logo-glow-effect" />
+                    <img src={siteSettings.logoSrc} alt="Company Logo" className="h-14 w-auto rounded-md" />
                 ) : (
                     <div className="h-14 w-14 rounded-md bg-[var(--theme-bg)] flex items-center justify-center text-[var(--theme-text-secondary)] text-lg font-bold">
                         {siteSettings.companyName ? siteSettings.companyName.charAt(0) : '?'}

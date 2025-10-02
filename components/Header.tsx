@@ -100,7 +100,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
                 className="flex items-center gap-3"
             >
             {siteSettings.logoSrc ? (
-                <img src={siteSettings.logoSrc} alt="Company Logo" className="h-16 w-auto rounded-md logo-glow-effect" />
+                <img src={siteSettings.logoSrc} alt="Company Logo" className="h-16 w-auto rounded-md" />
             ) : (
                 <div className="h-16 w-16 rounded-md bg-[var(--theme-bg)] flex items-center justify-center text-[var(--theme-text-secondary)] text-xl font-bold">
                     {siteSettings.companyName ? siteSettings.companyName.charAt(0) : '?'}

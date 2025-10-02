@@ -1,4 +1,5 @@
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from "@google/genai";
 
@@ -29,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     };
     const textPart = {
-      text: "Transcribe the following audio recording accurately.",
+      text: "Transcribe the following audio recording accurately. The primary languages spoken will be English and Afrikaans.",
     };
 
     const response = await ai.models.generateContent({
