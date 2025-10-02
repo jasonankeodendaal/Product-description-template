@@ -71,6 +71,68 @@ const getIconForItem = (item: FileSystemItem, className: string = "w-full h-full
     return <FileTextIcon className={className} />;
 };
 
+
+// --- Preview Modal Component ---
+const PreviewModal: React.FC<{ item: FileSystemItem | null; content: string | Blob | null; onClose: () => void }> = ({ item, content, onClose }) => {
+    if (!item) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in-down" onClick={onClose}>
+            <div className="bg-[var(--theme-card-bg)] max-w-4xl w-full max-h-[90vh] rounded-xl shadow-2xl p-4 flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="flex-1 flex items-center justify-center overflow-hidden">
+                    {item.mediaSrc && item.kind === 'photo' && <img src={item.mediaSrc} alt={item.name} className="max-w-full max-h-full object-contain" />}
+                    {item.mediaSrc && item.kind === 'video' && <video src={item.mediaSrc} controls autoPlay className="max-w-full max-h-full" />}
+                    {content && typeof content === 'string' && <pre className="w-full h-full overflow-auto text-sm bg-black/30 p-4 rounded-md text-gray-300 whitespace-pre-wrap">{content}</pre>}
+                </div>
+                <div className="flex-shrink-0 flex justify-between items-center pt-2 mt-2 border-t border-white/10">
+                    <p className="text-white font-semibold truncate">{item.name}</p>
+                    <button onClick={onClose} className="text-sm bg-orange-500 text-black font-bold py-1 px-3 rounded-md">Close</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Details Pane Component ---
+const DetailsPane: React.FC<{ item: FileSystemItem | null; content: string | Blob | null; onClose: () => void }> = ({ item, content, onClose }) => {
+    if (!item) return null;
+
+    return (
+        <aside className="w-80 border-l border-[var(--theme-border)] p-4 flex-shrink-0 flex flex-col animate-fade-in-down relative">
+            <button onClick={onClose} className="absolute top-2 right-2 p-2 text-gray-500 hover:text-white"><XIcon /></button>
+            <div className="text-center">
+                <div className="w-32 h-32 mx-auto text-orange-400 flex items-center justify-center">
+                    {item.mediaSrc && (item.kind === 'photo' || item.kind === 'video') ? (
+                        <img src={item.mediaSrc} alt={item.name} className="w-full h-full object-contain rounded-md" />
+                    ) : (
+                        getIconForItem(item)
+                    )}
+                </div>
+                <h3 className="text-lg font-bold mt-2 break-words">{item.name}</h3>
+                <p className="text-sm text-gray-400 capitalize">{item.kind || item.type}</p>
+            </div>
+            <div className="text-xs text-gray-500 space-y-1 mt-4 border-t border-[var(--theme-border)] pt-4">
+                {item.dateModified && <p><strong>Modified:</strong> {formatRelativeTime(item.dateModified)}</p>}
+                {item.size !== undefined && <p><strong>Size:</strong> {formatBytes(item.size)}</p>}
+            </div>
+
+            {(content || item.kind === 'video') && (
+                 <div className="mt-4 flex-grow flex flex-col min-h-0">
+                    <h4 className="font-bold text-sm text-gray-300 mb-2">Preview</h4>
+                    <div className="flex-grow bg-black/30 rounded-md p-2 overflow-auto">
+                        {content && typeof content === 'string' ? (
+                            <pre className="text-xs text-gray-300 whitespace-pre-wrap">{content}</pre>
+                        ) : item.mediaSrc && item.kind === 'video' ? (
+                            <video src={item.mediaSrc} controls className="w-full rounded" />
+                        ) : null}
+                    </div>
+                </div>
+            )}
+        </aside>
+    );
+};
+
+
 // --- Main Component ---
 export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
     const { syncMode, directoryHandle, photos, videos, onNavigate, onDeletePhoto, onDeleteVideo, onDeleteFolderVirtual } = props;
@@ -96,6 +158,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [detailsPaneItem, setDetailsPaneItem] = useState<FileSystemItem | null>(null);
     const [previewContent, setPreviewContent] = useState<string | Blob | null>(null);
+    const [previewItem, setPreviewItem] = useState<FileSystemItem | null>(null);
     const [renamingItem, setRenamingItem] = useState<string | null>(null);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'name', direction: 'asc' });
     const viewMenuRef = useRef<HTMLDivElement>(null);
@@ -109,49 +172,60 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
         setPreviewContent(null);
         
         try {
-            let items: FileSystemItem[] = [];
-            if (syncMode === 'folder' && directoryHandle) {
-                // TODO: Enhance fileSystemService to return more metadata
-                const fsContents = await fileSystemService.listDirectoryContents(directoryHandle, path.join('/'));
-                items = fsContents.map(item => ({
-                    ...item,
-                    path: [...path, item.name].join('/'),
-                    type: item.kind,
-                    kind: item.kind === 'file' ? item.name.split('.').pop()?.toLowerCase() : 'folder',
-                }));
+            const fullPath = path.join('/');
+            const subfolders = new Set<string>();
+            const filesInPath: FileSystemItem[] = [];
 
-            } else if (syncMode === 'local') {
-                const fullPath = path.join('/');
-                const subfolders = new Set<string>();
-                const filesInPath: FileSystemItem[] = [];
+            const allMedia = [
+                ...photos.map(p => ({ ...p, itemType: 'photo' as const })),
+                ...videos.map(v => ({ ...v, itemType: 'video' as const }))
+            ];
 
-                [...photos, ...videos].forEach(media => {
-                    const mediaPath = media.folder;
-                    if (mediaPath === fullPath) {
-                        filesInPath.push({
-                            name: media.name,
-                            type: 'file',
-                            kind: 'imageBlob' in media ? 'photo' : 'video',
-                            id: media.id,
-                            dateModified: media.date,
-                            size: 'imageBlob' in media ? media.imageBlob.size : media.videoBlob.size,
-                            path: `${mediaPath}/${media.name}`,
-                            mediaSrc: URL.createObjectURL('imageBlob' in media ? media.imageBlob : media.videoBlob),
-                        });
-                    } else if (mediaPath.startsWith(fullPath) && mediaPath !== fullPath) {
-                        const subPath = mediaPath.substring(fullPath.length).replace(/^\//, '');
-                        const subfolderName = subPath.split('/')[0];
-                        if(subfolderName) subfolders.add(subfolderName);
+            allMedia.forEach(media => {
+                const mediaPath = media.folder || '_uncategorized';
+                if (mediaPath === fullPath) {
+                    filesInPath.push({
+                        name: media.name,
+                        type: 'file',
+                        kind: media.itemType,
+                        id: media.id,
+                        dateModified: media.date,
+                        size: 'imageBlob' in media ? media.imageBlob.size : media.videoBlob.size,
+                        path: `${mediaPath}/${media.name}`,
+                        mediaSrc: URL.createObjectURL('imageBlob' in media ? media.imageBlob : media.videoBlob),
+                    });
+                } else {
+                    let relativePath = '';
+                    if (fullPath === '') {
+                        relativePath = mediaPath;
+                    } else if (mediaPath.startsWith(fullPath + '/')) {
+                        relativePath = mediaPath.substring(fullPath.length + 1);
                     }
-                });
-                
-                const folderItems: FileSystemItem[] = Array.from(subfolders).map(name => ({
-                    name, type: 'directory', kind: 'folder', path: `${fullPath}/${name}`
-                }));
+                    if (relativePath) {
+                        const subfolderName = relativePath.split('/')[0];
+                        if (subfolderName) subfolders.add(subfolderName);
+                    }
+                }
+            });
 
-                items = [...folderItems, ...filesInPath];
+            const folderItems: FileSystemItem[] = Array.from(subfolders).map(name => ({
+                name, type: 'directory', kind: 'folder', path: path.length > 0 ? `${fullPath}/${name}` : name
+            }));
+            
+            // In folder mode, also check for virtual description files
+            if (syncMode === 'folder' && directoryHandle && path.length > 0) {
+                 try {
+                    const currentDir = await fileSystemService.listDirectoryContents(directoryHandle, fullPath);
+                    if (currentDir.some(f => f.name === 'description.txt')) {
+                        filesInPath.push({ name: 'description.txt', type: 'file', kind: 'text', path: `${fullPath}/description.txt`});
+                    }
+                    if (currentDir.some(f => f.name === 'details.json')) {
+                        filesInPath.push({ name: 'details.json', type: 'file', kind: 'json', path: `${fullPath}/details.json`});
+                    }
+                 } catch (e) { console.warn("Could not check for virtual files:", e); }
             }
-            setContents(items);
+
+            setContents([...folderItems, ...filesInPath]);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load contents.");
         } finally {
@@ -160,6 +234,13 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
     }, [directoryHandle, path, syncMode, photos, videos]);
 
     useEffect(() => { loadContents(); }, [loadContents]);
+    
+     useEffect(() => {
+        return () => {
+            contents.forEach(item => { if (item.mediaSrc) { URL.revokeObjectURL(item.mediaSrc); } });
+        };
+    }, [contents]);
+
 
     const filteredAndSortedContents = useMemo(() => {
         return contents
@@ -197,22 +278,41 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleItemClick = (item: FileSystemItem, e: React.MouseEvent) => {
-        e.stopPropagation(); 
+    const handleItemClick = async (item: FileSystemItem, e: React.MouseEvent) => {
+        e.stopPropagation();
         if (viewOptions.itemCheckboxes) {
             toggleSelection(item.name);
         } else {
             setSelectedItems(new Set([item.name]));
             setDetailsPaneItem(item);
             setPreviewContent(null);
+
+            if (syncMode === 'folder' && directoryHandle && (item.kind === 'text' || item.kind === 'json')) {
+                try {
+                    const content = await fileSystemService.readFileContentByPath(directoryHandle, item.path);
+                    setPreviewContent(content);
+                } catch (err) {
+                    console.error("Failed to read file for preview:", err);
+                    setPreviewContent("Error: Could not load file content.");
+                }
+            }
         }
     };
     
-    const handleItemDoubleClick = (item: FileSystemItem) => {
+    const handleItemDoubleClick = async (item: FileSystemItem) => {
         if (item.type === 'directory') {
             setPath(prev => [...prev, item.name]);
         } else {
-             console.log("Opening file:", item.path);
+            let content: string | Blob | null = null;
+            if (syncMode === 'folder' && directoryHandle && (item.kind === 'text' || item.kind === 'json')) {
+                try {
+                    content = await fileSystemService.readFileContentByPath(directoryHandle, item.path);
+                } catch (err) {
+                    content = 'Error loading content.';
+                }
+            }
+            setPreviewContent(content);
+            setPreviewItem(item);
         }
     };
     
@@ -250,7 +350,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
             if (!item) continue;
 
             if (syncMode === 'folder' && directoryHandle) {
-                // TODO: Implement fileSystemService.deleteItem
+                await fileSystemService.deleteItemFromDirectory(directoryHandle, path, item.name, item.type === 'directory');
             } else if (syncMode === 'local') {
                 if (item.type === 'directory') {
                     await onDeleteFolderVirtual(item.path);
@@ -274,14 +374,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
 
         switch (viewOptions.layout) {
             case 'tiles': return <div className={`grid ${gridClasses} gap-4`}>{filteredAndSortedContents.map(renderItem)}</div>;
-            // Add other layouts later
             default: return <div className={`grid ${gridClasses} gap-4`}>{filteredAndSortedContents.map(renderItem)}</div>;
         }
     };
     
     const renderItem = (item: FileSystemItem) => {
         const isSelected = selectedItems.has(item.name);
-        const iconSizeClass = `w-16 h-16`; // Simplified for now
+        const iconSizeClass = 'w-full h-2/3';
+
         return (
             <div
                 key={item.name}
@@ -290,11 +390,17 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                 className={`group relative rounded-lg p-2 flex flex-col items-center text-center cursor-pointer transition-colors ${isSelected ? 'bg-orange-500/20' : 'hover:bg-white/10'}`}
             >
                 {viewOptions.itemCheckboxes && (
-                    <div className="absolute top-2 left-2 w-5 h-5 text-white">
+                    <div className="absolute top-2 left-2 w-5 h-5 text-white z-10">
                         {isSelected ? <CheckboxCheckedIcon /> : <CheckboxUncheckedIcon className="opacity-50 group-hover:opacity-100" />}
                     </div>
                 )}
-                <div className={`text-orange-400 mb-2 ${iconSizeClass}`}>{getIconForItem(item)}</div>
+                <div className={`text-orange-400 mb-2 w-full h-24 flex items-center justify-center`}>
+                    {item.mediaSrc && (item.kind === 'photo' || item.kind === 'video') ? (
+                        <img src={item.mediaSrc} alt={item.name} className="w-full h-full object-cover rounded-md" />
+                    ) : (
+                        getIconForItem(item, 'w-16 h-16')
+                    )}
+                </div>
                 <p className="text-sm text-gray-200 truncate w-full">{item.name}</p>
             </div>
         );
@@ -302,6 +408,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
 
     return (
         <div className="flex-1 flex flex-col bg-transparent overflow-hidden">
+             {previewItem && <PreviewModal item={previewItem} content={previewContent} onClose={() => setPreviewItem(null)} />}
              <header className="p-4 border-b border-[var(--theme-border)] flex-shrink-0 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 min-w-0">
                     <button onClick={() => path.length > 0 ? setPath(p => p.slice(0, -1)) : onNavigate('home')} className="p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white flex-shrink-0"><ChevronLeftIcon /></button>
@@ -321,30 +428,10 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                         <button onClick={() => setIsViewMenuOpen(p => !p)} className="flex items-center gap-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-sm font-semibold text-white rounded-lg px-3 py-1.5">View <MoreVerticalIcon /></button>
                         {isViewMenuOpen && (
                             <div className="absolute top-full right-0 mt-2 w-72 bg-slate-800 rounded-lg shadow-2xl border border-slate-600 z-20 p-2 space-y-1">
-                                <div className="p-1 font-bold text-xs text-slate-400">Layout</div>
-                                <div className="grid grid-cols-4 gap-1">
-                                    {(['tiles', 'list', 'details', 'content'] as LayoutMode[]).map(mode => (
-                                        <button key={mode} onClick={() => handleUpdateOption('layout', mode)} className={`flex flex-col items-center p-2 rounded ${viewOptions.layout === mode ? 'bg-orange-500/20 text-orange-400' : 'hover:bg-white/10'}`}>
-                                            {mode==='tiles'?<ViewGridIcon/>:mode==='list'?<ViewListIcon/>:mode==='details'?<ViewDetailsIcon/>:<ViewContentIcon/>}
-                                            <span className="text-xs capitalize mt-1">{mode}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="border-t border-slate-600 my-1"/>
                                 <label className="flex items-center justify-between p-2 hover:bg-white/10 rounded cursor-pointer"><span className="text-sm">Details pane</span><input type="checkbox" checked={viewOptions.showDetailsPane} onChange={e => handleUpdateOption('showDetailsPane', e.target.checked)} className="accent-orange-500"/></label>
                                 <div className="border-t border-slate-600 my-1"/>
                                 <label className="flex items-center justify-between p-2 hover:bg-white/10 rounded cursor-pointer"><span className="text-sm">Item check boxes</span><input type="checkbox" checked={viewOptions.itemCheckboxes} onChange={e => handleUpdateOption('itemCheckboxes', e.target.checked)} className="accent-orange-500"/></label>
-                                <label className="flex items-center justify-between p-2 hover:bg-white/10 rounded cursor-pointer"><span className="text-sm">Compact view</span><input type="checkbox" checked={viewOptions.compactView} onChange={e => handleUpdateOption('compactView', e.target.checked)} className="accent-orange-500"/></label>
-                                <label className="flex items-center justify-between p-2 hover:bg-white/10 rounded cursor-pointer"><span className="text-sm">Hidden items</span><input type="checkbox" checked={viewOptions.showHidden} onChange={e => handleUpdateOption('showHidden', e.target.checked)} className="accent-orange-500"/></label>
-                                {viewOptions.layout === 'tiles' && <>
-                                    <div className="border-t border-slate-600 my-1"/>
-                                    <div className="p-1 font-bold text-xs text-slate-400">Icon Size</div>
-                                    <div className="flex justify-around items-center p-1">
-                                        {(['small', 'medium', 'large', 'extra-large'] as IconSize[]).map(size => (
-                                             <button key={size} onClick={() => handleUpdateOption('iconSize', size)} className={`px-3 py-1 text-xs rounded-full capitalize ${viewOptions.iconSize === size ? 'bg-orange-500 text-black' : 'hover:bg-white/10'}`}>{size}</button>
-                                        ))}
-                                    </div>
-                                </>}
+                                <label className="flex items-center justify-between p-2 hover:bg-white/10 rounded cursor-pointer"><span className="text-sm">Show hidden items</span><input type="checkbox" checked={viewOptions.showHidden} onChange={e => handleUpdateOption('showHidden', e.target.checked)} className="accent-orange-500"/></label>
                             </div>
                         )}
                     </div>
@@ -355,14 +442,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                 <div className="flex-1 overflow-y-auto p-4">
                     {renderMainContent()}
                 </div>
-                {viewOptions.showDetailsPane && detailsPaneItem && (
-                    <aside className="w-80 border-l border-[var(--theme-border)] p-4 flex-shrink-0 flex flex-col">
-                        <div className="text-center">
-                            <div className="w-32 h-32 mx-auto text-orange-400">{getIconForItem(detailsPaneItem)}</div>
-                            <h3 className="text-lg font-bold mt-2 break-words">{detailsPaneItem.name}</h3>
-                            <p className="text-sm text-gray-400">{detailsPaneItem.kind}</p>
-                        </div>
-                    </aside>
+                {viewOptions.showDetailsPane && (
+                    <DetailsPane item={detailsPaneItem} content={previewContent} onClose={() => setDetailsPaneItem(null)} />
                 )}
             </main>
 
