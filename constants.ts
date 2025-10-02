@@ -1,5 +1,4 @@
 
-
 export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
 Periscope telephoto zoom – ultra-long zoom without losing quality.
 High-resolution sensors (200MP+) – super detailed photos.
@@ -69,9 +68,9 @@ export const CREATOR_PIN = '1723j';
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   companyName: 'JSTYP.me Ai tools',
   slogan: "Jason's solution to your problems, Yes me!!",
-  logoSrc: 'https://i.ibb.co/jDN7TfN/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png',
+  logoSrc: 'https://i.ibb.co/RkrJ44HK/Whats-App-Image-2025-06-25-at-15-31-54-removebg-preview.png',
   heroImageSrc: 'https://i.postimg.cc/prM05S7g/bc0e611c-f980-4f3d-b723-a06f0bb547a2.jpg',
-  backgroundImageSrc: 'https://i.postimg.cc/9F0C3r4M/futuristic-background.jpg',
+  backgroundImageSrc: 'https://i.ibb.co/hx8Zs4c3/881f8f35-aab6-451d-a33c-eb68278f65fc.jpg',
   tel: '0695989427',
   email: 'odendaaljason454@gmail.com',
   website: '',

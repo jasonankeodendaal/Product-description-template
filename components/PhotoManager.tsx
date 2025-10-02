@@ -190,7 +190,8 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
         setSelectionMode(false);
     };
 
-    const allVisiblePhotoIds = useMemo(() => Object.values(groupedPhotos).flat().map(p => p.id), [groupedPhotos]);
+    // FIX: Refactored to use Object.keys().flatMap() to avoid type inference issues with Object.values().flat() which can result in `unknown[]`.
+    const allVisiblePhotoIds = useMemo(() => Object.keys(groupedPhotos).flatMap(key => groupedPhotos[key].map(p => p.id)), [groupedPhotos]);
     const handleSelectAll = () => setSelectedIds(new Set(allVisiblePhotoIds));
     const allSelected = allVisiblePhotoIds.length > 0 && selectedIds.size === allVisiblePhotoIds.length;
     const handleToggleSelectAll = () => allSelected ? setSelectedIds(new Set()) : handleSelectAll();

@@ -1,4 +1,5 @@
 
+
 import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../App";
 import { SiteSettings } from "../constants";
 
@@ -28,6 +29,40 @@ const readFile = async (dirHandle: FileSystemDirectoryHandle, fileName: string):
 const getOrCreateDirectory = async (parentHandle: FileSystemDirectoryHandle, name: string): Promise<FileSystemDirectoryHandle> => {
     return await parentHandle.getDirectoryHandle(name, { create: true });
 }
+
+// New helper function to wrap removeEntry with a retry mechanism for InvalidStateError
+const removeEntryWithRetry = async (
+    dirHandle: FileSystemDirectoryHandle,
+    name: string,
+    options: { recursive?: boolean } = {},
+    // Pass the root handle to re-request permissions if needed
+    rootHandleForPerms?: FileSystemDirectoryHandle
+) => {
+    try {
+        await dirHandle.removeEntry(name, options);
+    } catch (e) {
+        if (e instanceof DOMException && e.name === 'InvalidStateError' && rootHandleForPerms) {
+            console.warn(`removeEntry for "${name}" failed due to a state change. Re-requesting permission and retrying...`);
+            try {
+                // Re-verify permissions. This might prompt the user.
+                const permissionState = await (rootHandleForPerms as any).requestPermission({ mode: 'readwrite' });
+                if (permissionState !== 'granted') {
+                    throw new Error('Permission to access the folder was denied.');
+                }
+                // The original handle should now be usable again.
+                await dirHandle.removeEntry(name, options);
+                console.log(`Retry of removeEntry for "${name}" was successful.`);
+            } catch (retryError) {
+                console.error(`Failed to delete "${name}" on retry:`, retryError);
+                // Throw a more user-friendly error.
+                throw new Error('Failed to delete. The folder was modified by another program. Please try again.');
+            }
+        } else {
+            // Re-throw other types of errors.
+            throw e;
+        }
+    }
+};
 
 // --- New Constants & Helpers ---
 const JSON_BACKUPS_DIR = 'JSON_Backups';
@@ -61,26 +96,35 @@ const deletePairedEntity = async (dirHandle: FileSystemDirectoryHandle, entity: 
     // Delete media file from primary location
     try {
         const dataDir = await getNestedDirectory(dirHandle, dataPath);
-        if (dataDir) await dataDir.removeEntry(`${entity.id}.${mediaExt}`);
+        if (dataDir) await removeEntryWithRetry(dataDir, `${entity.id}.${mediaExt}`, {}, dirHandle);
     } catch(e) {
-        if (!(e instanceof DOMException && e.name === 'NotFoundError')) console.warn(`Could not delete media file for ${entity.id}:`, e);
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+            console.error(`Could not delete media file for ${entity.id}:`, e);
+            throw e; // Propagate the error
+        }
     }
     
     // Delete JSON from new location
     try {
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const jsonDir = await getNestedDirectory(jsonBackupRoot, dataPath);
-        if (jsonDir) await jsonDir.removeEntry(`${entity.id}.json`);
+        if (jsonDir) await removeEntryWithRetry(jsonDir, `${entity.id}.json`, {}, dirHandle);
     } catch (e) {
-        if (!(e instanceof DOMException && e.name === 'NotFoundError')) console.warn(`Could not delete JSON backup for ${entity.id}:`, e);
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+            console.error(`Could not delete JSON backup for ${entity.id}:`, e);
+            throw e; // Propagate the error
+        }
     }
 
     // Delete JSON from old location (for migration cleanup)
     try {
         const dataDir = await getNestedDirectory(dirHandle, dataPath);
-        if (dataDir) await dataDir.removeEntry(`${entity.id}.json`);
+        if (dataDir) await removeEntryWithRetry(dataDir, `${entity.id}.json`, {}, dirHandle);
     } catch(e) {
-        if (!(e instanceof DOMException && e.name === 'NotFoundError')) console.warn(`Could not delete legacy JSON for ${entity.id}:`, e);
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+            // This is less critical, so just a warning is fine.
+            console.warn(`Could not delete legacy JSON for ${entity.id}:`, e);
+        }
     }
 };
 
@@ -96,13 +140,22 @@ const deleteJsonOnlyEntity = async (dirHandle: FileSystemDirectoryHandle, entity
     try {
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const jsonEntityDir = await jsonBackupRoot.getDirectoryHandle(entityPluralName);
-        await jsonEntityDir.removeEntry(`${id}.json`);
-    } catch (e) {}
+        await removeEntryWithRetry(jsonEntityDir, `${id}.json`, {}, dirHandle);
+    } catch (e) {
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+            console.error(`Could not delete new JSON for ${id}:`, e);
+            throw e; // Propagate error
+        }
+    }
     // Delete from old location
     try {
         const entityDir = await dirHandle.getDirectoryHandle(entityPluralName);
-        await entityDir.removeEntry(`${id}.json`);
-    } catch (e) {}
+        await removeEntryWithRetry(entityDir, `${id}.json`, {}, dirHandle);
+    } catch (e) {
+        if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+            console.warn(`Could not delete legacy JSON for ${id}:`, e);
+        }
+    }
 };
 
 const loadJsonOnlyEntities = async <T extends {id: string}>(dirHandle: FileSystemDirectoryHandle, entityNamePlural: string): Promise<T[]> => {
@@ -491,7 +544,7 @@ const deleteItemFromDirectory = async (
     isRecursive: boolean
 ): Promise<void> => {
     const parentHandle = await getDirectoryHandleByPath(rootHandle, path);
-    await parentHandle.removeEntry(itemName, { recursive: isRecursive });
+    await removeEntryWithRetry(parentHandle, itemName, { recursive: isRecursive }, rootHandle);
 };
 
 

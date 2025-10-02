@@ -704,9 +704,19 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteRecording = useCallback(async (id: string) => {
-        setRecordings(prev => prev.filter(r => r.id !== id));
-        await db.deleteRecording(id);
-        if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
+        let originalRecordings: Recording[] | null = null;
+        setRecordings(prev => {
+            originalRecordings = prev;
+            return prev.filter(r => r.id !== id);
+        });
+        try {
+            await db.deleteRecording(id);
+            if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalRecordings) setRecordings(originalRecordings);
+            console.error("Failed to delete recording:", e);
+            alert(`Failed to delete recording: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
     
     const handleSavePhoto = useCallback(async (photo: Photo) => {
@@ -723,9 +733,19 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeletePhoto = useCallback(async (photo: Photo) => {
-        setPhotos(prev => prev.filter(p => p.id !== photo.id));
-        await db.deletePhoto(photo.id);
-        if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
+        let originalPhotos: Photo[] | null = null;
+        setPhotos(prev => {
+            originalPhotos = prev;
+            return prev.filter(p => p.id !== photo.id);
+        });
+        try {
+            await db.deletePhoto(photo.id);
+            if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
+        } catch (e) {
+            if (originalPhotos) setPhotos(originalPhotos);
+            console.error("Failed to delete photo:", e);
+            alert(`Failed to delete photo: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
     
     const handleSaveVideo = useCallback(async (video: Video) => {
@@ -741,9 +761,19 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteVideo = useCallback(async (video: Video) => {
-        setVideos(prev => prev.filter(v => v.id !== video.id));
-        await db.deleteVideo(video.id);
-        if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
+        let originalVideos: Video[] | null = null;
+        setVideos(prev => {
+            originalVideos = prev;
+            return prev.filter(v => v.id !== video.id);
+        });
+        try {
+            await db.deleteVideo(video.id);
+            if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
+        } catch (e) {
+            if (originalVideos) setVideos(originalVideos);
+            console.error("Failed to delete video:", e);
+            alert(`Failed to delete video: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     const handleDeleteFolderContents = useCallback(async (folderPath: string) => {
@@ -778,9 +808,19 @@ const App: React.FC = () => {
     
 
     const handleDeleteNote = useCallback(async (id: string) => {
-        setNotes(prev => prev.filter(n => n.id !== id));
-        await db.deleteNote(id);
-        if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
+        let originalNotes: Note[] | null = null;
+        setNotes(prev => {
+            originalNotes = prev;
+            return prev.filter(n => n.id !== id);
+        });
+        try {
+            await db.deleteNote(id);
+            if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalNotes) setNotes(originalNotes);
+            console.error("Failed to delete note:", e);
+            alert(`Failed to delete note: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     const handleSaveNoteRecording = useCallback(async (rec: NoteRecording) => {
@@ -796,15 +836,35 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteNoteRecording = useCallback(async (id: string) => {
-        setNoteRecordings(prev => prev.filter(r => r.id !== id));
-        await db.deleteNoteRecording(id);
-        if (directoryHandle) await fileSystemService.deleteNoteRecordingFromDirectory(directoryHandle, id);
+        let originalNoteRecordings: NoteRecording[] | null = null;
+        setNoteRecordings(prev => {
+            originalNoteRecordings = prev;
+            return prev.filter(r => r.id !== id);
+        });
+        try {
+            await db.deleteNoteRecording(id);
+            if (directoryHandle) await fileSystemService.deleteNoteRecordingFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalNoteRecordings) setNoteRecordings(originalNoteRecordings);
+            console.error("Failed to delete note recording:", e);
+            alert(`Failed to delete note recording: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     const handleDeleteCalendarEvent = useCallback(async (id: string) => {
-        setCalendarEvents(prev => prev.filter(e => e.id !== id));
-        await db.deleteCalendarEvent(id);
-        if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
+        let originalEvents: CalendarEvent[] | null = null;
+        setCalendarEvents(prev => {
+            originalEvents = prev;
+            return prev.filter(e => e.id !== id);
+        });
+        try {
+            await db.deleteCalendarEvent(id);
+            if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalEvents) setCalendarEvents(originalEvents);
+            console.error("Failed to delete calendar event:", e);
+            alert(`Failed to delete calendar event: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     // --- Timer Handlers ---
