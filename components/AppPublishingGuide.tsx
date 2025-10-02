@@ -36,16 +36,78 @@ const Alert: React.FC<{ type: 'info' | 'warning' | 'tip' | 'error', children: Re
 };
 
 const getFixInstruction = (source: CheckResult['source'], name: string): React.ReactNode => {
-    const iconName = <span className="text-green-400 font-semibold">({name})</span>;
+    const assetName = <span className="text-green-400 font-semibold">{name}</span>;
+
+    // A reusable explanation for broken links.
+    const brokenLinkExplanation = (
+        <p className="text-sm text-amber-300 mt-2">
+            <strong>Why is this happening?</strong> The URL for this image is broken or has expired. You need to upload the image to a hosting service to get a new, working link.
+        </p>
+    );
+
+    const getNewUrlSteps = (
+        <div className="text-sm text-amber-300 mt-2 pl-4 border-l-2 border-amber-500/50">
+            <p><strong>To get a new URL:</strong></p>
+            <ol className="list-decimal list-inside mt-1 space-y-1">
+                <li>Find the original image file on your computer.</li>
+                <li>Go to a free image host like <a href="https://imgbb.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold">ImgBB</a> or <a href="https://postimages.org/" target="_blank" rel="noopener noreferrer" className="underline font-bold">Postimages</a>.</li>
+                <li>Upload your image and copy the "Direct link" they provide.</li>
+            </ol>
+        </div>
+    );
+
     switch (source) {
         case 'siteSettings':
-            return <>In the app, go to <strong className="text-white">Dashboard &gt; Site Settings &gt; Company Details (Local)</strong> and update the corresponding image URL {iconName}.</>;
+            return (
+                <div className="space-y-2">
+                    <p>This is a <strong className="text-white">dynamic branding image</strong> used inside the live app.</p>
+                    {brokenLinkExplanation}
+                    {getNewUrlSteps}
+                    <div className="text-sm text-amber-300 mt-2 pl-4 border-l-2 border-amber-500/50">
+                        <p><strong>How to fix:</strong></p>
+                         <ol className="list-decimal list-inside mt-1 space-y-1">
+                            <li>Once you have the new link, go to: <strong className="text-white">Dashboard &gt; Site Settings &gt; Company Details (Local)</strong>.</li>
+                            <li>Paste your new link into the <strong className="text-white">{assetName}</strong> field and save. The change will be live immediately.</li>
+                        </ol>
+                    </div>
+                </div>
+            );
         case 'creatorDetails':
-             return <>In the app, go to <strong className="text-white">Dashboard &gt; Site Settings &gt; Creator Details (Global)</strong> and update the logo URL {iconName}.</>;
+             return (
+                 <div className="space-y-2">
+                    <p>This is the <strong className="text-white">global creator logo</strong>, updated for all users.</p>
+                    {brokenLinkExplanation}
+                    {getNewUrlSteps}
+                     <div className="text-sm text-amber-300 mt-2 pl-4 border-l-2 border-amber-500/50">
+                        <p><strong>How to fix:</strong></p>
+                         <ol className="list-decimal list-inside mt-1 space-y-1">
+                            <li>Once you have the new link, go to: <strong className="text-white">Dashboard &gt; Site Settings &gt; Creator Details (Global)</strong>.</li>
+                            <li>Paste your new link into the <strong className="text-white">{assetName}</strong> field and save.</li>
+                        </ol>
+                    </div>
+                </div>
+             );
         case 'manifest':
-            return <>This URL for {iconName} is defined in the <strong className="text-white">`/manifest.json`</strong> file in the project's root directory. You must update the URL in the source code and redeploy the application.</>;
+            return (
+                 <div className="space-y-2">
+                    <p>This is a <strong className="text-white">static PWA asset</strong>. It's like the app's "business card" used by devices during installation.</p>
+                    <p className="text-sm text-amber-300 mt-2">
+                        <strong>Why is this different?</strong> Because your phone or computer reads this information <em className="font-semibold">before</em> the app starts, it cannot be changed from the live dashboard. It must be updated in the project's source code.
+                    </p>
+                    {getNewUrlSteps}
+                     <div className="text-sm text-amber-300 mt-2 pl-4 border-l-2 border-amber-500/50">
+                        <p><strong>How to fix:</strong></p>
+                         <ol className="list-decimal list-inside mt-1 space-y-1">
+                            <li>Open the project's source code and find the file named <strong className="text-white">`/manifest.json`</strong>.</li>
+                            <li>Inside this file, find the broken link for {assetName}.</li>
+                            <li>Replace the old, broken URL with your new, working one.</li>
+                            <li>Save the file and <strong className="text-white">redeploy your application</strong> on your hosting provider (e.g., Vercel) for the change to take effect.</li>
+                        </ol>
+                    </div>
+                </div>
+            );
         default:
-            return <>Check the application configuration for this URL {iconName}.</>;
+            return <>Check the application configuration for this URL ({assetName}).</>;
     }
 };
 
@@ -149,7 +211,7 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorD
                 </div>
                 {!isChecking && !allChecksPassed && (
                     <div className="mt-4"><Alert type="error"><strong>Check Failed:</strong> One or more resources are inaccessible. The build process will fail if these links are broken. Please fix the URLs below and reload this page to re-run the check.</Alert>
-                        <div className="mt-4 bg-red-900/20 p-4 rounded-md border border-red-500/30"><h4 className="font-semibold text-red-400">Failed Resources & How to Fix:</h4><ul className="mt-2 space-y-3 text-sm list-disc list-inside text-red-300">{failedChecks.map(result => (<li key={result.url + result.name}><p><strong className="text-red-200">{result.name}:</strong> <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-white">{result.url}</a></p><p className="mt-1 text-xs text-amber-300 pl-4 border-l-2 border-amber-500/50"><strong className="text-amber-200">Fix:</strong> {getFixInstruction(result.source, result.name)}</p></li>))}</ul></div>
+                        <div className="mt-4 bg-red-900/20 p-4 rounded-md border border-red-500/30"><h4 className="font-semibold text-red-400">Failed Resources & How to Fix:</h4><ul className="mt-2 space-y-3 text-sm list-disc list-inside text-red-300">{failedChecks.map(result => (<li key={result.url + result.name}><p><strong className="text-red-200">{result.name}:</strong> <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-white">{result.url}</a></p><div className="mt-1 text-xs text-amber-300 pl-4 border-l-2 border-amber-500/50"><strong className="text-amber-200">Fix:</strong> {getFixInstruction(result.source, result.name)}</div></li>))}</ul></div>
                     </div>
                 )}
             </section>
