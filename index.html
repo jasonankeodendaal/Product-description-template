@@ -5,10 +5,10 @@
   <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ai tools | AI Product Description Generator</title>
-  <link rel="icon" href="https://i.ibb.co/RkrJ44HK/Whats-App-Image-2025-06-25-at-15-31-54-removebg-preview.png" type="image/png">
+  <link rel="icon" href="https://i.ibb.co/d46Mf1g/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png" type="image/png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1F2937">
-  <link rel="apple-touch-icon" href="https://i.ibb.co/RkrJ44HK/Whats-App-Image-2025-06-25-at-15-31-54-removebg-preview.png">
+  <link rel="apple-touch-icon" href="https://i.ibb.co/d46Mf1g/7fa06a13-6799-4500-8eb8-b3d1d8b3dfa7.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -29,8 +29,8 @@
   <style>
     :root {
       /* Reverted to Dark & Orange Theme */
-      --theme-bg: rgba(17, 24, 39, 0.8);
-      --theme-card-bg: rgba(31, 41, 55, 0.85);
+      --theme-bg: rgba(17, 24, 39, 0.65);
+      --theme-card-bg: rgba(31, 41, 55, 0.8);
       --theme-dark-bg: #000000;
       --theme-border: #4B5563;
       --theme-orange: #F97316; /* Main accent color */
@@ -53,7 +53,7 @@
       --theme-green: #34D399;
     }
     body {
-      background-color: var(--theme-dark-bg);
+      background-color: transparent;
       color: var(--theme-text-primary);
       font-family: 'Nunito', sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -84,7 +84,7 @@
         background-image: 
             linear-gradient(to right, rgba(249, 115, 22, 0.08) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(249, 115, 22, 0.08) 1px, transparent 1px),
-            radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 1) 100%);
+            radial-gradient(ellipse at center, rgba(17, 24, 39, 0.1) 40%, rgba(17, 24, 39, 0.75) 100%);
         background-size: 40px 40px, 40px 40px, 100% 100%;
         animation: move-grid 25s linear infinite;
     }
@@ -177,17 +177,6 @@
     .note-editor-content { min-height: 5em; text-align: left; direction: ltr; }
     ul[data-type="checklist"] ul[data-type="checklist"] { padding-left: 2rem; margin: 0; }
 
-    /* Basic Camera Filters */
-    .camera-filter-none { filter: none; } .camera-filter-grayscale { filter: grayscale(100%); } .camera-filter-sepia { filter: sepia(100%); } .camera-filter-contrast { filter: contrast(1.5); } .camera-filter-saturate { filter: saturate(2); } .camera-filter-invert { filter: invert(100%); }
-    /* Advanced Camera Filters */
-    .camera-filter-vivid { filter: brightness(1.1) contrast(1.2) saturate(1.3); }
-    .camera-filter-vintage { filter: sepia(0.6) brightness(1.1) contrast(0.9); }
-    .camera-filter-noir { filter: grayscale(1) contrast(1.3); }
-    .camera-filter-dreamy { filter: saturate(1.5) blur(1px) contrast(1.1); }
-    .camera-filter-cool { filter: hue-rotate(-15deg) contrast(1.1); }
-    .camera-filter-warm { filter: sepia(0.3) saturate(1.2); }
-
-
     .bg-grid-orange-500\/10 {
         background-image: 
             linear-gradient(to right, rgba(249, 115, 22, 0.05) 1px, transparent 1px),
@@ -195,31 +184,6 @@
         background-size: 1.5rem 1.5rem;
     }
     
-    .camera-grid-overlay { pointer-events: none; position: absolute; inset: 0; z-index: 5; }
-    .camera-grid-overlay::before, .camera-grid-overlay::after { content: ''; position: absolute; }
-    .camera-grid-overlay::before { left: 33.33%; right: 33.33%; top: 0; bottom: 0; border-left: 1px solid rgba(255, 255, 255, 0.2); border-right: 1px solid rgba(255, 255, 255, 0.2); }
-    .camera-grid-overlay::after { top: 33.33%; bottom: 33.33%; left: 0; right: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
-    
-    .shutter-button {
-      background-color: white; width: 4.5rem; height: 4.5rem; border-radius: 9999px;
-      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .shutter-button:active { transform: scale(0.9); }
-
-    .zoom-slider {
-        -webkit-appearance: none; appearance: none;
-        writing-mode: bt-lr; /* Vertical slider */
-        background: rgba(255, 255, 255, 0.2);
-        width: 4px;
-        border-radius: 2px;
-    }
-    .zoom-slider::-webkit-slider-thumb {
-        -webkit-appearance: none; appearance: none;
-        width: 1.25rem; height: 1.25rem;
-        background: #F97316; border-radius: 9999px;
-        border: 2px solid white; cursor: pointer;
-    }
-
     @keyframes pulse-slow { 0%, 100% { opacity: 0.7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
     .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
     
@@ -320,7 +284,7 @@
         animation: flex-modal-scale-out 0.3s forwards;
     }
     .note-settings-sidebar {
-        background-color: #161b22; /* Darker background from screenshot */
+        background-color: rgba(22, 27, 34, 0.85); /* Darker background from screenshot */
         border-top: 1px solid var(--theme-border);
         width: 100%;
         max-height: 85vh;

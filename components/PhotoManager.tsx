@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Photo } from '../App';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { UploadIcon } from './icons/UploadIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { TrashIcon } from './icons/TrashIcon';
-import { CameraCapture } from './CameraCapture';
 import { resizeImage } from '../utils/imageUtils';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { Spinner } from './icons/Spinner';
@@ -100,12 +99,12 @@ const PhotoDetailModal: React.FC<{
 export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUpdate, onDelete }) => {
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadCount, setUploadCount] = useState(0);
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [viewGroup, setViewGroup] = useState<'date' | 'folder'>('date');
+    const cameraInputRef = useRef<HTMLInputElement>(null);
     
     useEffect(() => {
         if (selectedPhoto && !photos.find(p => p.id === selectedPhoto.id)) {
@@ -198,15 +197,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
 
     return (
         <div className="flex-1 flex flex-col bg-[#0D1117] overflow-hidden">
-            {isCameraOpen && <CameraCapture onClose={() => setIsCameraOpen(false)} onCapture={async (dataUrl) => {
-                setIsCameraOpen(false);
-                setIsUploading(true); setUploadCount(1);
-                try {
-                    const imageBlob = await resizeImage(dataURLtoBlob(dataUrl)).then(dataURLtoBlob);
-                    await onSave({ id: crypto.randomUUID(), name: `Capture ${new Date().toLocaleString()}`, notes: '', date: new Date().toISOString(), folder: '_uncategorized', imageBlob, imageMimeType: imageBlob.type, tags: ['camera-capture']});
-                } catch(e) { console.error("Failed to save captured photo:", e); alert("Failed to save captured photo."); } 
-                finally { setIsUploading(false); setUploadCount(0); }
-            }}/>}
+            <input type="file" ref={cameraInputRef} className="sr-only" onChange={(e) => handleFileUpload(e.target.files)} accept="image/*" capture="environment" />
             {selectedPhoto && <PhotoDetailModal photo={selectedPhoto} onUpdate={onUpdate} onDelete={handleDeletePhoto} onClose={() => setSelectedPhoto(null)} />}
            
             <header className="photo-manager-header">
@@ -263,7 +254,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
                         <input type="file" className="sr-only" onChange={(e) => handleFileUpload(e.target.files)} multiple accept="image/*" disabled={isUploading} />
                         {isUploading ? <Spinner className="h-6 w-6" /> : <UploadIcon />}
                     </label>
-                    <button onClick={() => setIsCameraOpen(true)} className="bg-orange-500 text-black rounded-full p-4 shadow-lg hover:bg-orange-600 transition-colors">
+                    <button onClick={() => cameraInputRef.current?.click()} className="bg-orange-500 text-black rounded-full p-4 shadow-lg hover:bg-orange-600 transition-colors">
                         <CameraIcon />
                     </button>
                 </div>

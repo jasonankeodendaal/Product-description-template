@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { CameraIcon } from './icons/CameraIcon';
-import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { useRecorder } from '../hooks/useRecorder';
@@ -12,6 +11,7 @@ import { formatTime } from '../utils/formatters';
 import { LiveWaveform } from './LiveWaveform';
 import { WaveformPlayer } from './WaveformPlayer';
 import { CheckIcon } from './icons/CheckIcon';
+import { resizeImage } from '../utils/imageUtils';
 
 interface EventEditorModalProps {
     onClose: () => void;
@@ -55,7 +55,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
     const [reminderOffset, setReminderOffset] = useState(event?.reminderOffset ?? -1);
     const [photoId, setPhotoId] = useState(event?.photoId);
     const [recordingIds, setRecordingIds] = useState<string[]>(event?.recordingIds || []);
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
     
     const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode, setAudioBlob } = useRecorder();
 
@@ -92,11 +92,17 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
         }
     };
     
-    const handleCapture = async (dataUrl: string) => {
-        setIsCameraOpen(false);
-        const newPhoto: Photo = { id: crypto.randomUUID(), name: `Event Photo ${new Date().toLocaleDateString()}`, notes: `For event: ${title}`, date: new Date().toISOString(), folder: 'calendar_events', imageBlob: dataURLtoBlob(dataUrl), imageMimeType: 'image/jpeg', tags: ['calendar', title] };
+    const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const resizedDataUrl = await resizeImage(file);
+        const imageBlob = dataURLtoBlob(resizedDataUrl);
+
+        const newPhoto: Photo = { id: crypto.randomUUID(), name: `Event Photo ${new Date().toLocaleDateString()}`, notes: `For event: ${title}`, date: new Date().toISOString(), folder: 'calendar_events', imageBlob: imageBlob, imageMimeType: imageBlob.type, tags: ['calendar', title] };
         await onSavePhoto(newPhoto);
         setPhotoId(newPhoto.id);
+        if (e.target) e.target.value = '';
     };
     
     const handleSaveRecording = useCallback(async () => {
@@ -111,7 +117,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
 
     return (
         <>
-            {isCameraOpen && <CameraCapture onCapture={handleCapture} onClose={() => setIsCameraOpen(false)} />}
+            <input type="file" ref={cameraInputRef} className="sr-only" onChange={handleCapture} accept="image/*" capture="environment" />
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={onClose}>
                 <div className="bg-[var(--theme-card-bg)] w-full max-w-lg rounded-xl shadow-2xl border border-[var(--theme-border)]/50 relative animate-modal-scale-in flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                     <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
@@ -143,7 +149,7 @@ export const EventEditorModal: React.FC<EventEditorModalProps> = ({ onClose, onS
                                 <h4 className="block text-sm font-medium text-[var(--theme-text-secondary)] mb-2">Attachments</h4>
                                 <div className="space-y-3">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-20 flex-shrink-0">{attachedPhoto ? <PhotoThumbnail photo={attachedPhoto} onSelect={() => {}} onDelete={() => setPhotoId(undefined)} isSelected={false} isSelectionActive={false} onToggleSelection={()=>{}} /> : <button type="button" onClick={() => setIsCameraOpen(true)} className="w-20 h-20 border-2 border-dashed border-[var(--theme-border)] rounded-md flex flex-col items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]/50"><CameraIcon className="h-6 w-6"/><span className="text-xs mt-1">Photo</span></button>}</div>
+                                        <div className="w-20 flex-shrink-0">{attachedPhoto ? <PhotoThumbnail photo={attachedPhoto} onSelect={() => {}} onDelete={() => setPhotoId(undefined)} isSelected={false} isSelectionActive={false} onToggleSelection={()=>{}} /> : <button type="button" onClick={() => cameraInputRef.current?.click()} className="w-20 h-20 border-2 border-dashed border-[var(--theme-border)] rounded-md flex flex-col items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]/50"><CameraIcon className="h-6 w-6"/><span className="text-xs mt-1">Photo</span></button>}</div>
                                         <div className="flex-1 space-y-2">
                                             {attachedRecordings.map(rec => (<div key={rec.id} className="flex items-center gap-2 bg-black/20 p-1 rounded-md"><div className="flex-grow"><WaveformPlayer audioBlob={rec.audioBlob} /></div><button type="button" onClick={() => handleUnlinkRecording(rec.id)} className="p-1 text-gray-400 hover:text-red-400"><XIcon/></button></div>))}
                                             <div className="flex items-center gap-2 bg-[var(--theme-bg)]/50 p-1 rounded">

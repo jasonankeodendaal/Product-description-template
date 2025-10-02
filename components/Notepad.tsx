@@ -15,7 +15,6 @@ import { WaveformPlayer } from './WaveformPlayer';
 import { formatTime } from '../utils/formatters';
 import { LiveWaveform } from './LiveWaveform';
 import { XIcon } from './icons/XIcon';
-import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { ScanIcon } from './icons/ScanIcon';
 import { BellIcon } from './icons/BellIcon';
@@ -157,11 +156,10 @@ const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note
     const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode, setAudioBlob } = useRecorder();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSettingsClosing, setIsSettingsClosing] = useState(false);
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
-    const [cameraMode, setCameraMode] = useState<'photo' | 'document'>('photo');
     const [isRecordingPanelOpen, setIsRecordingPanelOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const heroFileInputRef = useRef<HTMLInputElement>(null);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [playingRecording, setPlayingRecording] = useState<NoteRecording | null>(null);
     const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
@@ -376,11 +374,12 @@ const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note
         }
     };
     
-    const handleCameraCapture = async (dataUrl: string) => {
-        setIsCameraOpen(false);
-        const blob = dataURLtoBlob(dataUrl);
-        const file = new File([blob], `capture-${Date.now()}.jpeg`, { type: blob.type, lastModified: Date.now() });
-        await handleFileSelect(file);
+    const handleCameraCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            handleFileSelect(file);
+        }
+        if (event.target) event.target.value = '';
     };
 
     const dragHandlers = {
@@ -419,12 +418,12 @@ const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note
 
     return (
         <div className="h-full flex flex-col bg-[var(--theme-card-bg)] relative overflow-hidden">
-           {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} mode={cameraMode} />}
            {isSettingsOpen && <NoteSettingsPanel note={localNote} onNoteChange={updateLocalNote} onClose={handleCloseSettings} isClosing={isSettingsClosing} />}
            {playingRecording && <AudioPlayerModal recording={playingRecording} onClose={() => setPlayingRecording(null)}/>}
            {viewingPhoto && <PhotoViewerModal photo={viewingPhoto} onClose={() => setViewingPhoto(null)}/>}
            
            <input type="file" ref={heroFileInputRef} className="sr-only" accept="image/*" onChange={handleHeroImageSelect} />
+           <input type="file" ref={cameraInputRef} className="sr-only" accept="image/*" capture="environment" onChange={handleCameraCapture} />
            {localNote.heroImage ? (
                <div className="note-hero-container group">
                    <img src={localNote.heroImage} alt="Note hero" />
@@ -469,7 +468,7 @@ const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'> & { note: Note
                    <div className="toolbar-divider"></div>
                    <input type="file" ref={fileInputRef} className="sr-only" accept="image/*" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} />
                    <button title="Attach Image" onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-slate-700 rounded"><ImageIcon /></button>
-                   <button title="Scan Document" onClick={() => { setCameraMode('document'); setIsCameraOpen(true); }} className="p-2 hover:bg-slate-700 rounded"><ScanIcon /></button>
+                   <button title="Scan Document" onClick={() => cameraInputRef.current?.click()} className="p-2 hover:bg-slate-700 rounded"><ScanIcon /></button>
                    <button title="Record Audio Clip" onClick={() => setIsRecordingPanelOpen(p => !p)} className={`p-2 hover:bg-slate-700 rounded ${isRecordingPanelOpen ? 'active' : ''}`}><MicIcon /></button>
                    <button title="Note Settings" onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-slate-700 rounded"><SettingsIcon /></button>
                </div>

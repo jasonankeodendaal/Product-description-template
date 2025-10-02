@@ -126,7 +126,7 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-start md:items-center justify-center p-4 auth-modal-container overflow-y-auto pt-16 md:pt-4 pb-8" aria-modal="true" role="dialog">
-        <div className="bg-slate-800 w-full max-w-4xl rounded-xl shadow-2xl border border-slate-700/50 relative animate-modal-scale-in flex flex-col md:flex-row overflow-hidden md:min-h-[550px]">
+        <div className="bg-[var(--theme-bg)] w-full max-w-4xl rounded-xl shadow-2xl border border-slate-700/50 relative animate-modal-scale-in flex flex-col md:flex-row overflow-hidden md:min-h-[550px]">
             <AuthBrandingPanel creatorDetails={creatorDetails} />
             <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center relative auth-form-panel">
                 <div className="animate-fade-in-down">
@@ -143,4 +143,3 @@ export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, si
     </div>
   );
 };
-      

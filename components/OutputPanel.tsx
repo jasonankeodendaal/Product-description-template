@@ -227,7 +227,7 @@ const VideoPlayerModal: React.FC<{ video: Video; onClose: () => void }> = ({ vid
     );
 };
 
-const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video) => void }> = ({ video, onOpenPlayer }) => {
+const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video) => void; onDelete: (video: Video) => void; }> = ({ video, onOpenPlayer, onDelete }) => {
     const [thumbUrl, setThumbUrl] = useState<string | null>(null);
 
     useEffect(() => {
@@ -253,12 +253,22 @@ const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video
             >
                 <PlayIcon className="w-10 h-10 text-white drop-shadow-lg" />
             </div>
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(video);
+                }}
+                className="absolute top-0.5 right-0.5 p-0.5 bg-black/60 rounded-full text-white/80 hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                title="Delete Video"
+            >
+                <XIcon className="w-4 h-4" />
+            </button>
         </div>
     );
 };
 
 
-export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo }) => {
+export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo, onDeleteVideo }) => {
     const [editableOutput, setEditableOutput] = useState('');
     const [isCopied, setIsCopied] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -533,7 +543,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
             <div className="mt-4 pt-4 border-t border-[var(--theme-border)]/50">
                 <h3 className="text-lg font-semibold text-[var(--theme-orange)] mb-3">Linked Videos</h3>
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                    {linkedVideos.map(video => <LinkedVideoThumbnail key={video.id} video={video} onOpenPlayer={setPlayingVideo} />)}
+                    {linkedVideos.map(video => <LinkedVideoThumbnail key={video.id} video={video} onOpenPlayer={setPlayingVideo} onDelete={onDeleteVideo} />)}
                     <input
                         type="file"
                         ref={videoInputRef}

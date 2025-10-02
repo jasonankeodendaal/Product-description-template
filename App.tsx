@@ -1437,7 +1437,7 @@ const App: React.FC = () => {
             </div>
             
             <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
-                 <div className="bg-slate-950/70 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
+                 <div className="bg-slate-950/40 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
                     {/* --- Desktop Header (Now inside the main panel) --- */}
                     <Header 
                         siteSettings={siteSettings} 
@@ -1526,7 +1526,7 @@ const App: React.FC = () => {
             )}
              {isCalendarModalOpen && (
                 <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 md:p-4" onClick={() => setIsCalendarModalOpen(false)}>
-                    <div className="bg-[var(--theme-dark-bg)] w-full h-full md:max-w-4xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[var(--theme-bg)] w-full h-full md:max-w-4xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in" onClick={e => e.stopPropagation()}>
                         <CalendarView
                             onClose={() => setIsCalendarModalOpen(false)}
                             events={calendarEvents}

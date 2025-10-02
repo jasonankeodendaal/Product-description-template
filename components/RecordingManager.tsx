@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Recording, Photo } from '../App';
 import { SiteSettings } from '../constants';
 import { useRecorder } from '../hooks/useRecorder';
@@ -12,7 +12,6 @@ import { SaveIcon } from './icons/SaveIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { PhotoThumbnail } from './PhotoThumbnail';
-import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { Spinner } from './icons/Spinner';
 import { XIcon } from './icons/XIcon';
@@ -25,6 +24,7 @@ import { PlayIcon } from './icons/PlayIcon';
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
+import { resizeImage } from '../utils/imageUtils';
 
 
 interface RecordingManagerProps {
@@ -45,8 +45,8 @@ const RecordingDetailContent: React.FC<{
     onSavePhoto: (photo: Photo) => void;
 }> = React.memo(({ recording, onUpdate, onTranscribe, photos, onSavePhoto }) => {
     const [localRecording, setLocalRecording] = useState(recording);
-    const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
     
     // State for photo selection within this view
     const [isSelectionActive, setIsSelectionActive] = useState(false);
@@ -81,11 +81,17 @@ const RecordingDetailContent: React.FC<{
         });
     };
 
-    const handleCapture = async (dataUrl: string) => {
-       const newPhoto: Photo = { id: crypto.randomUUID(), name: `Photo for ${localRecording.name}`, notes: '', date: new Date().toISOString(), folder: `recordings/${localRecording.id}`, imageBlob: dataURLtoBlob(dataUrl), imageMimeType: 'image/jpeg', tags: [localRecording.name, 'recording-asset']};
+    const handleFileCapture = async (event: React.ChangeEvent<HTMLInputElement>) => {
+       const file = event.target.files?.[0];
+       if (!file) return;
+
+       const resizedDataUrl = await resizeImage(file);
+       const imageBlob = dataURLtoBlob(resizedDataUrl);
+
+       const newPhoto: Photo = { id: crypto.randomUUID(), name: `Photo for ${localRecording.name}`, notes: '', date: new Date().toISOString(), folder: `recordings/${localRecording.id}`, imageBlob, imageMimeType: imageBlob.type, tags: [localRecording.name, 'recording-asset']};
        await onSavePhoto(newPhoto);
        onUpdate({ ...localRecording, photoIds: [...localRecording.photoIds, newPhoto.id] });
-       setIsCameraOpen(false);
+       if (event.target) event.target.value = '';
     };
     
     const handleCopyTranscript = () => {
@@ -109,7 +115,7 @@ const RecordingDetailContent: React.FC<{
 
     return (
         <>
-            {isCameraOpen && <CameraCapture onClose={() => setIsCameraOpen(false)} onCapture={handleCapture} />}
+            <input type="file" ref={cameraInputRef} className="sr-only" onChange={handleFileCapture} accept="image/*" capture="environment" />
             <div className="p-4 space-y-4 bg-black/10">
                 <div className="bg-black/20 p-3 rounded-lg"><WaveformPlayer audioBlob={localRecording.audioBlob} /></div>
                 
@@ -143,7 +149,7 @@ const RecordingDetailContent: React.FC<{
                             const photo = photos.find(p => p.id === id);
                             return photo ? <PhotoThumbnail key={id} photo={photo} onSelect={() => {}} onDelete={handleUnlinkPhoto} isSelected={selectedPhotoIds.has(id)} isSelectionActive={isSelectionActive} onToggleSelection={togglePhotoSelection} /> : null;
                         })}
-                        <button onClick={() => setIsCameraOpen(true)} className="aspect-square border-2 border-dashed border-[var(--theme-border)] rounded-md flex items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]">
+                        <button onClick={() => cameraInputRef.current?.click()} className="aspect-square border-2 border-dashed border-[var(--theme-border)] rounded-md flex items-center justify-center text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg)]">
                             <CameraIcon className="h-6 w-6" />
                         </button>
                     </div>

@@ -93,7 +93,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ events, onSaveEvent,
     const formatEventTime = (isoString: string) => new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
     return (
-        <div className="flex-1 flex flex-col bg-gray-900 text-white font-inter animate-fade-in-down overflow-hidden">
+        <div className="flex-1 flex flex-col bg-transparent text-white font-inter animate-fade-in-down overflow-hidden">
              {/* Header */}
             <header className="p-4 flex justify-between items-center flex-shrink-0">
                 <button 

@@ -53,6 +53,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
             const topMargin = 16;
             const navHeight = 64;
 
+            // FIX: Define startX and endX for the SVG path calculation. These variables determine the start and end points of the "scoop" effect.
             const startX = center - scoopWidth / 2;
             const endX = center + scoopWidth / 2;
 
@@ -85,7 +86,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentView, onNavig
             <nav ref={navRef} className="relative w-full h-16">
                 <div className="absolute inset-0">
                     <svg width="100%" height="100%" viewBox={`0 0 ${navWidth} 64`} preserveAspectRatio="none">
-                        <path d={pathD} fill="#111827" className="transition-all duration-300 ease-out" style={{ filter: 'drop-shadow(0 -5px 10px rgba(0,0,0,0.3))' }} />
+                        <path d={pathD} fill="var(--theme-card-bg)" className="transition-all duration-300 ease-out" style={{ filter: 'drop-shadow(0 -5px 10px rgba(0,0,0,0.3))' }} />
                     </svg>
                 </div>
                 
