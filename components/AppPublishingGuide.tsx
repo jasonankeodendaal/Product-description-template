@@ -134,7 +134,8 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorD
             
             // Add URLs from manifest.json
             try {
-                const response = await fetch('/manifest.json');
+                const response = await fetch(`/manifest.json?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`Failed to fetch manifest: ${response.statusText}`);
                 const manifest = await response.json();
                 
                 (manifest.icons || []).forEach((icon: any) => urlsToCheck.push({ name: `Manifest Icon (${icon.sizes})`, url: icon.src, source: 'manifest' }));
