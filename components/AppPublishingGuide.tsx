@@ -4,6 +4,8 @@ import { AndroidIcon } from './icons/AndroidIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { XIcon } from './icons/XIcon';
 import { Spinner } from './icons/Spinner';
+import { ChevronDownIcon } from './icons/ChevronDownIcon';
+import { ChevronUpIcon } from './icons/ChevronUpIcon';
 
 interface CheckResult {
     name: string;
@@ -38,7 +40,6 @@ const Alert: React.FC<{ type: 'info' | 'warning' | 'tip' | 'error', children: Re
 const getFixInstruction = (source: CheckResult['source'], name: string): React.ReactNode => {
     const assetName = <span className="text-green-400 font-semibold">{name}</span>;
 
-    // A reusable explanation for broken links.
     const brokenLinkExplanation = (
         <p className="text-sm text-amber-300 mt-2">
             <strong>Why is this happening?</strong> The URL for this image is broken or has expired. You need to upload the image to a hosting service to get a new, working link.
@@ -88,6 +89,25 @@ const getFixInstruction = (source: CheckResult['source'], name: string): React.R
                 </div>
              );
         case 'manifest':
+             const isManifestFile = name === 'Manifest File';
+             if(isManifestFile) {
+                return (
+                    <div className="space-y-2">
+                        <p>The <strong className="text-white">manifest.json</strong> file itself is inaccessible. This is a critical file required for the app to be installable.</p>
+                        <p className="text-sm text-amber-300 mt-2">
+                            <strong>Why is this happening?</strong> The file might be missing from your project's public folder, or there could be a server misconfiguration preventing it from being served correctly.
+                        </p>
+                        <div className="text-sm text-amber-300 mt-2 pl-4 border-l-2 border-amber-500/50">
+                            <p><strong>How to fix:</strong></p>
+                             <ol className="list-decimal list-inside mt-1 space-y-1">
+                                <li>Ensure the <strong className="text-white">`manifest.json`</strong> file exists in the root of your project's public directory.</li>
+                                <li>Verify that your hosting provider is serving this file correctly.</li>
+                                <li>If the file exists, try redeploying your application.</li>
+                            </ol>
+                        </div>
+                    </div>
+                );
+             }
             return (
                  <div className="space-y-2">
                     <p>This is a <strong className="text-white">static PWA asset</strong>. It's like the app's "business card" used by devices during installation.</p>
@@ -111,10 +131,37 @@ const getFixInstruction = (source: CheckResult['source'], name: string): React.R
     }
 };
 
+const CheckResultItem: React.FC<{ result: CheckResult }> = ({ result }) => {
+    const [isExpanded, setIsExpanded] = useState(result.status === 'failure');
+    const isFailure = result.status === 'failure';
+
+    return (
+        <li className={`p-2 rounded-md transition-colors ${isFailure ? 'bg-red-900/20' : ''}`}>
+            <button onClick={() => isFailure && setIsExpanded(!isExpanded)} className="w-full flex items-center justify-between text-left" disabled={!isFailure}>
+                <div className="flex items-center gap-2 min-w-0">
+                    {result.status === 'pending' ? <Spinner className="w-4 h-4 text-gray-500" /> : isFailure ? <XIcon className="w-5 h-5 text-red-500" /> : <CheckIcon className="w-5 h-5 text-green-500" />}
+                    <span className={`truncate text-xs ${isFailure ? 'text-red-300' : 'text-gray-300'}`}>{result.name}</span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <a href={result.url} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-orange-400 underline truncate max-w-[150px] text-xs">{result.url}</a>
+                    {isFailure && (
+                        <div className="w-5 h-5 text-gray-400">
+                           {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                        </div>
+                    )}
+                </div>
+            </button>
+            {isFailure && isExpanded && (
+                <div className="mt-2 pt-2 border-t border-red-500/20">
+                    {getFixInstruction(result.source, result.name)}
+                </div>
+            )}
+        </li>
+    );
+};
 
 export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorDetails: CreatorDetails }> = ({ siteSettings, creatorDetails }) => {
     const [checkResults, setCheckResults] = useState<CheckResult[]>([]);
-    const [failedChecks, setFailedChecks] = useState<CheckResult[]>([]);
     const [allChecksPassed, setAllChecksPassed] = useState(false);
     const [isChecking, setIsChecking] = useState(true);
 
@@ -122,44 +169,39 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorD
         const runChecks = async () => {
             setIsChecking(true);
             setAllChecksPassed(false);
-            setFailedChecks([]);
 
-            let urlsToCheck: {name: string, url: string, source: CheckResult['source']}[] = [];
+            let urlsToCheck: { name: string, url: string, source: CheckResult['source'] }[] = [];
 
             // Add URLs from siteSettings
             if (siteSettings.logoSrc) urlsToCheck.push({ name: 'Site Logo', url: siteSettings.logoSrc, source: 'siteSettings' });
             if (siteSettings.heroImageSrc) urlsToCheck.push({ name: 'Hero Image', url: siteSettings.heroImageSrc, source: 'siteSettings' });
             if (siteSettings.backgroundImageSrc) urlsToCheck.push({ name: 'Background Image', url: siteSettings.backgroundImageSrc, source: 'siteSettings' });
             if (creatorDetails.logoSrc) urlsToCheck.push({ name: 'Creator Logo', url: creatorDetails.logoSrc, source: 'creatorDetails' });
+
+            // Add manifest.json itself as a resource to check
+            urlsToCheck.push({ name: 'Manifest File', url: '/manifest.json', source: 'manifest' });
             
-            // Add URLs from manifest.json
+            // Add URLs from within manifest.json
             try {
                 const response = await fetch(`/manifest.json?t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error(`Failed to fetch manifest: ${response.statusText}`);
-                const manifest = await response.json();
-                
-                (manifest.icons || []).forEach((icon: any) => urlsToCheck.push({ name: `Manifest Icon (${icon.sizes})`, url: icon.src, source: 'manifest' }));
-                (manifest.screenshots || []).forEach((ss: any) => urlsToCheck.push({ name: `Screenshot (${ss.form_factor})`, url: ss.src, source: 'manifest' }));
-                (manifest.shortcuts || []).forEach((sc: any) => {
-                    if (sc.icons) {
-                        sc.icons.forEach((icon: any) => urlsToCheck.push({ name: `Shortcut Icon (${sc.name})`, url: icon.src, source: 'manifest' }))
-                    }
-                });
-
+                if (response.ok) {
+                    const manifest = await response.json();
+                    (manifest.icons || []).forEach((icon: any) => urlsToCheck.push({ name: `Manifest Icon (${icon.sizes})`, url: icon.src, source: 'manifest' }));
+                    (manifest.screenshots || []).forEach((ss: any) => urlsToCheck.push({ name: `Screenshot (${ss.form_factor})`, url: ss.src, source: 'manifest' }));
+                    (manifest.shortcuts || []).forEach((sc: any) => {
+                        if (sc.icons) {
+                            sc.icons.forEach((icon: any) => urlsToCheck.push({ name: `Shortcut Icon (${sc.name})`, url: icon.src, source: 'manifest' }))
+                        }
+                    });
+                }
             } catch (e) {
-                console.error("Failed to fetch or parse manifest.json", e);
-                const manifestFailure: CheckResult = { name: 'manifest.json', url: '/manifest.json', status: 'failure', source: 'manifest' };
-                setCheckResults([manifestFailure]);
-                setFailedChecks([manifestFailure]);
-                setIsChecking(false);
-                return;
+                console.warn("Could not parse manifest.json, but continuing checks. The 'Manifest File' check will likely fail.", e);
             }
             
             const uniqueUrls = Array.from(new Map(urlsToCheck.map(item => [item.url, item])).values());
             const initialResults: CheckResult[] = uniqueUrls.map(item => ({...item, status: 'pending' as 'pending' }));
             setCheckResults(initialResults);
 
-            const failures: CheckResult[] = [];
             let allPassed = true;
 
             const checkPromises = uniqueUrls.map(async (item): Promise<CheckResult> => {
@@ -169,22 +211,21 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorD
                         return { ...item, status: 'success' };
                     } else {
                         allPassed = false;
-                        const failure: CheckResult = { ...item, status: 'failure' };
-                        failures.push(failure);
-                        return failure;
+                        return { ...item, status: 'failure' };
                     }
                 } catch (e) {
                     allPassed = false;
-                    const failure: CheckResult = { ...item, status: 'failure' };
-                    failures.push(failure);
-                    return failure;
+                    return { ...item, status: 'failure' };
                 }
             });
 
             const results = await Promise.all(checkPromises);
             
-            setCheckResults(results.sort((a,b) => a.name.localeCompare(b.name)));
-            setFailedChecks(failures);
+            setCheckResults(results.sort((a, b) => {
+                if (a.status === 'failure' && b.status !== 'failure') return -1;
+                if (a.status !== 'failure' && b.status === 'failure') return 1;
+                return a.name.localeCompare(b.name);
+            }));
             setAllChecksPassed(allPassed);
             setIsChecking(false);
         };
@@ -206,13 +247,28 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorD
             <section>
                 <h3 className="text-xl font-bold text-white mb-4">Part 1: Pre-flight Check</h3>
                 <p className="mb-4 text-gray-400">Before packaging, this automated check verifies that all icons, screenshots, and other assets defined in your app's configuration are accessible online. A broken link here will cause the final build to fail.</p>
-                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 max-h-60 overflow-y-auto">
+                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 max-h-96 overflow-y-auto">
                     {isChecking && checkResults.length === 0 && <div className="flex items-center justify-center p-4 gap-2 text-gray-400"><Spinner /> Preparing checks...</div>}
-                    <ul className="space-y-2">{checkResults.map(result => (<li key={result.url + result.name} className="flex items-center justify-between text-xs"><span className="text-gray-300 truncate pr-4">{result.name}</span><div className="flex items-center gap-2 flex-shrink-0"><a href={result.url} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-orange-400 underline truncate max-w-[150px]">{result.url}</a>{result.status === 'pending' ? <Spinner className="w-4 h-4 text-gray-500" /> : result.status === 'success' ? <CheckIcon className="w-5 h-5 text-green-500" /> : <XIcon className="w-5 h-5 text-red-500" />}</div></li>))}</ul>
+                    {checkResults.length > 0 && (
+                        <ul className="space-y-1">
+                            {checkResults.map(result => (
+                                <CheckResultItem key={result.url + result.name} result={result} />
+                            ))}
+                        </ul>
+                    )}
                 </div>
                 {!isChecking && !allChecksPassed && (
-                    <div className="mt-4"><Alert type="error"><strong>Check Failed:</strong> One or more resources are inaccessible. The build process will fail if these links are broken. Please fix the URLs below and reload this page to re-run the check.</Alert>
-                        <div className="mt-4 bg-red-900/20 p-4 rounded-md border border-red-500/30"><h4 className="font-semibold text-red-400">Failed Resources & How to Fix:</h4><ul className="mt-2 space-y-3 text-sm list-disc list-inside text-red-300">{failedChecks.map(result => (<li key={result.url + result.name}><p><strong className="text-red-200">{result.name}:</strong> <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline break-all hover:text-white">{result.url}</a></p><div className="mt-1 text-xs text-amber-300 pl-4 border-l-2 border-amber-500/50"><strong className="text-amber-200">Fix:</strong> {getFixInstruction(result.source, result.name)}</div></li>))}</ul></div>
+                    <div className="mt-4">
+                        <Alert type="error">
+                            <strong>Check Failed:</strong> One or more resources are inaccessible. Expand the items above for instructions on how to fix them before proceeding.
+                        </Alert>
+                    </div>
+                )}
+                 {!isChecking && allChecksPassed && (
+                    <div className="mt-4">
+                        <Alert type="info">
+                            <strong>Check Passed:</strong> All resources are accessible. You are ready to generate the Android project.
+                        </Alert>
                     </div>
                 )}
             </section>
@@ -258,7 +314,7 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorD
                 </Step>
                  <Step num="3" title="Locate Your App Bundle">
                     <p>Android Studio will start building. When it's done, a notification will appear. Click <strong className="text-white">"locate"</strong> in the notification to open the folder containing your app bundle. The file will be named <strong className="text-white">`app-release.aab`</strong> and located in `[project-folder]/app/release/`.</p>
-                </Step>
+                 </Step>
             </section>
             
             <section>

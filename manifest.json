@@ -21,55 +21,55 @@
   },
   "icons": [
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/m5BPN6Xy/android-launchericon-48-48.png",
       "sizes": "48x48",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/rfz0v0KS/android-launchericon-72-72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/gFLw92kj/128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/07qD4Ln/android-launchericon-144-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/G4k8WvPh/android-launchericon-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/Y4gtqjdR/android-launchericon-512-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/G4k8WvPh/android-launchericon-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+      "src": "https://i.ibb.co/Y4gtqjdR/android-launchericon-512-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -82,44 +82,44 @@
   ],
   "screenshots": [
     {
-      "src": "https://i.postimg.cc/850gZvjM/screenshot-generator.webp",
+      "src": "https://i.ibb.co/C5CmwxX7/Whats-App-Image-2025-10-03-at-10-49-58.jpg",
       "sizes": "1280x720",
-      "type": "image/webp",
+      "type": "image/jpeg",
       "form_factor": "wide",
       "label": "AI Generator Workspace"
     },
     {
-      "src": "https://i.postimg.cc/6p7B6s71/screenshot-recordings.webp",
+      "src": "https://i.ibb.co/ymjvjJSg/Whats-App-Image-2025-10-03-at-10-49-56-1.jpg",
       "sizes": "1280x720",
-      "type": "image/webp",
+      "type": "image/jpeg",
       "form_factor": "wide",
       "label": "Recording and Transcription Manager"
     },
     {
-      "src": "https://i.postimg.cc/mDDBqK7B/screenshot-photos.webp",
+      "src": "https://i.ibb.co/nqTyB5nP/Whats-App-Image-2025-10-03-at-10-49-56-2.jpg",
       "sizes": "1280x720",
-      "type": "image/webp",
+      "type": "image/jpeg",
       "form_factor": "wide",
       "label": "Photo Library and Management"
     },
     {
-      "src": "https://i.postimg.cc/L8QpW5gR/screenshot-generator-narrow.webp",
+      "src": "https://i.ibb.co/nqjqYPHh/Whats-App-Image-2025-10-03-at-10-49-56.jpg",
       "sizes": "720x1280",
-      "type": "image/webp",
+      "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "AI Generator on Mobile"
     },
     {
-      "src": "https://i.postimg.cc/Y0zVb7YV/screenshot-recordings-narrow.webp",
+      "src": "https://i.ibb.co/DDKGF9YP/Whats-App-Image-2025-10-03-at-10-49-57-1.jpg",
       "sizes": "720x1280",
-      "type": "image/webp",
+      "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "Recordings on Mobile"
     },
     {
-      "src": "https://i.postimg.cc/brdY0W3b/screenshot-photos-narrow.webp",
+      "src": "https://i.ibb.co/V6dgHHZ/Whats-App-Image-2025-10-03-at-10-49-57-2.jpg",
       "sizes": "720x1280",
-      "type": "image/webp",
+      "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "Photos on Mobile"
     }
@@ -132,7 +132,7 @@
       "url": "/?view=recordings",
       "icons": [
         {
-          "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+          "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ]
@@ -144,7 +144,7 @@
       "url": "/?view=notepad",
       "icons": [
         {
-          "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+          "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ]
@@ -156,7 +156,7 @@
       "url": "/?view=image-tool",
       "icons": [
         {
-          "src": "https://i.ibb.co/cK3z0hpv/e297517a-bb29-4edb-89ee-31f4da399314-removebg-preview.png",
+          "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ]
