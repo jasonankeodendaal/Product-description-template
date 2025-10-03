@@ -364,12 +364,24 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         }
 
         setIsUploading(true);
+        let addedInBatch = 0;
         for (const file of Array.from(files)) {
             try {
-                const sanitizedName = sanitize(structuredData['Name'] || file.name.split('.').slice(0, -1).join('.'));
-                const sanitizedSku = sanitize(structuredData['SKU'] || `image_${Date.now()}`);
-                const newPhotoName = `${sanitizedName}_${sanitizedSku}`;
+                const sanitizedSku = sanitize(structuredData['SKU'] || '');
+                if (!sanitizedSku) { // Redundant check, but good for safety
+                     alert("Cannot link images: Product SKU is missing.");
+                     continue;
+                }
 
+                // Count existing media for this SKU
+                const existingPhotoCount = photos.filter(p => p.folder === folderPath).length;
+                const existingVideoCount = videos.filter(v => v.folder === folderPath).length;
+                const totalExistingCount = existingPhotoCount + existingVideoCount;
+
+                // The new name includes the count of existing media + items added in this batch.
+                const newPhotoName = `${sanitizedSku} - ${totalExistingCount + addedInBatch + 1}`;
+                addedInBatch++;
+                
                 const imageBlob = await squareImageAndGetBlob(file, 800);
                 
                 const newPhoto: Photo = {
@@ -391,7 +403,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         setIsUploading(false);
         if(fileInputRef.current) fileInputRef.current.value = '';
 
-    }, [structuredData, onSavePhoto, getProductFolderPath]);
+    }, [structuredData, onSavePhoto, getProductFolderPath, photos, videos]);
     
     const handleVideoUpload = useCallback(async (files: FileList | null) => {
         if (!files || files.length === 0 || !structuredData) return;
@@ -402,11 +414,22 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         }
         
         setIsUploadingVideo(true);
+        let addedInBatch = 0;
         for (const file of Array.from(files)) {
              try {
-                const sanitizedName = sanitize(structuredData['Name'] || file.name.split('.').slice(0, -1).join('.'));
-                const sanitizedSku = sanitize(structuredData['SKU'] || `video_${Date.now()}`);
-                const newVideoName = `${sanitizedName}_${sanitizedSku}`;
+                const sanitizedSku = sanitize(structuredData['SKU'] || '');
+                if (!sanitizedSku) {
+                     alert("Cannot link videos: Product SKU is missing.");
+                     continue;
+                }
+
+                // Count existing media for this SKU
+                const existingPhotoCount = photos.filter(p => p.folder === folderPath).length;
+                const existingVideoCount = videos.filter(v => v.folder === folderPath).length;
+                const totalExistingCount = existingPhotoCount + existingVideoCount;
+
+                const newVideoName = `${sanitizedSku} - ${totalExistingCount + addedInBatch + 1}`;
+                addedInBatch++;
 
                 const newVideo: Video = {
                     id: crypto.randomUUID(),
@@ -426,7 +449,7 @@ export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isL
         }
         setIsUploadingVideo(false);
         if(videoInputRef.current) videoInputRef.current.value = '';
-    }, [structuredData, onSaveVideo, getProductFolderPath]);
+    }, [structuredData, onSaveVideo, getProductFolderPath, photos, videos]);
 
 
     const handleSquareImage = async (photo: Photo, size: number) => {

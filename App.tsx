@@ -32,7 +32,7 @@ import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
-import { FileBrowser } from './components/FileBrowser';
+import { FileBrowser, FileSystemItem } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
 import { XIcon } from './components/icons/XIcon';
 
@@ -865,6 +865,67 @@ const App: React.FC = () => {
         }
     }, [directoryHandle]);
 
+    const handleRenameItem = useCallback(async (item: FileSystemItem, newName: string) => {
+        // Renaming is only supported in local (virtual) mode for now.
+        if (siteSettings.syncMode !== 'local') return;
+
+        if (item.type === 'directory') {
+            const oldPath = item.path;
+            const pathParts = oldPath.split('/');
+            pathParts[pathParts.length - 1] = newName;
+            const newPath = pathParts.join('/');
+
+            const updatedPhotosPromises = photos.map(p => {
+                let newFolder = p.folder;
+                if (p.folder === oldPath) {
+                    newFolder = newPath;
+                } else if (p.folder.startsWith(oldPath + '/')) {
+                    newFolder = newPath + p.folder.substring(oldPath.length);
+                }
+                if (newFolder !== p.folder) {
+                    const updatedPhoto = { ...p, folder: newFolder };
+                    return db.savePhoto(updatedPhoto).then(() => updatedPhoto);
+                }
+                return Promise.resolve(p);
+            });
+    
+            const updatedVideosPromises = videos.map(v => {
+                let newFolder = v.folder;
+                if (v.folder === oldPath) {
+                    newFolder = newPath;
+                } else if (v.folder.startsWith(oldPath + '/')) {
+                    newFolder = newPath + v.folder.substring(oldPath.length);
+                }
+                if (newFolder !== v.folder) {
+                    const updatedVideo = { ...v, folder: newFolder };
+                    return db.saveVideo(updatedVideo).then(() => updatedVideo);
+                }
+                return Promise.resolve(v);
+            });
+
+            const [updatedPhotos, updatedVideos] = await Promise.all([
+                Promise.all(updatedPhotosPromises),
+                Promise.all(updatedVideosPromises),
+            ]);
+            
+            setPhotos(updatedPhotos);
+            setVideos(updatedVideos);
+
+        } else { // It's a file
+            if (item.kind === 'photo') {
+                const photoToUpdate = photos.find(p => p.id === item.id);
+                if (photoToUpdate) {
+                    await handleUpdatePhoto({ ...photoToUpdate, name: newName });
+                }
+            } else if (item.kind === 'video') {
+                const videoToUpdate = videos.find(v => v.id === item.id);
+                if (videoToUpdate) {
+                    await handleUpdateVideo({ ...videoToUpdate, name: newName });
+                }
+            }
+        }
+    }, [siteSettings.syncMode, photos, videos, handleUpdatePhoto, handleUpdateVideo]);
+
     // --- Timer Handlers ---
     const handleStartTimer = (task: string) => {
         if (activeTimer) return; // Prevent starting a new timer if one is active
@@ -1405,6 +1466,7 @@ const App: React.FC = () => {
                     onDeletePhoto={handleDeletePhoto}
                     onDeleteVideo={handleDeleteVideo}
                     onDeleteFolderVirtual={handleDeleteFolderContents}
+                    onRenameItem={handleRenameItem}
                 />;
             case 'calendar':
                 // This view is now handled by a modal, so this case is effectively unused.

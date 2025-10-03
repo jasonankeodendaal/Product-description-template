@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Photo, Video, View } from '../App';
 import { fileSystemService } from '../services/fileSystemService';
@@ -31,6 +30,17 @@ type IconSize = 'small' | 'medium' | 'large' | 'extra-large';
 type SortKey = 'name' | 'dateModified' | 'type' | 'size';
 type SortDirection = 'asc' | 'desc';
 
+export interface FileSystemItem {
+    name: string;
+    type: 'directory' | 'file';
+    kind?: 'photo' | 'video' | 'text' | 'json' | string;
+    id?: string; // For photos/videos
+    dateModified?: string;
+    size?: number;
+    path: string;
+    mediaSrc?: string;
+}
+
 interface FileBrowserProps {
     photos: Photo[];
     videos: Video[];
@@ -40,17 +50,7 @@ interface FileBrowserProps {
     onDeletePhoto: (photo: Photo) => Promise<void>;
     onDeleteVideo: (video: Video) => Promise<void>;
     onDeleteFolderVirtual: (folderPath: string) => Promise<void>;
-}
-
-interface FileSystemItem {
-    name: string;
-    type: 'directory' | 'file';
-    kind?: 'photo' | 'video' | 'text' | 'json' | string;
-    id?: string;
-    dateModified?: string;
-    size?: number;
-    path: string;
-    mediaSrc?: string;
+    onRenameItem: (item: FileSystemItem, newName: string) => Promise<void>;
 }
 
 // --- Helper Functions ---
@@ -136,7 +136,7 @@ const DetailsPane: React.FC<{ item: FileSystemItem | null; content: string | nul
 
 // --- Main Component ---
 export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
-    const { syncMode, directoryHandle, photos, videos, onNavigate, onDeletePhoto, onDeleteVideo, onDeleteFolderVirtual } = props;
+    const { syncMode, directoryHandle, photos, videos, onNavigate, onDeletePhoto, onDeleteVideo, onDeleteFolderVirtual, onRenameItem } = props;
 
     // Core State
     const [path, setPath] = useState<string[]>([]);
@@ -163,6 +163,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
     const [previewItem, setPreviewItem] = useState<FileSystemItem | null>(null);
     const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
     const [renamingItem, setRenamingItem] = useState<string | null>(null);
+    const [renameValue, setRenameValue] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'name', direction: 'asc' });
     const viewMenuRef = useRef<HTMLDivElement>(null);
     
@@ -420,6 +421,42 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
         loadContents(); // Refresh
     };
 
+    const canRename = useMemo(() => {
+        if (syncMode === 'folder') return false;
+        if (selectedItems.size !== 1) return false;
+        const selectedName = Array.from(selectedItems)[0];
+        const item = contents.find(c => c.name === selectedName);
+        return item ? item.name !== '_uncategorized' : false;
+    }, [selectedItems, contents, syncMode]);
+    
+    const handleStartRename = () => {
+        if (!canRename) return;
+        const selectedName = Array.from(selectedItems)[0];
+        setRenamingItem(selectedName);
+        setRenameValue(selectedName);
+    };
+
+    const handleRenameConfirm = async (originalName: string) => {
+        const trimmedNewName = renameValue.trim();
+        setRenamingItem(null);
+    
+        if (trimmedNewName && trimmedNewName !== originalName) {
+            try {
+                const originalItem = contents.find(c => c.name === originalName);
+                if (originalItem) {
+                    await onRenameItem(originalItem, trimmedNewName);
+                }
+            } catch (e) {
+                // Error is alerted in App.tsx
+            } finally {
+                // Let the state update from App.tsx trigger a re-render
+                // A full reload is simpler to handle failures and state sync
+                loadContents();
+            }
+        }
+    };
+
+
     // --- Render logic ---
     const renderMainContent = () => {
         if (isLoading) return <div className="flex justify-center items-center h-full"><Spinner className="w-8 h-8" /></div>;
@@ -434,6 +471,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
     
     const renderItem = (item: FileSystemItem) => {
         const isSelected = selectedItems.has(item.name);
+        const isRenaming = renamingItem === item.name;
         
         return (
             <div
@@ -454,7 +492,24 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                         getIconForItem(item, 'w-16 h-16')
                     )}
                 </div>
-                <p className="text-sm text-gray-200 truncate w-full">{item.name}</p>
+                 {isRenaming ? (
+                    <input
+                        type="text"
+                        value={renameValue}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onBlur={() => handleRenameConfirm(item.name)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            if (e.key === 'Escape') setRenamingItem(null);
+                        }}
+                        className="text-sm text-gray-900 bg-gray-200 rounded p-1 w-full text-center -mb-1 z-10"
+                        autoFocus
+                        onClick={e => e.stopPropagation()}
+                        onDoubleClick={e => e.stopPropagation()}
+                    />
+                ) : (
+                    <p className="text-sm text-gray-200 truncate w-full">{item.name}</p>
+                )}
             </div>
         );
     };
@@ -500,9 +555,17 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                 )}
             </main>
 
-            {selectedItems.size > 0 && (
+            {selectedItems.size > 0 && !renamingItem && (
                 <footer className="absolute bottom-24 lg:bottom-4 left-1/2 -translate-x-1/2 z-20 bg-slate-800/80 backdrop-blur-md p-2 rounded-full flex items-center gap-4 animate-fade-in-down border border-white/10">
                     <span className="text-sm font-semibold text-white pl-2">{selectedItems.size} selected</span>
+                    <button 
+                        onClick={handleStartRename} 
+                        disabled={!canRename} 
+                        title={syncMode === 'folder' ? 'Renaming is not available in Folder Sync mode' : !canRename ? 'Select a single item to rename' : 'Rename'} 
+                        className="flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-3 py-1.5 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <PencilIcon /> Rename
+                    </button>
                     <button onClick={handleDeleteSelected} className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-full"><TrashIcon /> Delete</button>
                     <button onClick={() => setSelectedItems(new Set())} className="p-2 text-gray-400 hover:text-white"><XIcon/></button>
                 </footer>
