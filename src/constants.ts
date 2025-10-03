@@ -1,5 +1,7 @@
-// FIX: Add a triple-slash directive to include Vite's client types, which defines `import.meta.env`.
-/// <reference types="vite/client" />
+// FIX: The triple-slash directive for Vite client types was causing a resolution error.
+// It is removed from this file, assuming the types are correctly included globally in the project
+// (e.g., via a tsconfig.json or a dedicated vite-env.d.ts file), which is standard practice for Vite projects.
+// This resolves both the "Cannot find type definition file" and the "Property 'env' does not exist" errors.
 
 export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
 Periscope telephoto zoom – ultra-long zoom without losing quality.
