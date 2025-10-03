@@ -1,11 +1,5 @@
-// FIX: Add manual type definition for ImportMeta to resolve Vite env types error.
-interface ImportMetaEnv {
-    readonly VITE_GIST_ID: string | undefined;
-}
-
-interface ImportMeta {
-    readonly env: ImportMetaEnv;
-}
+// FIX: Add a triple-slash directive to include Vite's client types, which defines `import.meta.env`.
+/// <reference types="vite/client" />
 
 export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
 Periscope telephoto zoom – ultra-long zoom without losing quality.
