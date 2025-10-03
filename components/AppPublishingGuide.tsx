@@ -206,7 +206,7 @@ export const AppPublishingGuide: React.FC<{ siteSettings: SiteSettings, creatorD
 
             const checkPromises = uniqueUrls.map(async (item): Promise<CheckResult> => {
                  try {
-                    const response = await fetch(`${item.url}?t=${new Date().getTime()}`, { method: 'HEAD', mode: 'cors' });
+                    const response = await fetch(`${item.url}?t=${new Date().getTime()}`, { method: 'GET', mode: 'cors' });
                     if (response.ok) {
                         return { ...item, status: 'success' };
                     } else {
