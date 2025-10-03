@@ -1,11 +1,20 @@
-const STATIC_CACHE_NAME = 'site-static-v23'; // Incremented version
-const DYNAMIC_CACHE_NAME = 'site-dynamic-v23'; // Incremented version
+const STATIC_CACHE_NAME = 'site-static-v24'; // Incremented version
+const DYNAMIC_CACHE_NAME = 'site-dynamic-v24'; // Incremented version
 
 // Simplified list of assets for a more robust installation
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/android-launchericon-48-48.png',
+  '/android-launchericon-72-72.png',
+  '/android-launchericon-96-96.png',
+  '/128.png',
+  '/android-launchericon-144-144.png',
+  '/android-launchericon-192-192.png',
+  '/android-launchericon-512-512.png',
+  '/180.png',
+  '/background.jpg'
 ];
 
 // Install service worker and cache the app shell
@@ -58,7 +67,7 @@ self.addEventListener('fetch', event => {
         return fetch(event.request).then(fetchRes => {
           // Check for valid responses before caching
           // Allow caching of opaque responses from CDNs
-          if (!fetchRes || fetchRes.status !== 200) {
+          if (!fetchRes || (fetchRes.status !== 200 && fetchRes.type !== 'opaque')) {
             return fetchRes;
           }
 
