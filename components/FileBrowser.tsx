@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Photo, Video, View } from '../App';
 import { fileSystemService } from '../services/fileSystemService';
@@ -73,15 +74,15 @@ const getIconForItem = (item: FileSystemItem, className: string = "w-full h-full
 
 
 // --- Preview Modal Component ---
-const PreviewModal: React.FC<{ item: FileSystemItem | null; content: string | Blob | null; onClose: () => void }> = ({ item, content, onClose }) => {
+const PreviewModal: React.FC<{ item: FileSystemItem | null; content: string | null; mediaUrl: string | null; onClose: () => void }> = ({ item, content, mediaUrl, onClose }) => {
     if (!item) return null;
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in-down" onClick={onClose}>
             <div className="bg-[var(--theme-card-bg)] max-w-4xl w-full max-h-[90vh] rounded-xl shadow-2xl p-4 flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="flex-1 flex items-center justify-center overflow-hidden">
-                    {item.mediaSrc && item.kind === 'photo' && <img src={item.mediaSrc} alt={item.name} className="max-w-full max-h-full object-contain" />}
-                    {item.mediaSrc && item.kind === 'video' && <video src={item.mediaSrc} controls autoPlay className="max-w-full max-h-full" />}
+                    {mediaUrl && item.kind === 'photo' && <img src={mediaUrl} alt={item.name} className="max-w-full max-h-full object-contain" />}
+                    {mediaUrl && item.kind === 'video' && <video src={mediaUrl} controls autoPlay className="max-w-full max-h-full" />}
                     {content && typeof content === 'string' && <pre className="w-full h-full overflow-auto text-sm bg-black/30 p-4 rounded-md text-gray-300 whitespace-pre-wrap">{content}</pre>}
                 </div>
                 <div className="flex-shrink-0 flex justify-between items-center pt-2 mt-2 border-t border-white/10">
@@ -94,7 +95,7 @@ const PreviewModal: React.FC<{ item: FileSystemItem | null; content: string | Bl
 };
 
 // --- Details Pane Component ---
-const DetailsPane: React.FC<{ item: FileSystemItem | null; content: string | Blob | null; onClose: () => void }> = ({ item, content, onClose }) => {
+const DetailsPane: React.FC<{ item: FileSystemItem | null; content: string | null; mediaUrl: string | null; onClose: () => void }> = ({ item, content, mediaUrl, onClose }) => {
     if (!item) return null;
 
     return (
@@ -102,8 +103,8 @@ const DetailsPane: React.FC<{ item: FileSystemItem | null; content: string | Blo
             <button onClick={onClose} className="absolute top-2 right-2 p-2 text-gray-500 hover:text-white"><XIcon /></button>
             <div className="text-center">
                 <div className="w-32 h-32 mx-auto text-orange-400 flex items-center justify-center">
-                    {item.mediaSrc && (item.kind === 'photo' || item.kind === 'video') ? (
-                        <img src={item.mediaSrc} alt={item.name} className="w-full h-full object-contain rounded-md" />
+                    {mediaUrl && (item.kind === 'photo' || item.kind === 'video') ? (
+                        <img src={mediaUrl} alt={item.name} className="w-full h-full object-contain rounded-md" />
                     ) : (
                         getIconForItem(item)
                     )}
@@ -116,14 +117,14 @@ const DetailsPane: React.FC<{ item: FileSystemItem | null; content: string | Blo
                 {item.size !== undefined && <p><strong>Size:</strong> {formatBytes(item.size)}</p>}
             </div>
 
-            {(content || item.kind === 'video') && (
+            {(content || mediaUrl) && item.kind !== 'photo' && (
                  <div className="mt-4 flex-grow flex flex-col min-h-0">
                     <h4 className="font-bold text-sm text-gray-300 mb-2">Preview</h4>
                     <div className="flex-grow bg-black/30 rounded-md p-2 overflow-auto">
                         {content && typeof content === 'string' ? (
                             <pre className="text-xs text-gray-300 whitespace-pre-wrap">{content}</pre>
-                        ) : item.mediaSrc && item.kind === 'video' ? (
-                            <video src={item.mediaSrc} controls className="w-full rounded" />
+                        ) : mediaUrl && item.kind === 'video' ? (
+                            <video src={mediaUrl} controls className="w-full rounded" />
                         ) : null}
                     </div>
                 </div>
@@ -157,8 +158,10 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
     const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [detailsPaneItem, setDetailsPaneItem] = useState<FileSystemItem | null>(null);
-    const [previewContent, setPreviewContent] = useState<string | Blob | null>(null);
+    const [detailsPaneMediaUrl, setDetailsPaneMediaUrl] = useState<string | null>(null);
+    const [previewContent, setPreviewContent] = useState<string | null>(null);
     const [previewItem, setPreviewItem] = useState<FileSystemItem | null>(null);
+    const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null);
     const [renamingItem, setRenamingItem] = useState<string | null>(null);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'name', direction: 'asc' });
     const viewMenuRef = useRef<HTMLDivElement>(null);
@@ -171,61 +174,89 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
         setDetailsPaneItem(null);
         setPreviewContent(null);
         
+        // Revoke old object URLs from previous directory listing
+        contents.forEach(item => { if (item.mediaSrc) URL.revokeObjectURL(item.mediaSrc); });
+
         try {
             const fullPath = path.join('/');
-            const subfolders = new Set<string>();
-            const filesInPath: FileSystemItem[] = [];
 
-            const allMedia = [
-                ...photos.map(p => ({ ...p, itemType: 'photo' as const })),
-                ...videos.map(v => ({ ...v, itemType: 'video' as const }))
-            ];
+            if (syncMode === 'folder' && directoryHandle) {
+                // FOLDER SYNC MODE: Read directly from the file system handle
+                const dirContents = await fileSystemService.listDirectoryContents(directoryHandle, fullPath);
 
-            allMedia.forEach(media => {
-                const mediaPath = media.folder || '_uncategorized';
-                if (mediaPath === fullPath) {
-                    filesInPath.push({
-                        name: media.name,
-                        type: 'file',
-                        kind: media.itemType,
-                        id: media.id,
-                        dateModified: media.date,
-                        size: 'imageBlob' in media ? media.imageBlob.size : media.videoBlob.size,
-                        path: `${mediaPath}/${media.name}`,
-                        mediaSrc: URL.createObjectURL('imageBlob' in media ? media.imageBlob : media.videoBlob),
-                    });
-                } else {
-                    let relativePath = '';
-                    if (fullPath === '') {
-                        relativePath = mediaPath;
-                    } else if (mediaPath.startsWith(fullPath + '/')) {
-                        relativePath = mediaPath.substring(fullPath.length + 1);
-                    }
-                    if (relativePath) {
-                        const subfolderName = relativePath.split('/')[0];
-                        if (subfolderName) subfolders.add(subfolderName);
-                    }
-                }
-            });
+                const items: FileSystemItem[] = dirContents.map((entry) => {
+                    const itemPath = path.length > 0 ? `${fullPath}/${entry.name}` : entry.name;
+                    const isPhoto = /\.(jpe?g|png|gif|webp|bmp)$/i.test(entry.name);
+                    const isVideo = /\.(mp4|mov|webm|avi|mkv)$/i.test(entry.name);
+                    const isText = /\.(txt|md|csv)$/i.test(entry.name);
+                    const isJson = /\.json$/i.test(entry.name);
 
-            const folderItems: FileSystemItem[] = Array.from(subfolders).map(name => ({
-                name, type: 'directory', kind: 'folder', path: path.length > 0 ? `${fullPath}/${name}` : name
-            }));
-            
-            // In folder mode, also check for virtual description files
-            if (syncMode === 'folder' && directoryHandle && path.length > 0) {
-                 try {
-                    const currentDir = await fileSystemService.listDirectoryContents(directoryHandle, fullPath);
-                    if (currentDir.some(f => f.name === 'description.txt')) {
-                        filesInPath.push({ name: 'description.txt', type: 'file', kind: 'text', path: `${fullPath}/description.txt`});
+                    let kind: FileSystemItem['kind'] = 'file';
+                    if (isPhoto) kind = 'photo';
+                    else if (isVideo) kind = 'video';
+                    else if (isText) kind = 'text';
+                    else if (isJson) kind = 'json';
+
+                    // Find a match in the loaded data to get an ID for deletion purposes
+                    const photoMatch = photos.find(p => p.folder === fullPath && p.name === entry.name);
+                    const videoMatch = videos.find(v => v.folder === fullPath && v.name === entry.name);
+
+                    return {
+                        name: entry.name,
+                        type: entry.kind,
+                        kind: entry.kind === 'directory' ? 'folder' : kind,
+                        dateModified: entry.lastModified ? new Date(entry.lastModified).toISOString() : undefined,
+                        size: entry.size,
+                        path: itemPath,
+                        id: photoMatch?.id || videoMatch?.id,
+                        mediaSrc: undefined,
+                    };
+                });
+                setContents(items);
+            } else {
+                // LOCAL (VIRTUAL) MODE: Build from photos and videos arrays
+                const subfolders = new Set<string>();
+                const filesInPath: FileSystemItem[] = [];
+
+                const allMedia = [
+                    ...photos.map(p => ({ ...p, itemType: 'photo' as const })),
+                    ...videos.map(v => ({ ...v, itemType: 'video' as const }))
+                ];
+
+                allMedia.forEach(media => {
+                    const mediaPath = media.folder || '_uncategorized';
+                    if (mediaPath === fullPath) {
+                        filesInPath.push({
+                            name: media.name,
+                            type: 'file',
+                            kind: media.itemType,
+                            id: media.id,
+                            dateModified: media.date,
+                            size: 'imageBlob' in media ? media.imageBlob.size : media.videoBlob.size,
+                            path: `${mediaPath}/${media.name}`,
+                            mediaSrc: URL.createObjectURL('imageBlob' in media ? media.imageBlob : media.videoBlob),
+                        });
+                    } else {
+                        let relativePath = '';
+                        if (fullPath === '') {
+                            relativePath = mediaPath;
+                        } else if (mediaPath.startsWith(fullPath + '/')) {
+                            relativePath = mediaPath.substring(fullPath.length + 1);
+                        }
+                        if (relativePath) {
+                            const subfolderName = relativePath.split('/')[0];
+                            if (subfolderName) subfolders.add(subfolderName);
+                        }
                     }
-                    if (currentDir.some(f => f.name === 'details.json')) {
-                        filesInPath.push({ name: 'details.json', type: 'file', kind: 'json', path: `${fullPath}/details.json`});
-                    }
-                 } catch (e) { console.warn("Could not check for virtual files:", e); }
+                });
+
+                const folderItems: FileSystemItem[] = Array.from(subfolders).map(name => ({
+                    name, type: 'directory', kind: 'folder', path: path.length > 0 ? `${fullPath}/${name}` : name
+                }));
+                
+                setContents([...folderItems, ...filesInPath]);
             }
 
-            setContents([...folderItems, ...filesInPath]);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load contents.");
         } finally {
@@ -235,11 +266,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
 
     useEffect(() => { loadContents(); }, [loadContents]);
     
-     useEffect(() => {
+    useEffect(() => {
+        // On unmount, revoke any active object URLs
         return () => {
-            contents.forEach(item => { if (item.mediaSrc) { URL.revokeObjectURL(item.mediaSrc); } });
+            if (detailsPaneMediaUrl) URL.revokeObjectURL(detailsPaneMediaUrl);
+            if (previewMediaUrl) URL.revokeObjectURL(previewMediaUrl);
+            contents.forEach(item => { if (item.mediaSrc) URL.revokeObjectURL(item.mediaSrc); });
         };
-    }, [contents]);
+    }, [detailsPaneMediaUrl, previewMediaUrl, contents]);
 
 
     const filteredAndSortedContents = useMemo(() => {
@@ -280,21 +314,31 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
 
     const handleItemClick = async (item: FileSystemItem, e: React.MouseEvent) => {
         e.stopPropagation();
+        
+        if (detailsPaneMediaUrl) URL.revokeObjectURL(detailsPaneMediaUrl);
+        setDetailsPaneMediaUrl(null);
+        setPreviewContent(null);
+
         if (viewOptions.itemCheckboxes) {
             toggleSelection(item.name);
         } else {
             setSelectedItems(new Set([item.name]));
             setDetailsPaneItem(item);
-            setPreviewContent(null);
 
-            if (syncMode === 'folder' && directoryHandle && (item.kind === 'text' || item.kind === 'json')) {
+            if (syncMode === 'folder' && directoryHandle && item.type === 'file') {
                 try {
                     const content = await fileSystemService.readFileContentByPath(directoryHandle, item.path);
-                    setPreviewContent(content);
+                    if (content instanceof Blob) {
+                        setDetailsPaneMediaUrl(URL.createObjectURL(content));
+                    } else {
+                        setPreviewContent(content);
+                    }
                 } catch (err) {
-                    console.error("Failed to read file for preview:", err);
+                    console.error("Failed to read file for details pane:", err);
                     setPreviewContent("Error: Could not load file content.");
                 }
+            } else if (item.mediaSrc) { // Local mode
+                setDetailsPaneMediaUrl(item.mediaSrc);
             }
         }
     };
@@ -303,16 +347,26 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
         if (item.type === 'directory') {
             setPath(prev => [...prev, item.name]);
         } else {
-            let content: string | Blob | null = null;
-            if (syncMode === 'folder' && directoryHandle && (item.kind === 'text' || item.kind === 'json')) {
-                try {
-                    content = await fileSystemService.readFileContentByPath(directoryHandle, item.path);
-                } catch (err) {
-                    content = 'Error loading content.';
-                }
-            }
-            setPreviewContent(content);
             setPreviewItem(item);
+            
+            if (previewMediaUrl) URL.revokeObjectURL(previewMediaUrl);
+            setPreviewMediaUrl(null);
+            setPreviewContent(null);
+            
+            if (syncMode === 'folder' && directoryHandle) {
+                try {
+                    const content = await fileSystemService.readFileContentByPath(directoryHandle, item.path);
+                    if (content instanceof Blob) {
+                        setPreviewMediaUrl(URL.createObjectURL(content));
+                    } else {
+                        setPreviewContent(content);
+                    }
+                } catch (err) {
+                    setPreviewContent("Error loading content.");
+                }
+            } else if (item.mediaSrc) { // Local mode
+                setPreviewMediaUrl(item.mediaSrc);
+            }
         }
     };
     
@@ -380,8 +434,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
     
     const renderItem = (item: FileSystemItem) => {
         const isSelected = selectedItems.has(item.name);
-        const iconSizeClass = 'w-full h-2/3';
-
+        
         return (
             <div
                 key={item.name}
@@ -395,7 +448,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                     </div>
                 )}
                 <div className={`text-orange-400 mb-2 w-full h-24 flex items-center justify-center`}>
-                    {item.mediaSrc && (item.kind === 'photo' || item.kind === 'video') ? (
+                    {item.mediaSrc ? (
                         <img src={item.mediaSrc} alt={item.name} className="w-full h-full object-cover rounded-md" />
                     ) : (
                         getIconForItem(item, 'w-16 h-16')
@@ -408,7 +461,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
 
     return (
         <div className="flex-1 flex flex-col bg-transparent overflow-hidden">
-             {previewItem && <PreviewModal item={previewItem} content={previewContent} onClose={() => setPreviewItem(null)} />}
+             {previewItem && <PreviewModal item={previewItem} content={previewContent} mediaUrl={previewMediaUrl} onClose={() => setPreviewItem(null)} />}
              <header className="p-4 border-b border-[var(--theme-border)] flex-shrink-0 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 min-w-0">
                     <button onClick={() => path.length > 0 ? setPath(p => p.slice(0, -1)) : onNavigate('home')} className="p-2 -ml-2 text-[var(--theme-text-secondary)] hover:text-white flex-shrink-0"><ChevronLeftIcon /></button>
@@ -443,7 +496,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                     {renderMainContent()}
                 </div>
                 {viewOptions.showDetailsPane && (
-                    <DetailsPane item={detailsPaneItem} content={previewContent} onClose={() => setDetailsPaneItem(null)} />
+                    <DetailsPane item={detailsPaneItem} content={previewContent} mediaUrl={detailsPaneMediaUrl} onClose={() => setDetailsPaneItem(null)} />
                 )}
             </main>
 

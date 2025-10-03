@@ -1,5 +1,4 @@
 
-
 import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../App";
 import { SiteSettings } from "../constants";
 
@@ -494,18 +493,28 @@ const renameItem = async (
 };
 
 
-const listDirectoryContents = async (rootHandle: FileSystemDirectoryHandle, path: string): Promise<{ name: string; kind: 'file' | 'directory' }[]> => {
+const listDirectoryContents = async (rootHandle: FileSystemDirectoryHandle, path: string): Promise<{ name: string; kind: 'file' | 'directory'; size?: number; lastModified?: number; }[]> => {
     try {
         const pathParts = path.split('/').filter(p => p);
         const dirHandle = await getDirectoryHandleByPath(rootHandle, pathParts);
         
         const contents = [];
         for await (const entry of dirHandle.values()) {
-            contents.push({ name: entry.name, kind: entry.kind });
-        }
-        // Also check for virtual JSON backup folder
-        if(pathParts.length === 0 && (await rootHandle.getDirectoryHandle(JSON_BACKUPS_DIR).then(() => true).catch(() => false))) {
-            contents.push({ name: JSON_BACKUPS_DIR, kind: 'directory' });
+            let details: { name: string; kind: 'file' | 'directory'; size?: number; lastModified?: number; } = {
+                name: entry.name,
+                kind: entry.kind,
+            };
+
+            if (entry.kind === 'file') {
+                try {
+                    const file = await (entry as FileSystemFileHandle).getFile();
+                    details.size = file.size;
+                    details.lastModified = file.lastModified;
+                } catch (e) {
+                    console.warn(`Could not get file details for ${entry.name}`, e);
+                }
+            }
+            contents.push(details);
         }
         return contents.sort((a, b) => {
             if (a.kind === b.kind) return a.name.localeCompare(b.name);
