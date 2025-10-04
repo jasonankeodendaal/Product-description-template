@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
-import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
+import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
 import { GenerationResult } from './components/OutputPanel';
@@ -170,7 +170,6 @@ export interface BackupData {
 type ApiRecording = Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string };
 type ApiPhoto = Omit<Photo, 'imageBlob'> & { imageBase64: string, imageMimeType: string };
 type ApiNoteRecording = Omit<NoteRecording, 'audioBlob'> & { audioBase64: string, audioMimeType: string };
-
 
 // Function to migrate old notes to the new format
 const migrateNote = (note: any): Note => {
@@ -596,7 +595,7 @@ const App: React.FC = () => {
     
     
     // --- Reminder Service ---
-    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent = false) => {
+    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent: boolean = false) => {
         setCalendarEvents(prev => {
             const existing = prev.find(e => e.id === event.id);
             return existing ? prev.map(e => e.id === event.id ? event : e) : [event, ...prev];
@@ -605,7 +604,7 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveCalendarEventToDirectory(directoryHandle, event);
     }, [directoryHandle]);
 
-    const handleUpdateNote = useCallback(async (note: Note, silent = false) => {
+    const handleUpdateNote = useCallback(async (note: Note, silent: boolean = false) => {
         setNotes(prev => prev.map(n => n.id === note.id ? note : n));
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
@@ -1253,11 +1252,11 @@ const App: React.FC = () => {
 
             await db.clearAllData();
             await Promise.all([
-                ...restoredRecordings.map(r => db.saveRecording(r)),
-                ...restoredPhotos.map(p => db.savePhoto(p)),
-                ...restoredVideos.map(v => db.saveVideo(v)),
+                ...restoredRecordings.map((r: Recording) => db.saveRecording(r)),
+                ...restoredPhotos.map((p: Photo) => db.savePhoto(p)),
+                ...restoredVideos.map((v: Video) => db.saveVideo(v)),
                 ...metadata.notes.map((n: Note) => db.saveNote(n)),
-                ...restoredNoteRecordings.map(r => db.saveNoteRecording(r)),
+                ...restoredNoteRecordings.map((r: NoteRecording) => db.saveNoteRecording(r)),
                 ...(metadata.logEntries || []).map((l: LogEntry) => db.saveLogEntry(l)),
                 ...(metadata.calendarEvents || []).map((e: CalendarEvent) => db.saveCalendarEvent(e)),
             ]);
@@ -1429,6 +1428,7 @@ const App: React.FC = () => {
                     onDelete={handleDeleteNote}
                     noteRecordings={noteRecordings}
                     onSaveNoteRecording={handleSaveNoteRecording}
+                    onUpdateNoteRecording={handleUpdateNoteRecording}
                     onDeleteNoteRecording={handleDeleteNoteRecording}
                     photos={photos}
                     onSavePhoto={handleSavePhoto}

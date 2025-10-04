@@ -1,4 +1,5 @@
 import React from 'react';
+// FIX: Import the 'OutputPanel' component to resolve the 'Cannot find name' error.
 import { GenerationResult, OutputPanel } from './OutputPanel';
 import { TemplateManager } from './TemplateManager';
 import { Template, ParsedProductData, Photo, Recording, Note, View, Video } from '../App';
@@ -90,19 +91,19 @@ export const GeneratorView: React.FC<GeneratorViewProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 flex-1">
                     <ComposerPanel
                         value={userInput}
-                        onChange={(e) => onUserInputChange(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onUserInputChange(e.target.value)}
                         onGenerate={onGenerate}
                         isLoading={isLoading}
                         templates={templates}
                         selectedTemplateId={selectedTemplateId}
-                        onTemplateChange={(e) => onTemplateChange(e.target.value)}
+                        onTemplateChange={(e: React.ChangeEvent<HTMLSelectElement>) => onTemplateChange(e.target.value)}
                         tone={tone}
-                        onToneChange={(e) => onToneChange(e.target.value)}
+                        onToneChange={(e: React.ChangeEvent<HTMLSelectElement>) => onToneChange(e.target.value)}
                         recordings={recordings}
                         notes={notes}
                         photos={photos}
                         siteSettings={siteSettings}
-                        onAddToInput={(text) => onUserInputChange(userInput + '\n' + text)}
+                        onAddToInput={(text: string) => onUserInputChange(userInput + '\n' + text)}
                         onDeletePhoto={onDeletePhoto}
                         onClear={() => onUserInputChange('')}
                     />

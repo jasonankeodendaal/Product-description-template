@@ -22,7 +22,7 @@ interface TimesheetManagerProps {
     onNavigate: (view: View) => void;
 }
 
-const logTypeDetails: { [key in LogEntry['type']]: { icon: React.FC; color: string; } } = {
+const logTypeDetails: { [key in LogEntry['type']]: { icon: React.FC<React.SVGProps<SVGSVGElement>>; color: string; } } = {
     'Clock In': { icon: ClockInIcon, color: 'text-emerald-400' },
     'Clock Out': { icon: ClockOutIcon, color: 'text-red-400' },
     'Manual Task': { icon: ClockIcon, color: 'text-sky-400' },
@@ -226,7 +226,7 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                             {isCalendarOpen && <MiniCalendar selectedDate={selectedDate} onDateSelect={(date: Date) => {setSelectedDate(date); setIsCalendarOpen(false);}} highlightedDays={highlightedDays} />}
                         </div>
                         <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
-                            {['day', 'week', 'month'].map(tf => <button key={tf} onClick={() => setTimeframe(tf as any)} className={`px-3 py-1 text-sm rounded-md capitalize ${timeframe === tf ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>{tf}</button>)}
+                            {['day', 'week', 'month'].map(tf => <button key={tf} onClick={() => setTimeframe(tf as 'day' | 'week' | 'month')} className={`px-3 py-1 text-sm rounded-md capitalize ${timeframe === tf ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>{tf}</button>)}
                         </div>
                         <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
                              <button onClick={() => setLogFilter('all')} className={`px-3 py-1 text-sm rounded-md ${logFilter === 'all' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>All</button>
