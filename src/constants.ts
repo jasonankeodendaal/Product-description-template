@@ -1,3 +1,4 @@
+
 export const CAMERA_FEATURES_LIST = `AI photo enhancement – automatic editing, color correction, and sharpening.
 Periscope telephoto zoom – ultra-long zoom without losing quality.
 High-resolution sensors (200MP+) – super detailed photos.

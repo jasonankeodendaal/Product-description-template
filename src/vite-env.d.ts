@@ -1,8 +1,11 @@
-// FIX: Manually define the types for import.meta.env to resolve issues with vite/client types not being found
-// and to fix the resulting type error in src/constants.ts.
+/// <reference types="vite/client" />
+
+// FIX: Manually define the 'import.meta.env' types as a workaround for
+// the "Cannot find type definition file for 'vite/client'" error.
+// This ensures that TypeScript recognizes Vite's environment variables.
 interface ImportMetaEnv {
   readonly VITE_GIST_ID: string;
-  // more env variables here...
+  // Add other environment variables used in the app here.
 }
 
 interface ImportMeta {
