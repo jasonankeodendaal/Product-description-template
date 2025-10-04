@@ -31,7 +31,7 @@ import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser, FileSystemItem } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-import { XIcon } from './components/icons/XIcon';
+import { Hero } from './components/Hero';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -166,6 +166,11 @@ export interface BackupData {
     logEntries: LogEntry[];
     calendarEvents: CalendarEvent[];
 }
+
+type ApiRecording = Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string };
+type ApiPhoto = Omit<Photo, 'imageBlob'> & { imageBase64: string, imageMimeType: string };
+type ApiNoteRecording = Omit<NoteRecording, 'audioBlob'> & { audioBase64: string, audioMimeType: string };
+
 
 // Function to migrate old notes to the new format
 const migrateNote = (note: any): Note => {
@@ -551,7 +556,6 @@ const App: React.FC = () => {
                 setSelectedTemplateId(initialTemplates[0]?.id || '');
                 
                 const handle = await db.getDirectoryHandle();
-                let folderSyncSuccess = false;
 
                 if (handle) {
                     // This is the new reconnection flow
@@ -560,7 +564,6 @@ const App: React.FC = () => {
                         setDirectoryHandle(handle);
                         await handleUpdateSettings({ ...settings, syncMode: 'folder' });
                         await syncFromDirectory(handle);
-                        folderSyncSuccess = true;
                     } else if (permissionState === 'prompt') {
                         // Show our custom prompt instead of the browser's one immediately
                         setReconnectPrompt({ handle, visible: true });
@@ -967,7 +970,7 @@ const App: React.FC = () => {
           tone,
           siteSettings.customApiEndpoint,
           siteSettings.customApiAuthKey,
-          (partialResult) => setGeneratedOutput(partialResult)
+          (partialResult: GenerationResult) => setGeneratedOutput(partialResult)
         );
       } catch (e: any) {
         setError(e.message || 'An unknown error occurred.');
@@ -1124,9 +1127,9 @@ const App: React.FC = () => {
             const isConnected = await apiSyncService.connect(apiUrl, apiKey);
             if(isConnected) {
                 const data = await apiSyncService.fetchAllData(apiUrl, apiKey);
-                const newRecordings = await Promise.all(data.recordings.map(async r => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
-                const newPhotos = await Promise.all(data.photos.map(async p => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
-                const newNoteRecordings = await Promise.all(data.noteRecordings.map(async r => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
+                const newRecordings = await Promise.all(data.recordings.map(async (r: ApiRecording) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
+                const newPhotos = await Promise.all(data.photos.map(async (p: ApiPhoto) => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
+                const newNoteRecordings = await Promise.all(data.noteRecordings.map(async (r: ApiNoteRecording) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
 
                 const newSettings = { ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' as const };
                 setSiteSettings(newSettings);
@@ -1309,7 +1312,7 @@ const App: React.FC = () => {
     
     if (isPinResetting) {
         return <PinSetupModal 
-            onSetPin={(pin, _) => handleSetNewPinAfterReset(pin)} 
+            onSetPin={(pin: string, _: string) => handleSetNewPinAfterReset(pin)} 
             mode="reset" 
             siteSettings={siteSettings}
             creatorDetails={creatorDetails}
@@ -1355,7 +1358,7 @@ const App: React.FC = () => {
                         photos={photos}
                         recordings={recordings}
                         logEntries={logEntries}
-                        onSaveLogEntry={(type) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
+                        onSaveLogEntry={(type: LogEntry['type']) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
                         siteSettings={siteSettings}
                         creatorDetails={creatorDetails}
                         onOpenDashboard={() => setIsDashboardOpen(true)}
@@ -1426,12 +1429,11 @@ const App: React.FC = () => {
                     onDelete={handleDeleteNote}
                     noteRecordings={noteRecordings}
                     onSaveNoteRecording={handleSaveNoteRecording}
-                    onUpdateNoteRecording={handleUpdateNoteRecording}
                     onDeleteNoteRecording={handleDeleteNoteRecording}
                     photos={photos}
                     onSavePhoto={handleSavePhoto}
                     onUpdatePhoto={handleUpdatePhoto}
-                    performAiAction={(prompt, context) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
+                    performAiAction={(prompt: string, context: string) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
                     siteSettings={siteSettings}
                 />;
             case 'image-tool':
