@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { UploadIcon } from './icons/UploadIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
-import { TrashIcon } from './icons/TrashIcon';
 import { Photo, View } from '../App';
 import { squareImageAndGetBlob } from '../utils/imageUtils';
 import { XIcon } from './icons/XIcon';
