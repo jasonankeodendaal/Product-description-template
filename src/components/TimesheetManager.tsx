@@ -8,10 +8,8 @@ import { PhotoIcon } from './icons/PhotoIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
 import { ClockInIcon } from './icons/ClockInIcon';
 import { ClockOutIcon } from './icons/ClockOutIcon';
-import { Spinner } from './icons/Spinner';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
-import { CalendarIcon } from './icons/CalendarIcon';
 import { MiniCalendar } from './MiniCalendar';
 
 interface TimesheetManagerProps {
@@ -225,7 +223,7 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                             </div>
                              <button onClick={() => handleTimeframeNavigation(1)} disabled={isToday && timeframe==='day'} className="p-2 hover:bg-slate-700 rounded-full disabled:opacity-30 disabled:cursor-not-allowed"><ChevronRightIcon /></button>
                              {!isToday && <button onClick={goToToday} className="text-sm font-semibold text-orange-400 hover:underline">Today</button>}
-                            {isCalendarOpen && <MiniCalendar selectedDate={selectedDate} onDateSelect={(date: Date) => {setSelectedDate(date); setIsCalendarOpen(false);}} highlightedDays={highlightedDays} />}
+                            {isCalendarOpen && <MiniCalendar selectedDate={selectedDate} onDateSelect={(date) => {setSelectedDate(date); setIsCalendarOpen(false);}} highlightedDays={highlightedDays} />}
                         </div>
                         <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
                             {['day', 'week', 'month'].map(tf => <button key={tf} onClick={() => setTimeframe(tf as any)} className={`px-3 py-1 text-sm rounded-md capitalize ${timeframe === tf ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>{tf}</button>)}
