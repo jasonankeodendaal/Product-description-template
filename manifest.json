@@ -3,7 +3,7 @@
   "name": "Ai tools - AI Product Description Generator",
   "description": "An AI-powered application to automatically generate structured and professional product descriptions.",
   "id": "/",
-  "start_url": "/",
+  "start_url": "https://the-dash.vercel.app/",
   "scope": "/",
   "display": "standalone",
   "display_override": [
@@ -14,62 +14,62 @@
   "theme_color": "#1F2937",
   "background_color": "#000000",
   "lang": "en",
-  "dir": "ltr",
+  "dir": "auto",
   "prefer_related_applications": false,
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
   "icons": [
     {
-      "src": "/android-launchericon-48-48.png",
+      "src": "https://i.ibb.co/m5BPN6Xy/android-launchericon-48-48.png",
       "sizes": "48x48",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/android-launchericon-72-72.png",
+      "src": "https://i.ibb.co/rfz0v0KS/android-launchericon-72-72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/android-launchericon-96-96.png",
+      "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/128.png",
+      "src": "https://i.ibb.co/gFLw92kj/128.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/android-launchericon-144-144.png",
+      "src": "https://i.ibb.co/07qD4Ln/android-launchericon-144-144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/android-launchericon-192-192.png",
+      "src": "https://i.ibb.co/G4k8WvPh/android-launchericon-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/android-launchericon-512-512.png",
+      "src": "https://i.ibb.co/Y4gtqjdR/android-launchericon-512-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/android-launchericon-192-192.png",
+      "src": "https://i.ibb.co/G4k8WvPh/android-launchericon-192-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/android-launchericon-512-512.png",
+      "src": "https://i.ibb.co/Y4gtqjdR/android-launchericon-512-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -132,7 +132,7 @@
       "url": "/?view=recordings",
       "icons": [
         {
-          "src": "/android-launchericon-96-96.png",
+          "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ]
@@ -144,7 +144,7 @@
       "url": "/?view=notepad",
       "icons": [
         {
-          "src": "/android-launchericon-96-96.png",
+          "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ]
@@ -156,7 +156,7 @@
       "url": "/?view=image-tool",
       "icons": [
         {
-          "src": "/android-launchericon-96-96.png",
+          "src": "https://i.ibb.co/KpG5YWfq/android-launchericon-96-96.png",
           "sizes": "96x96"
         }
       ]
