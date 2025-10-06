@@ -1,6 +1,6 @@
 
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Photo, Video, View, FileSystemItem } from '../types';
 import { fileSystemService } from '../services/fileSystemService';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { FolderIcon } from './icons/FolderIcon';
@@ -24,6 +24,7 @@ import { PlusIcon } from './icons/PlusIcon';
 import { ArrowUpIcon } from './icons/ArrowUpIcon';
 import { ArrowDownIcon } from './icons/ArrowDownIcon';
 import { FolderOpenIcon } from './icons/FolderOpenIcon';
+import type { Photo, Video, View, FileSystemItem } from '../types';
 
 // --- Type Definitions ---
 type LayoutMode = 'tiles' | 'list' | 'details' | 'content';

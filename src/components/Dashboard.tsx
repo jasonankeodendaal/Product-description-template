@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent, Video } from '../types';
 import { XIcon } from './icons/XIcon';

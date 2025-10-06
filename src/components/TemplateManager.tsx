@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
 import { PlusIcon } from './icons/PlusIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
-import type { Template } from '../types';
+import { Template } from '../types';
 import { FolderIcon } from './icons/FolderIcon';
 
 interface TemplateManagerProps {
@@ -168,7 +169,6 @@ export const TemplateManager: React.FC<TemplateManagerProps> = React.memo(({ tem
           <div className="pt-6">
             <h3 className="font-semibold text-[var(--theme-text-primary)] mb-4">Existing Templates</h3>
             <div className="space-y-3">
-              {/* FIX: Refactored to use Object.keys().sort().map() for more reliable type inference and to prevent 'map does not exist on type unknown' error. */}
               {Object.keys(groupedTemplates).sort().map(category => {
                 const templatesInCategory = groupedTemplates[category];
                 const isCollapsed = collapsedCategories.has(category);

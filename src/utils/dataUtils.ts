@@ -1,3 +1,4 @@
+
 import type { Template, Recording, Photo, Note, BackupData, NoteRecording, LogEntry, CalendarEvent, Video } from '../types';
 import { SiteSettings } from '../constants';
 

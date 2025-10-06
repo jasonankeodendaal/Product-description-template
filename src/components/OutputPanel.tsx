@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { SaveIcon } from './icons/SaveIcon';
-import type { ParsedProductData, Photo, Video } from '../types';
+import { ParsedProductData, Photo, Video } from '../types';
 import { UploadIcon } from './icons/UploadIcon';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { resizeImage, squareImageAndGetBlob } from '../utils/imageUtils';
@@ -32,7 +33,6 @@ interface OutputPanelProps {
   isLoading: boolean;
   error: string | null;
   onSaveToFolder: (item: ParsedProductData, structuredData: Record<string, string>) => Promise<void>;
-  // FIX: Add 'ftp' to syncMode to match the type in SiteSettings, resolving a type error.
   syncMode?: 'local' | 'folder' | 'api' | 'ftp';
   photos: Photo[];
   onSavePhoto: (photo: Photo) => Promise<void>;
