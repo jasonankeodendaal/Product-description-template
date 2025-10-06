@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { GenerationResult, OutputPanel } from './OutputPanel';
-import { TemplateManager } from './TemplateManager';
+import { OutputPanel } from '../../components/OutputPanel';
+import { TemplateManager } from '../../components/TemplateManager';
 import { SiteSettings } from '../constants';
-import { ComposerPanel } from './ComposerPanel';
-import { Hero } from './Hero';
-import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import type { Template, ParsedProductData, Photo, Recording, Note, View, Video } from '../types';
+import { ComposerPanel } from '../../components/ComposerPanel';
+import { Hero } from '../../components/Hero';
+import { ChevronLeftIcon } from '../../components/icons/ChevronLeftIcon';
+import type { Template, ParsedProductData, Photo, Recording, Note, View, Video, GenerationResult } from '../types';
 
 interface GeneratorViewProps {
     userInput: string;

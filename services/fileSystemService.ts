@@ -1,5 +1,5 @@
 
-import { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../App";
+import type { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../src/types";
 import { SiteSettings } from "../constants";
 
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
@@ -28,6 +28,29 @@ const readFile = async (dirHandle: FileSystemDirectoryHandle, fileName: string):
 const getOrCreateDirectory = async (parentHandle: FileSystemDirectoryHandle, name: string): Promise<FileSystemDirectoryHandle> => {
     return await parentHandle.getDirectoryHandle(name, { create: true });
 }
+
+const getOrCreateNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle> => {
+    let current = root;
+    const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');
+    for (const part of parts) {
+        current = await current.getDirectoryHandle(part, { create: true });
+    }
+    return current;
+};
+
+const getNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle | null> => {
+    let current = root;
+    const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');
+    try {
+        for (const part of parts) {
+            current = await current.getDirectoryHandle(part);
+        }
+        return current;
+    } catch (e) {
+        return null;
+    }
+};
+
 
 // New helper function to wrap removeEntry with a retry mechanism for InvalidStateError
 const removeEntryWithRetry = async (
@@ -68,7 +91,7 @@ const JSON_BACKUPS_DIR = 'JSON_Backups';
 
 // --- Generic Checks ---
 const directoryHasData = async (dirHandle: FileSystemDirectoryHandle): Promise<boolean> => {
-    for await (const entry of dirHandle.values()) return true;
+    for await (const _ of (dirHandle as any).values()) return true;
     return false;
 }
 
@@ -161,7 +184,7 @@ const loadJsonOnlyEntities = async <T extends {id: string}>(dirHandle: FileSyste
     const entityMap = new Map<string, T>();
 
     const processDir = async (dir: FileSystemDirectoryHandle) => {
-        for await (const entry of dir.values()) {
+        for await (const entry of (dir as any).values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
                     const file = await (entry as FileSystemFileHandle).getFile();
@@ -207,10 +230,9 @@ const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle)
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const jsonRecsDir = await jsonBackupRoot.getDirectoryHandle('recordings');
         const mediaDir = await dirHandle.getDirectoryHandle('recordings');
-        for await (const entry of jsonRecsDir.values()) {
+        for await (const entry of (jsonRecsDir as any).values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
-                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
                     if (!recordingsMap.has(metadata.id)) {
                         const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
@@ -225,10 +247,9 @@ const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle)
     // Load from old structure
     try {
         const mediaDir = await dirHandle.getDirectoryHandle('recordings');
-        for await (const entry of mediaDir.values()) {
+        for await (const entry of (mediaDir as any).values()) {
              if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
-                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
                     if (!recordingsMap.has(metadata.id)) {
                         const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
@@ -258,10 +279,9 @@ const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHan
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const jsonRecsDir = await jsonBackupRoot.getDirectoryHandle('note_recordings');
         const mediaDir = await dirHandle.getDirectoryHandle('note_recordings');
-        for await (const entry of jsonRecsDir.values()) {
+        for await (const entry of (jsonRecsDir as any).values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
-                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
                     if (!recordingsMap.has(metadata.id)) {
                         const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
@@ -274,10 +294,9 @@ const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHan
     } catch(e) {}
     try {
         const mediaDir = await dirHandle.getDirectoryHandle('note_recordings');
-        for await (const entry of mediaDir.values()) {
+        for await (const entry of (mediaDir as any).values()) {
              if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
-                    // FIX: Cast entry to FileSystemFileHandle to access getFile method.
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
                     if (!recordingsMap.has(metadata.id)) {
                         const audioHandle = await mediaDir.getFileHandle(`${metadata.id}.webm`);
@@ -292,28 +311,6 @@ const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHan
 };
 
 // --- Photos & Videos ---
-const getOrCreateNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle> => {
-    let current = root;
-    const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');
-    for (const part of parts) {
-        current = await current.getDirectoryHandle(part, { create: true });
-    }
-    return current;
-};
-
-const getNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle | null> => {
-    let current = root;
-    const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');
-    try {
-        for (const part of parts) {
-            current = await current.getDirectoryHandle(part);
-        }
-        return current;
-    } catch (e) {
-        return null;
-    }
-};
-
 const savePhotoToDirectory = async (dirHandle: FileSystemDirectoryHandle, photo: Photo) => {
     const { imageBlob, ...metadata } = photo;
     const ext = photo.imageMimeType.split('/')[1] || 'png';
@@ -345,7 +342,7 @@ const loadMediaFromDirectory = async <T extends Photo | Video>(dirHandle: FileSy
     const blobField = mediaType === 'photo' ? 'imageBlob' : 'videoBlob';
     const defaultExt = mediaType === 'photo' ? 'png' : 'mp4';
 
-    const processJsonEntry = async (entry: FileSystemFileHandle, jsonDir: FileSystemDirectoryHandle, dataRootDir: FileSystemDirectoryHandle) => {
+    const processJsonEntry = async (entry: FileSystemFileHandle, dataRootDir: FileSystemDirectoryHandle) => {
         try {
             const file = await entry.getFile();
             const text = await file.text();
@@ -370,11 +367,9 @@ const loadMediaFromDirectory = async <T extends Photo | Video>(dirHandle: FileSy
     try {
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const scan = async (dir: FileSystemDirectoryHandle) => {
-            for await (const entry of dir.values()) {
-                // FIX: Check entry.kind and cast to the correct handle type before recursive call.
+            for await (const entry of (dir as any).values()) {
                 if (entry.kind === 'directory') await scan(entry as FileSystemDirectoryHandle);
-                // FIX: Check entry.kind and cast to the correct handle type before passing to function.
-                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir, dirHandle);
+                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dirHandle);
             }
         };
         await scan(jsonBackupRoot);
@@ -384,11 +379,9 @@ const loadMediaFromDirectory = async <T extends Photo | Video>(dirHandle: FileSy
     try {
         const scan = async (dir: FileSystemDirectoryHandle, path: string[]) => {
             if (path.length === 0 && (reservedDirs.includes(dir.name) || dir.name === JSON_BACKUPS_DIR)) return;
-            for await (const entry of dir.values()) {
-                // FIX: Check entry.kind and cast to the correct handle type before recursive call.
+            for await (const entry of (dir as any).values()) {
                 if (entry.kind === 'directory') await scan(entry as FileSystemDirectoryHandle, [...path, entry.name]);
-                // FIX: Check entry.kind and cast to the correct handle type before passing to function.
-                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir, dir);
+                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir);
             }
         };
         await scan(dirHandle, []);
@@ -407,7 +400,6 @@ const deleteNoteFromDirectory = (dirHandle: FileSystemDirectoryHandle, id: strin
 const loadNotesFromDirectory = (dirHandle: FileSystemDirectoryHandle): Promise<Note[]> => loadJsonOnlyEntities<Note>(dirHandle, 'notes');
 
 const saveLogEntryToDirectory = (dirHandle: FileSystemDirectoryHandle, entry: LogEntry) => saveJsonOnlyEntity(dirHandle, 'logs', entry);
-const deleteLogEntryFromDirectory = (dirHandle: FileSystemDirectoryHandle, id: string) => deleteJsonOnlyEntity(dirHandle, 'logs', id);
 const loadLogEntriesFromDirectory = (dirHandle: FileSystemDirectoryHandle): Promise<LogEntry[]> => loadJsonOnlyEntities<LogEntry>(dirHandle, 'logs');
 
 const saveCalendarEventToDirectory = (dirHandle: FileSystemDirectoryHandle, event: CalendarEvent) => saveJsonOnlyEntity(dirHandle, 'calendar_events', event);
@@ -499,7 +491,7 @@ const listDirectoryContents = async (rootHandle: FileSystemDirectoryHandle, path
         const dirHandle = await getDirectoryHandleByPath(rootHandle, pathParts);
         
         const contents = [];
-        for await (const entry of dirHandle.values()) {
+        for await (const entry of (dirHandle as any).values()) {
             let details: { name: string; kind: 'file' | 'directory'; size?: number; lastModified?: number; } = {
                 name: entry.name,
                 kind: entry.kind,
@@ -581,7 +573,6 @@ export const fileSystemService = {
     deleteNoteRecordingFromDirectory,
     saveLogEntryToDirectory,
     loadLogEntriesFromDirectory,
-    deleteLogEntryFromDirectory,
     saveCalendarEventToDirectory,
     loadCalendarEventsFromDirectory,
     deleteCalendarEventFromDirectory,

@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 export const useRecorder = () => {
@@ -27,6 +28,69 @@ export const useRecorder = () => {
         audioContextRef.current = null;
     }
   }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && (mediaRecorderRef.current.state === 'recording' || mediaRecorderRef.current.state === 'paused')) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsPaused(false);
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    }
+  }, []);
+  
+   const pauseRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.pause();
+        setIsPaused(true);
+         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    }
+  }, []);
+
+  const resumeRecording = useCallback(() => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+          mediaRecorderRef.current.resume();
+          setIsPaused(false);
+           timerIntervalRef.current = window.setInterval(() => {
+              setRecordingTime(prevTime => prevTime + 1);
+          }, 1000);
+      }
+  }, []);
+  
+  // This effect manages the Media Session API to allow background recording
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) {
+        return;
+    }
+
+    if (isRecording) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Recording in Progress...',
+            artist: 'AI Tools App',
+            album: 'Audio Recordings',
+            artwork: [
+                { src: '/android-launchericon-96-96.png', sizes: '96x96', type: 'image/png' },
+                { src: '/android-launchericon-192-192.png', sizes: '192x192', type: 'image/png' },
+                { src: '/android-launchericon-512-512.png', sizes: '512x512', type: 'image/png' },
+            ]
+        });
+
+        navigator.mediaSession.setActionHandler('play', resumeRecording);
+        navigator.mediaSession.setActionHandler('pause', pauseRecording);
+        navigator.mediaSession.setActionHandler('stop', stopRecording);
+
+        navigator.mediaSession.playbackState = isPaused ? 'paused' : 'playing';
+    } else {
+        // Cleanup when not recording
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = 'none';
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+        navigator.mediaSession.setActionHandler('stop', null);
+    }
+    
+  }, [isRecording, isPaused, pauseRecording, resumeRecording, stopRecording]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -74,35 +138,6 @@ export const useRecorder = () => {
       // You could add state to show an error to the user
     }
   }, [cleanupAudioContext]);
-
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsPaused(false);
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
-    }
-  }, [isRecording]);
-  
-   const pauseRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.pause();
-        setIsPaused(true);
-         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    }
-  }, []);
-
-  const resumeRecording = useCallback(() => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
-          mediaRecorderRef.current.resume();
-          setIsPaused(false);
-           timerIntervalRef.current = window.setInterval(() => {
-              setRecordingTime(prevTime => prevTime + 1);
-          }, 1000);
-      }
-  }, []);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -110,6 +145,7 @@ export const useRecorder = () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       streamRef.current?.getTracks().forEach(track => track.stop());
       cleanupAudioContext();
+      // Media session cleanup is handled by the dedicated useEffect
     };
   }, [cleanupAudioContext]);
 

@@ -1,11 +1,10 @@
 
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+// FIX: Corrected import paths to be relative to the 'src' directory.
 import { Header } from './components/Header';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
-import { GenerationResult } from './components/OutputPanel';
 import { FullScreenLoader } from './components/FullScreenLoader';
 import { db } from './services/db';
 import { fileSystemService } from './services/fileSystemService';
@@ -33,7 +32,7 @@ import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem } from './types';
+import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem, GenerationResult } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -267,9 +266,6 @@ const App: React.FC = () => {
             const appleTouchIconLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
             if (appleTouchIconLink) appleTouchIconLink.href = logoUrl;
         }
-        // The manifest.json file remains static, which is required for tools like PWABuilder.
-        // The icon for the initial "Add to Home Screen" prompt will be the one from manifest.json,
-        // but the icon on the device's home screen should update based on the links above.
     }, [siteSettings.logoSrc]);
 
     // Effect to dynamically update app background image
@@ -283,23 +279,17 @@ const App: React.FC = () => {
     }, [siteSettings.backgroundImageSrc]);
 
     const handleInstallClick = async () => {
-        // If the PWA install prompt is available, show it directly. This is the ideal flow.
         if (installPromptEvent) {
             installPromptEvent.prompt();
             const { outcome } = await installPromptEvent.userChoice;
             console.log(`User response to the install prompt: ${outcome}`);
-            // The prompt can only be used once, so we clear it.
             setInstallPromptEvent(null);
         } else {
-            // If the prompt is not available (e.g., on iOS, or if previously dismissed),
-            // open the modal that provides other options like APK download or manual instructions.
             setIsInstallOptionsModalOpen(true);
         }
     };
 
     const handlePwaInstallFromModal = () => {
-        // This handler is called from the InstallOptionsModal. At this point, we know the
-        // direct prompt is not available, so we show the manual installation guide.
         setIsInstallOptionsModalOpen(false);
         setIsManualInstallModalOpen(true);
     };
@@ -517,24 +507,19 @@ const App: React.FC = () => {
                 const handle = await db.getDirectoryHandle();
 
                 if (handle) {
-                    // This is the new reconnection flow
                     const permissionState = await (handle as any).queryPermission({ mode: 'readwrite' });
                     if (permissionState === 'granted') {
                         setDirectoryHandle(handle);
                         await handleUpdateSettings({ ...settings, syncMode: 'folder' });
                         await syncFromDirectory(handle);
                     } else if (permissionState === 'prompt') {
-                        // Show our custom prompt instead of the browser's one immediately
                         setReconnectPrompt({ handle, visible: true });
-                        // Don't set folderSyncSuccess, let user decide
                     } else {
-                        // Permission was denied previously
                         await db.clearDirectoryHandle();
                         await handleUpdateSettings({ ...settings, syncMode: 'local' });
                         await loadLocalData();
                     }
                 } else {
-                    // No handle stored, check for API sync or default to local
                     if (settings.syncMode === 'api' && settings.customApiEndpoint && settings.customApiAuthKey) {
                         await handleApiConnect(settings.customApiEndpoint, settings.customApiAuthKey, true);
                     } else {
@@ -586,7 +571,7 @@ const App: React.FC = () => {
     }, [fileToEdit]);
     
     // --- Reminder Service ---
-    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent = false) => {
+    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent) => {
         setCalendarEvents(prev => {
             const existing = prev.find(e => e.id === event.id);
             return existing ? prev.map(e => e.id === event.id ? event : e) : [event, ...prev];
@@ -595,7 +580,7 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveCalendarEventToDirectory(directoryHandle, event);
     }, [directoryHandle]);
 
-    const handleUpdateNote = useCallback(async (note: Note, silent = false) => {
+    const handleUpdateNote = useCallback(async (note: Note) => {
         setNotes(prev => prev.map(n => n.id === note.id ? note : n));
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
@@ -614,11 +599,11 @@ const App: React.FC = () => {
                 if (now >= reminderTime) {
                     new Notification(event.title, {
                         body: stripHtml(event.notes).substring(0, 100) + '...',
-                        icon: '/logo192.png', // Using a default icon path
-                        tag: event.id, // Prevent duplicate notifications
+                        icon: '/android-launchericon-192-192.png',
+                        tag: event.id,
                     });
                     const updatedEvent = { ...event, reminderFired: true };
-                    await handleSaveCalendarEvent(updatedEvent, true); 
+                    await handleSaveCalendarEvent(updatedEvent); 
                 }
             }
         };
@@ -637,11 +622,11 @@ const App: React.FC = () => {
                 if (now >= reminderTime) {
                     new Notification(`Reminder: ${note.title}`, {
                         body: stripHtml(note.content).substring(0, 100) + '...',
-                        icon: '/logo192.png',
+                        icon: '/android-launchericon-192-192.png',
                         tag: note.id,
                     });
                     const updatedNote = { ...note, reminderFired: true };
-                    await handleUpdateNote(updatedNote, true);
+                    await handleUpdateNote(updatedNote);
                 }
             }
         };
@@ -655,7 +640,6 @@ const App: React.FC = () => {
         const newSettings = { ...siteSettings, userPin: pin, pinIsSet: true, userName: name };
         await handleUpdateSettings(newSettings);
         setIsPinSetupModalOpen(false);
-        // After setting pin for the first time, show onboarding.
         if (!siteSettings.onboardingCompleted) {
             setIsOnboardingOpen(true);
         }
@@ -679,7 +663,7 @@ const App: React.FC = () => {
         await db.saveRecording(newRecording);
         if (directoryHandle) await fileSystemService.saveRecordingToDirectory(directoryHandle, newRecording);
         await handleSaveLogEntry({type: 'Recording Added', timestamp: new Date().toISOString()});
-        return newRecording; // Return the saved recording so its ID can be used
+        return newRecording;
     }, [directoryHandle, handleSaveLogEntry]);
 
     const handleUpdateRecording = useCallback(async (recording: Recording) => {
@@ -689,19 +673,9 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteRecording = useCallback(async (id: string) => {
-        let originalRecordings: Recording[] | null = null;
-        setRecordings(prev => {
-            originalRecordings = prev;
-            return prev.filter(r => r.id !== id);
-        });
-        try {
-            await db.deleteRecording(id);
-            if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
-        } catch (e) {
-            if (originalRecordings) setRecordings(originalRecordings);
-            console.error("Failed to delete recording:", e);
-            alert(`Failed to delete recording: ${e instanceof Error ? e.message : String(e)}`);
-        }
+        setRecordings(prev => prev.filter(r => r.id !== id));
+        await db.deleteRecording(id);
+        if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
     }, [directoryHandle]);
     
     const handleSavePhoto = useCallback(async (photo: Photo) => {
@@ -718,19 +692,9 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeletePhoto = useCallback(async (photo: Photo) => {
-        let originalPhotos: Photo[] | null = null;
-        setPhotos(prev => {
-            originalPhotos = prev;
-            return prev.filter(p => p.id !== photo.id);
-        });
-        try {
-            await db.deletePhoto(photo.id);
-            if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
-        } catch (e) {
-            if (originalPhotos) setPhotos(originalPhotos);
-            console.error("Failed to delete photo:", e);
-            alert(`Failed to delete photo: ${e instanceof Error ? e.message : String(e)}`);
-        }
+        setPhotos(prev => prev.filter(p => p.id !== photo.id));
+        await db.deletePhoto(photo.id);
+        if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
     }, [directoryHandle]);
     
     const handleSaveVideo = useCallback(async (video: Video) => {
@@ -746,48 +710,23 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteVideo = useCallback(async (video: Video) => {
-        let originalVideos: Video[] | null = null;
-        setVideos(prev => {
-            originalVideos = prev;
-            return prev.filter(v => v.id !== video.id);
-        });
-        try {
-            await db.deleteVideo(video.id);
-            if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
-        } catch (e) {
-            if (originalVideos) setVideos(originalVideos);
-            console.error("Failed to delete video:", e);
-            alert(`Failed to delete video: ${e instanceof Error ? e.message : String(e)}`);
-        }
+        setVideos(prev => prev.filter(v => v.id !== video.id));
+        await db.deleteVideo(video.id);
+        if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
     }, [directoryHandle]);
 
     const handleDeleteFolderContents = useCallback(async (folderPath: string) => {
-        // This is for virtual folders in local mode.
         const photosToDelete = photos.filter(p => p.folder.startsWith(folderPath));
         const videosToDelete = videos.filter(v => v.folder.startsWith(folderPath));
 
-        for (const photo of photosToDelete) {
-            await handleDeletePhoto(photo);
-        }
-        for (const video of videosToDelete) {
-            await handleDeleteVideo(video);
-        }
+        for (const photo of photosToDelete) await handleDeletePhoto(photo);
+        for (const video of videosToDelete) await handleDeleteVideo(video);
     }, [photos, videos, handleDeletePhoto, handleDeleteVideo]);
 
     const handleDeleteNote = useCallback(async (id: string) => {
-        let originalNotes: Note[] | null = null;
-        setNotes(prev => {
-            originalNotes = prev;
-            return prev.filter(n => n.id !== id);
-        });
-        try {
-            await db.deleteNote(id);
-            if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
-        } catch (e) {
-            if (originalNotes) setNotes(originalNotes);
-            console.error("Failed to delete note:", e);
-            alert(`Failed to delete note: ${e instanceof Error ? e.message : String(e)}`);
-        }
+        setNotes(prev => prev.filter(n => n.id !== id));
+        await db.deleteNote(id);
+        if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
     }, [directoryHandle]);
 
     const handleSaveNoteRecording = useCallback(async (rec: NoteRecording) => {
@@ -803,39 +742,18 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteNoteRecording = useCallback(async (id: string) => {
-        let originalNoteRecordings: NoteRecording[] | null = null;
-        setNoteRecordings(prev => {
-            originalNoteRecordings = prev;
-            return prev.filter(r => r.id !== id);
-        });
-        try {
-            await db.deleteNoteRecording(id);
-            if (directoryHandle) await fileSystemService.deleteNoteRecordingFromDirectory(directoryHandle, id);
-        } catch (e) {
-            if (originalNoteRecordings) setNoteRecordings(originalNoteRecordings);
-            console.error("Failed to delete note recording:", e);
-            alert(`Failed to delete note recording: ${e instanceof Error ? e.message : String(e)}`);
-        }
+        setNoteRecordings(prev => prev.filter(r => r.id !== id));
+        await db.deleteNoteRecording(id);
+        if (directoryHandle) await fileSystemService.deleteNoteRecordingFromDirectory(directoryHandle, id);
     }, [directoryHandle]);
 
     const handleDeleteCalendarEvent = useCallback(async (id: string) => {
-        let originalEvents: CalendarEvent[] | null = null;
-        setCalendarEvents(prev => {
-            originalEvents = prev;
-            return prev.filter(e => e.id !== id);
-        });
-        try {
-            await db.deleteCalendarEvent(id);
-            if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
-        } catch (e) {
-            if (originalEvents) setCalendarEvents(originalEvents);
-            console.error("Failed to delete calendar event:", e);
-            alert(`Failed to delete calendar event: ${e instanceof Error ? e.message : String(e)}`);
-        }
+        setCalendarEvents(prev => prev.filter(e => e.id !== id));
+        await db.deleteCalendarEvent(id);
+        if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
     }, [directoryHandle]);
 
     const handleRenameItem = useCallback(async (item: FileSystemItem, newName: string) => {
-        // Renaming is only supported in local (virtual) mode for now.
         if (siteSettings.syncMode !== 'local') return;
 
         if (item.type === 'directory') {
@@ -846,11 +764,8 @@ const App: React.FC = () => {
 
             const updatedPhotosPromises = photos.map(p => {
                 let newFolder = p.folder;
-                if (p.folder === oldPath) {
-                    newFolder = newPath;
-                } else if (p.folder.startsWith(oldPath + '/')) {
-                    newFolder = newPath + p.folder.substring(oldPath.length);
-                }
+                if (p.folder === oldPath) newFolder = newPath;
+                else if (p.folder.startsWith(oldPath + '/')) newFolder = newPath + p.folder.substring(oldPath.length);
                 if (newFolder !== p.folder) {
                     const updatedPhoto = { ...p, folder: newFolder };
                     return db.savePhoto(updatedPhoto).then(() => updatedPhoto);
@@ -860,11 +775,8 @@ const App: React.FC = () => {
     
             const updatedVideosPromises = videos.map(v => {
                 let newFolder = v.folder;
-                if (v.folder === oldPath) {
-                    newFolder = newPath;
-                } else if (v.folder.startsWith(oldPath + '/')) {
-                    newFolder = newPath + v.folder.substring(oldPath.length);
-                }
+                if (v.folder === oldPath) newFolder = newPath;
+                else if (v.folder.startsWith(oldPath + '/')) newFolder = newPath + v.folder.substring(oldPath.length);
                 if (newFolder !== v.folder) {
                     const updatedVideo = { ...v, folder: newFolder };
                     return db.saveVideo(updatedVideo).then(() => updatedVideo);
@@ -883,21 +795,16 @@ const App: React.FC = () => {
         } else { // It's a file
             if (item.kind === 'photo') {
                 const photoToUpdate = photos.find(p => p.id === item.id);
-                if (photoToUpdate) {
-                    await handleUpdatePhoto({ ...photoToUpdate, name: newName });
-                }
+                if (photoToUpdate) await handleUpdatePhoto({ ...photoToUpdate, name: newName });
             } else if (item.kind === 'video') {
                 const videoToUpdate = videos.find(v => v.id === item.id);
-                if (videoToUpdate) {
-                    await handleUpdateVideo({ ...videoToUpdate, name: newName });
-                }
+                if (videoToUpdate) await handleUpdateVideo({ ...videoToUpdate, name: newName });
             }
         }
     }, [siteSettings.syncMode, photos, videos, handleUpdatePhoto, handleUpdateVideo]);
 
-    // --- Timer Handlers ---
     const handleStartTimer = (task: string) => {
-        if (activeTimer) return; // Prevent starting a new timer if one is active
+        if (activeTimer) return;
         setActiveTimer({ startTime: Date.now(), task });
     };
 
@@ -907,71 +814,41 @@ const App: React.FC = () => {
         const endTime = new Date();
         const startTime = new Date(activeTimer.startTime);
 
-        // Don't log entries less than a second
         if (endTime.getTime() - startTime.getTime() < 1000) {
             setActiveTimer(null);
             return;
         }
         
-        const newEntry: Omit<LogEntry, 'id'> = {
-            type: 'Manual Task',
-            task: activeTimer.task,
-            timestamp: startTime.toISOString(),
-            startTime: startTime.toISOString(),
-            endTime: endTime.toISOString(),
-        };
-
+        const newEntry: Omit<LogEntry, 'id'> = { type: 'Manual Task', task: activeTimer.task, timestamp: startTime.toISOString(), startTime: startTime.toISOString(), endTime: endTime.toISOString() };
         handleSaveLogEntry(newEntry);
         setActiveTimer(null);
     };
 
-    // --- Other Handlers ---
     const handleGenerate = async () => {
       const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
-      if (!selectedTemplate) {
-        setError('Please select a template first.');
-        return;
-      }
+      if (!selectedTemplate) { setError('Please select a template first.'); return; }
       setIsLoading(true);
       setError(null);
       setGeneratedOutput({ text: '', sources: [] });
       try {
-        await generateProductDescription(
-          userInput,
-          selectedTemplate.prompt,
-          tone,
-          siteSettings.customApiEndpoint,
-          siteSettings.customApiAuthKey,
-          (partialResult: GenerationResult) => setGeneratedOutput(partialResult)
-        );
+        await generateProductDescription(userInput, selectedTemplate.prompt, tone, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey, (partialResult) => setGeneratedOutput(partialResult));
       } catch (e: any) {
         setError(e.message || 'An unknown error occurred.');
         setGeneratedOutput(null);
-      } finally {
-        setIsLoading(false);
-      }
+      } finally { setIsLoading(false); }
     };
     
     const handleSaveToFolder = useCallback(async (item: ParsedProductData, structuredData: Record<string, string>) => {
-        if (!directoryHandle) {
-             alert("Local folder connection is required to use this feature. Please connect a folder in the Dashboard.");
-             throw new Error("Directory not connected");
-        }
+        if (!directoryHandle) { alert("Local folder connection is required."); throw new Error("Directory not connected"); }
         try {
             await fileSystemService.saveProductDescription(directoryHandle, item, structuredData);
-        } catch(e) {
-            console.error("Error saving to folder:", e);
-            alert(`Failed to save to folder: ${e instanceof Error ? e.message : String(e)}`);
-            throw e;
-        }
+        } catch(e) { console.error("Error saving to folder:", e); alert(`Failed to save to folder: ${e instanceof Error ? e.message : String(e)}`); throw e; }
     }, [directoryHandle]);
 
     const handleUpdateSettings = useCallback(async (newSettings: SiteSettings) => {
         setSiteSettings(newSettings);
         localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-        if(directoryHandle) {
-            await fileSystemService.saveSettings(directoryHandle, newSettings);
-        }
+        if(directoryHandle) await fileSystemService.saveSettings(directoryHandle, newSettings);
     }, [directoryHandle]);
     
     const handleFinishOnboarding = useCallback(async () => {
@@ -979,10 +856,6 @@ const App: React.FC = () => {
         await handleUpdateSettings(newSettings);
         setIsOnboardingOpen(false);
     }, [siteSettings, handleUpdateSettings]);
-
-    const handleOpenOnboarding = () => {
-        setIsOnboardingOpen(true);
-    };
 
     const handleAddTemplate = useCallback(async (name: string, prompt: string, category: string) => {
         const newTemplate: Template = { id: crypto.randomUUID(), name, prompt, category };
@@ -1009,42 +882,29 @@ const App: React.FC = () => {
         setIsLoading(true);
         try {
             const [dirSettings, dirTemplates, {recordings: dirRecordings}, dirPhotos, dirVideos, dirNotes, dirNoteRecordings, dirLogEntries, dirCalendarEvents] = await Promise.all([
-                fileSystemService.loadSettings(handle),
-                fileSystemService.loadTemplates(handle),
-                fileSystemService.loadRecordingsFromDirectory(handle),
-                fileSystemService.loadPhotosFromDirectory(handle),
-                fileSystemService.loadVideosFromDirectory(handle),
-                fileSystemService.loadNotesFromDirectory(handle),
-                fileSystemService.loadNoteRecordingsFromDirectory(handle),
-                fileSystemService.loadLogEntriesFromDirectory(handle),
+                fileSystemService.loadSettings(handle), fileSystemService.loadTemplates(handle),
+                fileSystemService.loadRecordingsFromDirectory(handle), fileSystemService.loadPhotosFromDirectory(handle),
+                fileSystemService.loadVideosFromDirectory(handle), fileSystemService.loadNotesFromDirectory(handle),
+                fileSystemService.loadNoteRecordingsFromDirectory(handle), fileSystemService.loadLogEntriesFromDirectory(handle),
                 fileSystemService.loadCalendarEventsFromDirectory(handle),
             ]);
             
             if (dirSettings) setSiteSettings(prev => ({...prev, ...dirSettings, syncMode: 'folder' }));
             if (dirTemplates) setTemplates(dirTemplates);
-            setRecordings(dirRecordings);
-            setPhotos(dirPhotos);
-            setVideos(dirVideos);
-            setNotes(dirNotes.map(migrateNote));
-            setNoteRecordings(dirNoteRecordings);
-            setLogEntries(dirLogEntries);
-            setCalendarEvents(dirCalendarEvents);
+            setRecordings(dirRecordings); setPhotos(dirPhotos); setVideos(dirVideos);
+            setNotes(dirNotes.map(migrateNote)); setNoteRecordings(dirNoteRecordings);
+            setLogEntries(dirLogEntries); setCalendarEvents(dirCalendarEvents);
             
             if (showSuccess) alert('Sync from folder complete!');
 
-        } catch (e) {
-            console.error("Sync error:", e);
-            alert(`Error syncing from directory: ${e instanceof Error ? e.message : 'Unknown error'}`);
-        } finally {
-            setIsLoading(false);
-        }
+        } catch (e) { console.error("Sync error:", e); alert(`Error syncing from directory: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        } finally { setIsLoading(false); }
     }, []);
     
     const handleSyncDirectory = useCallback(async () => {
         try {
             const handle = await fileSystemService.getDirectoryHandle();
             const newSettings = { ...siteSettings, syncMode: 'folder' as const };
-
             if (await fileSystemService.directoryHasData(handle)) {
                 await syncFromDirectory(handle, true);
             } else {
@@ -1059,36 +919,23 @@ const App: React.FC = () => {
             setDirectoryHandle(handle);
             setSiteSettings(newSettings);
             localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-
-        } catch (err) {
-            if (err instanceof DOMException && err.name === 'AbortError') return;
-            alert(`Could not connect to directory: ${err instanceof Error ? err.message : String(err)}`);
-        }
+        } catch (err) { if (err instanceof DOMException && err.name === 'AbortError') return; alert(`Could not connect to directory: ${err instanceof Error ? err.message : String(err)}`); }
     }, [siteSettings, templates, recordings, photos, videos, notes, noteRecordings, logEntries, calendarEvents, syncFromDirectory]);
 
     const handleDisconnectDirectory = useCallback(async () => {
-        if(window.confirm("Are you sure you want to disconnect? The app will switch back to using local browser storage.")) {
-            await db.clearDirectoryHandle();
-            setDirectoryHandle(null);
-            
+        if(window.confirm("Are you sure? The app will switch back to local browser storage.")) {
+            await db.clearDirectoryHandle(); setDirectoryHandle(null);
             const newSettings = { ...siteSettings, syncMode: 'local' as const };
-            setSiteSettings(newSettings);
-            localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-
+            setSiteSettings(newSettings); localStorage.setItem('siteSettings', JSON.stringify(newSettings));
             await loadLocalData();
         }
     }, [siteSettings, loadLocalData]);
 
     const handleClearLocalData = useCallback(async () => {
-        if (window.confirm("WARNING: This will permanently delete all recordings, photos, videos, notes, logs, and calendar events from your browser's local storage. This cannot be undone. Are you absolutely sure?")) {
+        if (window.confirm("WARNING: This will permanently delete all data from local storage. This cannot be undone. Are you sure?")) {
             await db.clearAllData();
-            setRecordings([]);
-            setPhotos([]);
-            setVideos([]);
-            setNotes([]);
-            setNoteRecordings([]);
-            setLogEntries([]);
-            setCalendarEvents([]);
+            setRecordings([]); setPhotos([]); setVideos([]); setNotes([]);
+            setNoteRecordings([]); setLogEntries([]); setCalendarEvents([]);
             alert("Local data has been cleared.");
         }
     }, []);
@@ -1096,41 +943,28 @@ const App: React.FC = () => {
     const handleApiConnect = useCallback(async (apiUrl: string, apiKey: string, silent = false) => {
         setIsApiConnecting(true);
         try {
-            const isConnected = await apiSyncService.connect(apiUrl, apiKey);
-            if(isConnected) {
+            if(await apiSyncService.connect(apiUrl, apiKey)) {
                 const data = await apiSyncService.fetchAllData(apiUrl, apiKey);
-                const newRecordings = await Promise.all(data.recordings.map(async (r: any) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
-                const newPhotos = await Promise.all(data.photos.map(async (p: any) => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
-                const newNoteRecordings = await Promise.all(data.noteRecordings.map(async (r: any) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
+                const newRecordings = await Promise.all((data.recordings as any[]).map(async (r: any) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
+                const newPhotos = await Promise.all((data.photos as any[]).map(async (p: any) => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
+                const newNoteRecordings = await Promise.all((data.noteRecordings as any[]).map(async (r: any) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
 
                 const newSettings = { ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' as const };
-                setSiteSettings(newSettings);
-                localStorage.setItem('siteSettings', JSON.stringify(newSettings));
-                
-                setTemplates(data.templates);
-                setRecordings(newRecordings);
-                setPhotos(newPhotos);
-                setVideos([]); // TODO: Add video support to API sync
-                setNotes(data.notes.map(migrateNote));
-                setNoteRecordings(newNoteRecordings);
-                setLogEntries(data.logEntries);
-                setCalendarEvents(data.calendarEvents || []);
-                setIsApiConnected(true);
-                if (!silent) alert("Successfully connected to API server and synced data.");
-            } else {
-                throw new Error("Connection test failed. Check API URL and server status.");
-            }
+                setSiteSettings(newSettings); localStorage.setItem('siteSettings', JSON.stringify(newSettings));
+                setTemplates(data.templates); setRecordings(newRecordings); setPhotos(newPhotos);
+                setVideos([]); setNotes(data.notes.map(migrateNote)); setNoteRecordings(newNoteRecordings);
+                setLogEntries(data.logEntries); setCalendarEvents(data.calendarEvents || []); setIsApiConnected(true);
+                if (!silent) alert("Successfully connected and synced.");
+            } else throw new Error("Connection test failed.");
         } catch(e) {
             console.error("API Connection error:", e);
             if (!silent) alert(`Failed to connect to API: ${e instanceof Error ? e.message : String(e)}`);
             setIsApiConnected(false);
-        } finally {
-            setIsApiConnecting(false);
-        }
+        } finally { setIsApiConnecting(false); }
     }, []);
     
     const handleApiDisconnect = useCallback(() => {
-        if(window.confirm("Disconnect from the API server? The app will revert to local browser storage.")) {
+        if(window.confirm("Disconnect from API? The app will revert to local storage.")) {
             setIsApiConnected(false);
             const newSettings = { ...siteSettings, customApiEndpoint: null, customApiAuthKey: null, syncMode: 'local' as const };
             setSiteSettings(newSettings);
@@ -1139,8 +973,7 @@ const App: React.FC = () => {
     }, [siteSettings]);
 
     const onRestore = useCallback(async (file: File) => {
-        setIsLoading(true);
-        setLoadingMessage('Restoring backup...');
+        setIsLoading(true); setLoadingMessage('Restoring backup...');
         try {
             const JSZip = await waitForGlobal<any>('JSZip');
             const zip = await JSZip.loadAsync(file);
@@ -1151,30 +984,24 @@ const App: React.FC = () => {
             
             const restoredRecordings: Recording[] = [];
             const recordingsFolder = zip.folder('assets/recordings');
-            if (recordingsFolder) {
+            if(recordingsFolder) {
                 for (const fileName in recordingsFolder.files) {
                     if (fileName.endsWith('.json')) {
-                        const recMetadata = JSON.parse(await recordingsFolder.files[fileName].async('string'));
-                        const audioFile = zip.file(`assets/recordings/${recMetadata.id}.webm`);
-                        if (audioFile) {
-                            const audioBlob = await audioFile.async('blob');
-                            restoredRecordings.push({ ...recMetadata, audioBlob });
-                        }
+                        const recMeta = JSON.parse(await recordingsFolder.files[fileName].async('string'));
+                        const audioFile = zip.file(`assets/recordings/${recMeta.id}.webm`);
+                        if (audioFile) restoredRecordings.push({ ...recMeta, audioBlob: await audioFile.async('blob') });
                     }
                 }
             }
 
             const restoredNoteRecordings: NoteRecording[] = [];
-            const noteRecordingsFolder = zip.folder('assets/note_recordings');
-            if (noteRecordingsFolder) {
-                for (const fileName in noteRecordingsFolder.files) {
+            const noteRecsFolder = zip.folder('assets/note_recordings');
+            if(noteRecsFolder) {
+                for (const fileName in noteRecsFolder.files) {
                     if (fileName.endsWith('.json')) {
-                        const recMetadata = JSON.parse(await noteRecordingsFolder.files[fileName].async('string'));
-                        const audioFile = zip.file(`assets/note_recordings/${recMetadata.id}.webm`);
-                        if (audioFile) {
-                            const audioBlob = await audioFile.async('blob');
-                            restoredNoteRecordings.push({ ...recMetadata, audioBlob });
-                        }
+                        const recMeta = JSON.parse(await noteRecsFolder.files[fileName].async('string'));
+                        const audioFile = zip.file(`assets/note_recordings/${recMeta.id}.webm`);
+                        if (audioFile) restoredNoteRecordings.push({ ...recMeta, audioBlob: await audioFile.async('blob') });
                     }
                 }
             }
@@ -1182,24 +1009,17 @@ const App: React.FC = () => {
             const restoredPhotos: Photo[] = [];
             const photosFolder = zip.folder('assets/photos');
             if (photosFolder) {
-                 const processFolder = async (folder: any, path: string) => {
+                 const processFolder = async (folder: any) => {
                     for (const fileName in folder.files) {
-                        const fullPath = path + fileName;
-                        const fileInFolder = folder.files[fileName];
-                        if (fileInFolder.dir) {
-                           await processFolder(fileInFolder, fullPath);
-                        } else if (fileName.endsWith('.json')) {
-                            const photoMetadata = JSON.parse(await fileInFolder.async('string'));
-                            const ext = photoMetadata.imageMimeType.split('/')[1] || 'png';
-                            const imageFile = zip.file(`assets/photos/${photoMetadata.folder}/${photoMetadata.id}.${ext}`);
-                            if (imageFile) {
-                                const imageBlob = await imageFile.async('blob');
-                                restoredPhotos.push({ ...photoMetadata, imageBlob });
-                            }
+                        if (fileName.endsWith('.json')) {
+                            const photoMeta = JSON.parse(await folder.files[fileName].async('string'));
+                            const ext = photoMeta.imageMimeType.split('/')[1] || 'png';
+                            const imageFile = zip.file(`assets/photos/${photoMeta.folder}/${photoMeta.id}.${ext}`);
+                            if (imageFile) restoredPhotos.push({ ...photoMeta, imageBlob: await imageFile.async('blob') });
                         }
                     }
                 };
-                await processFolder(photosFolder, '');
+                await processFolder(photosFolder);
             }
             
             const restoredVideos: Video[] = [];
@@ -1208,13 +1028,10 @@ const App: React.FC = () => {
                  const processFolder = async (folder: any) => {
                     for (const fileName in folder.files) {
                         if (fileName.endsWith('.json')) {
-                            const videoMetadata = JSON.parse(await folder.files[fileName].async('string'));
-                            const ext = videoMetadata.videoMimeType.split('/')[1] || 'mp4';
-                            const videoFile = zip.file(`assets/videos/${videoMetadata.folder}/${videoMetadata.id}.${ext}`);
-                            if (videoFile) {
-                                const videoBlob = await videoFile.async('blob');
-                                restoredVideos.push({ ...videoMetadata, videoBlob });
-                            }
+                            const videoMeta = JSON.parse(await folder.files[fileName].async('string'));
+                            const ext = videoMeta.videoMimeType.split('/')[1] || 'mp4';
+                            const videoFile = zip.file(`assets/videos/${videoMeta.folder}/${videoMeta.id}.${ext}`);
+                            if (videoFile) restoredVideos.push({ ...videoMeta, videoBlob: await videoFile.async('blob') });
                         }
                     }
                 };
@@ -1234,24 +1051,13 @@ const App: React.FC = () => {
                 ...(metadata.calendarEvents || []).map((e: CalendarEvent) => db.saveCalendarEvent(e)),
             ]);
 
-            setSiteSettings(metadata.siteSettings);
-            setTemplates(metadata.templates);
-            setRecordings(restoredRecordings);
-            setPhotos(restoredPhotos);
-            setVideos(restoredVideos);
-            setNotes(metadata.notes.map(migrateNote));
-            setNoteRecordings(restoredNoteRecordings);
-            setLogEntries(metadata.logEntries || []);
-            setCalendarEvents(metadata.calendarEvents || []);
-
+            setSiteSettings(metadata.siteSettings); setTemplates(metadata.templates);
+            setRecordings(restoredRecordings); setPhotos(restoredPhotos); setVideos(restoredVideos);
+            setNotes(metadata.notes.map(migrateNote)); setNoteRecordings(restoredNoteRecordings);
+            setLogEntries(metadata.logEntries || []); setCalendarEvents(metadata.calendarEvents || []);
             alert("Backup restored successfully!");
-
-        } catch (e) {
-            console.error("Restore failed:", e);
-            alert(`Failed to restore backup: ${e instanceof Error ? e.message : 'Unknown error'}`);
-        } finally {
-            setIsLoading(false);
-        }
+        } catch (e) { console.error("Restore failed:", e); alert(`Failed to restore backup: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        } finally { setIsLoading(false); }
     }, [directoryHandle, handleDisconnectDirectory]);
 
     const stripHtml = (html: string) => {
@@ -1263,10 +1069,7 @@ const App: React.FC = () => {
         setUserRole(role);
         setIsAuthenticated(true);
         handleSaveLogEntry({ type: 'Clock In', timestamp: new Date().toISOString() });
-        const loginData = {
-          timestamp: new Date().getTime(),
-          role: role
-        };
+        const loginData = { timestamp: new Date().getTime(), role: role };
         localStorage.setItem('loginData', JSON.stringify(loginData));
     };
 
@@ -1278,310 +1081,73 @@ const App: React.FC = () => {
     }, [handleSaveLogEntry]);
 
 
-    if (!isInitialized) {
-        return <FullScreenLoader message="Initializing App..." />;
-    }
-    
-    if (isPinResetting) {
-        return <PinSetupModal 
-            onSetPin={(pin: string, _: string) => handleSetNewPinAfterReset(pin)} 
-            mode="reset" 
-            siteSettings={siteSettings}
-            creatorDetails={creatorDetails}
-            showInstallButton={!isAppInstalled}
-            onInstallClick={handleInstallClick}
-        />;
-    }
-
-    if (isPinSetupModalOpen) {
-        return <PinSetupModal 
-            onSetPin={handleSetUserPin} 
-            mode="setup" 
-            siteSettings={siteSettings}
-            creatorDetails={creatorDetails}
-            showInstallButton={!isAppInstalled}
-            onInstallClick={handleInstallClick}
-        />;
-    }
-    
-    if (isOnboardingOpen) {
-        return <OnboardingTour onFinish={handleFinishOnboarding} />;
-    }
-
-    if (!isAuthenticated) {
-        return <AuthModal 
-            onUnlock={handleLogin} 
-            userPin={siteSettings.userPin} 
-            siteSettings={siteSettings} 
-            creatorDetails={creatorDetails}
-            showInstallButton={!isAppInstalled}
-            onInstallClick={handleInstallClick}
-        />;
-    }
+    if (!isInitialized) return <FullScreenLoader message="Initializing App..." />;
+    if (isPinResetting) return <PinSetupModal onSetPin={(pin) => handleSetNewPinAfterReset(pin)} mode="reset" siteSettings={siteSettings} creatorDetails={creatorDetails} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} />;
+    if (isPinSetupModalOpen) return <PinSetupModal onSetPin={handleSetUserPin} mode="setup" siteSettings={siteSettings} creatorDetails={creatorDetails} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} />;
+    if (isOnboardingOpen) return <OnboardingTour onFinish={handleFinishOnboarding} />;
+    if (!isAuthenticated) return <AuthModal onUnlock={handleLogin} userPin={siteSettings.userPin} siteSettings={siteSettings} creatorDetails={creatorDetails} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} />;
 
 
     const renderView = () => {
         switch (currentView) {
             case 'home':
-                return (
-                    <Home
-                        onNavigate={setCurrentView}
-                        notes={notes}
-                        photos={photos}
-                        recordings={recordings}
-                        logEntries={logEntries}
-                        onSaveLogEntry={(type: LogEntry['type']) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})}
-                        siteSettings={siteSettings}
-                        creatorDetails={creatorDetails}
-                        onOpenDashboard={() => setIsDashboardOpen(true)}
-                        calendarEvents={calendarEvents}
-                        getWeatherInfo={getWeatherInfo}
-                        storageUsage={storageUsage}
-                        onLogout={handleLogout}
-                        userRole={userRole}
-                        onOpenOnboarding={handleOpenOnboarding}
-                        onOpenCalendar={() => setIsCalendarModalOpen(true)}
-                        isApiConnected={isApiConnected}
-                    />
-                );
+                return <Home onNavigate={setCurrentView} notes={notes} photos={photos} recordings={recordings} logEntries={logEntries} onSaveLogEntry={(type) => handleSaveLogEntry({type, timestamp: new Date().toISOString()})} siteSettings={siteSettings} creatorDetails={creatorDetails} onOpenDashboard={() => setIsDashboardOpen(true)} calendarEvents={calendarEvents} getWeatherInfo={getWeatherInfo} storageUsage={storageUsage} onLogout={handleLogout} userRole={userRole} onOpenOnboarding={() => setIsOnboardingOpen(true)} onOpenCalendar={() => setIsCalendarModalOpen(true)} isApiConnected={isApiConnected} />;
             case 'generator':
-                return (
-                    <GeneratorView 
-                        userInput={userInput}
-                        onUserInputChange={setUserInput}
-                        generatedOutput={generatedOutput}
-                        isLoading={isLoading}
-                        error={error}
-                        templates={templates}
-                        onAddTemplate={handleAddTemplate}
-                        onEditTemplate={onEditTemplate}
-                        selectedTemplateId={selectedTemplateId}
-                        onTemplateChange={setSelectedTemplateId}
-                        tone={tone}
-                        onToneChange={setTone}
-                        onGenerate={handleGenerate}
-                        onSaveToFolder={handleSaveToFolder}
-                        siteSettings={siteSettings}
-                        photos={photos}
-                        onSavePhoto={handleSavePhoto}
-                        onDeletePhoto={handleDeletePhoto}
-                        videos={videos}
-                        onSaveVideo={handleSaveVideo}
-                        onDeleteVideo={handleDeleteVideo}
-                        recordings={recordings}
-                        notes={notes}
-                        onEditImage={handleEditImage}
-                        onUpdatePhoto={handleUpdatePhoto}
-                        heroImageSrc={siteSettings.heroImageSrc}
-                        onNavigate={setCurrentView}
-                    />
-                );
+                return <GeneratorView userInput={userInput} onUserInputChange={setUserInput} generatedOutput={generatedOutput} isLoading={isLoading} error={error} templates={templates} onAddTemplate={handleAddTemplate} onEditTemplate={onEditTemplate} selectedTemplateId={selectedTemplateId} onTemplateChange={setSelectedTemplateId} tone={tone} onToneChange={setTone} onGenerate={handleGenerate} onSaveToFolder={handleSaveToFolder} siteSettings={siteSettings} photos={photos} onSavePhoto={handleSavePhoto} onDeletePhoto={handleDeletePhoto} videos={videos} onSaveVideo={handleSaveVideo} onDeleteVideo={handleDeleteVideo} recordings={recordings} notes={notes} onEditImage={handleEditImage} onUpdatePhoto={handleUpdatePhoto} heroImageSrc={siteSettings.heroImageSrc} onNavigate={setCurrentView} />;
              case 'recordings':
-                return <RecordingManager 
-                    recordings={recordings}
-                    onSave={handleSaveRecording}
-                    onUpdate={handleUpdateRecording}
-                    onDelete={handleDeleteRecording}
-                    photos={photos}
-                    onSavePhoto={handleSavePhoto}
-                    siteSettings={siteSettings}
-                 />;
+                return <RecordingManager recordings={recordings} onSave={handleSaveRecording} onUpdate={handleUpdateRecording} onDelete={handleDeleteRecording} photos={photos} onSavePhoto={handleSavePhoto} siteSettings={siteSettings} />;
             case 'photos':
-                return <PhotoManager 
-                    photos={photos}
-                    onSave={handleSavePhoto}
-                    onUpdate={handleUpdatePhoto}
-                    onDelete={handleDeletePhoto}
-                />;
+                return <PhotoManager photos={photos} onSave={handleSavePhoto} onUpdate={handleUpdatePhoto} onDelete={handleDeletePhoto} />;
             case 'notepad':
-                return <Notepad 
-                    notes={notes}
-                    onSave={handleSaveNote}
-                    onUpdate={handleUpdateNote}
-                    onDelete={handleDeleteNote}
-                    noteRecordings={noteRecordings}
-                    onSaveNoteRecording={handleSaveNoteRecording}
-                    onUpdateNoteRecording={handleUpdateNoteRecording}
-                    onDeleteNoteRecording={handleDeleteNoteRecording}
-                    photos={photos}
-                    onSavePhoto={handleSavePhoto}
-                    onUpdatePhoto={handleUpdatePhoto}
-                    performAiAction={(prompt: string, context: string) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
-                    siteSettings={siteSettings}
-                    noteToSelectId={noteToSelectId}
-                    onNoteSelected={() => setNoteToSelectId(null)}
-                />;
+                return <Notepad notes={notes} onSave={handleSaveNote} onUpdate={handleUpdateNote} onDelete={handleDeleteNote} noteRecordings={noteRecordings} onSaveNoteRecording={handleSaveNoteRecording} onUpdateNoteRecording={handleUpdateNoteRecording} onDeleteNoteRecording={handleDeleteNoteRecording} photos={photos} onSavePhoto={handleSavePhoto} onUpdatePhoto={handleUpdatePhoto} performAiAction={(prompt, context) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)} siteSettings={siteSettings} noteToSelectId={noteToSelectId} onNoteSelected={() => setNoteToSelectId(null)} />;
             case 'image-tool':
-                return <ImageTool 
-                    initialImage={imageToEdit} 
-                    onClearInitialImage={() => setImageToEdit(null)}
-                    onNavigate={setCurrentView}
-                />;
+                return <ImageTool initialImage={imageToEdit} onClearInitialImage={() => setImageToEdit(null)} onNavigate={setCurrentView} />;
             case 'timesheet':
-                return <TimesheetManager 
-                    logEntries={logEntries}
-                    activeTimer={activeTimer}
-                    timerDuration={timerDuration}
-                    onStartTimer={handleStartTimer}
-                    onStopTimer={handleStopTimer}
-                    onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
-                    onNavigate={setCurrentView}
-                />;
+                return <TimesheetManager logEntries={logEntries} activeTimer={activeTimer} timerDuration={timerDuration} onStartTimer={handleStartTimer} onStopTimer={handleStopTimer} onOpenPrintPreview={() => setIsPrintPreviewOpen(true)} onNavigate={setCurrentView} />;
             case 'browser':
-                return <FileBrowser 
-                    photos={photos}
-                    videos={videos}
-                    directoryHandle={directoryHandle}
-                    syncMode={siteSettings.syncMode}
-                    onNavigate={setCurrentView}
-                    onDeletePhoto={handleDeletePhoto}
-                    onDeleteVideo={handleDeleteVideo}
-                    onDeleteFolderVirtual={handleDeleteFolderContents}
-                    onRenameItem={handleRenameItem}
-                />;
-            case 'calendar':
-                // This view is now handled by a modal, so this case is effectively unused.
-                return null;
-            default:
-                return null;
+                return <FileBrowser photos={photos} videos={videos} directoryHandle={directoryHandle} syncMode={siteSettings.syncMode || 'local'} onNavigate={setCurrentView} onDeletePhoto={handleDeletePhoto} onDeleteVideo={handleDeleteVideo} onDeleteFolderVirtual={handleDeleteFolderContents} onRenameItem={handleRenameItem} />;
+            case 'calendar': return null;
+            default: return null;
         }
     };
 
     return (
         <div className="min-h-screen font-sans text-[var(--theme-text-primary)] flex flex-col">
             <InactivityManager onLogout={handleLogout} />
-            
-            {/* --- Mobile App Shell (Remains fixed at top for mobile) --- */}
-            <div className="lg:hidden">
-                 <MobileHeader 
-                    siteSettings={siteSettings}
-                    onNavigate={setCurrentView}
-                    onOpenDashboard={() => setIsDashboardOpen(true)}
-                    onOpenInfo={() => setIsInfoModalOpen(true)}
-                    onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
-                    showInstallButton={!isAppInstalled}
-                    onInstallClick={handleInstallClick}
-                    onToggleOrientation={handleToggleOrientation}
-                    isLandscapeLocked={isLandscapeLocked}
-                    userRole={userRole}
-                    isApiConnected={isApiConnected}
-                />
-            </div>
-            
+            <div className="lg:hidden"><MobileHeader siteSettings={siteSettings} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} userRole={userRole} isApiConnected={isApiConnected} /></div>
             <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
                  <div className="bg-slate-950/40 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
-                    {/* --- Desktop Header (Now inside the main panel) --- */}
-                    <Header 
-                        siteSettings={siteSettings} 
-                        isApiConnected={isApiConnected}
-                        currentView={currentView}
-                        onNavigate={setCurrentView}
-                        onOpenDashboard={() => setIsDashboardOpen(true)}
-                        onOpenInfo={() => setIsInfoModalOpen(true)}
-                        onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
-                        showInstallButton={!isAppInstalled}
-                        onInstallClick={handleInstallClick}
-                        onToggleOrientation={handleToggleOrientation}
-                        isLandscapeLocked={isLandscapeLocked}
-                    />
+                    <Header siteSettings={siteSettings} isApiConnected={isApiConnected} currentView={currentView} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} />
                     {renderView()}
                 </div>
             </main>
-            
-            <BottomNavBar
-                 currentView={currentView} 
-                 onNavigate={setCurrentView}
-            />
-            
+            <BottomNavBar currentView={currentView} onNavigate={setCurrentView} />
             {reconnectPrompt?.visible && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-[var(--theme-card-bg)] w-full max-w-md rounded-xl shadow-2xl border border-[var(--theme-border)]/50 p-6 text-center animate-modal-scale-in">
                         <FolderOpenIcon className="w-12 h-12 text-orange-400 mx-auto mb-4" />
                         <h2 className="text-2xl font-bold text-white">Reconnect to Folder?</h2>
-                        <p className="text-slate-400 mt-2">
-                            Would you like to reconnect to your last used folder, <strong className="text-white">"{reconnectPrompt.handle.name}"</strong>?
-                        </p>
+                        <p className="text-slate-400 mt-2">Would you like to reconnect to your last used folder, <strong className="text-white">"{reconnectPrompt.handle.name}"</strong>?</p>
                         <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                            <button
-                                onClick={handleDeclineReconnect}
-                                className="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
-                            >
-                                Use Browser Storage
-                            </button>
-                            <button
-                                onClick={handleReconnect}
-                                className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
-                            >
-                                Reconnect
-                            </button>
+                            <button onClick={handleDeclineReconnect} className="w-full bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">Use Browser Storage</button>
+                            <button onClick={handleReconnect} className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">Reconnect</button>
                         </div>
                     </div>
                 </div>
             )}
-
             {isLoading && !generatedOutput?.text && <FullScreenLoader message={loadingMessage} />}
-            
-            {isDashboardOpen && (
-                <Dashboard 
-                    onClose={() => setIsDashboardOpen(false)}
-                    templates={templates}
-                    recordings={recordings}
-                    photos={photos}
-                    videos={videos}
-                    notes={notes}
-                    noteRecordings={noteRecordings}
-                    logEntries={logEntries}
-                    calendarEvents={calendarEvents}
-                    siteSettings={siteSettings}
-                    creatorDetails={creatorDetails}
-                    onUpdateSettings={handleUpdateSettings}
-                    onRestore={onRestore}
-                    directoryHandle={directoryHandle}
-                    onSyncDirectory={handleSyncDirectory}
-                    onDisconnectDirectory={handleDisconnectDirectory}
-                    onClearLocalData={handleClearLocalData}
-                    onApiConnect={handleApiConnect}
-                    onApiDisconnect={handleApiDisconnect}
-                    isApiConnecting={isApiConnecting}
-                    isApiConnected={isApiConnected}
-                    userRole={userRole}
-                    onInitiatePinReset={handleInitiatePinReset}
-                    onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)}
-                />
-            )}
-            {isPrintPreviewOpen && (
-                <PrintPreview 
-                    logEntries={logEntries} 
-                    onClose={() => setIsPrintPreviewOpen(false)}
-                    siteSettings={siteSettings}
-                />
-            )}
-             {isCalendarModalOpen && (
+            {isDashboardOpen && <Dashboard onClose={() => setIsDashboardOpen(false)} templates={templates} recordings={recordings} photos={photos} videos={videos} notes={notes} noteRecordings={noteRecordings} logEntries={logEntries} calendarEvents={calendarEvents} siteSettings={siteSettings} creatorDetails={creatorDetails} onUpdateSettings={handleUpdateSettings} onRestore={onRestore} directoryHandle={directoryHandle} onSyncDirectory={handleSyncDirectory} onDisconnectDirectory={handleDisconnectDirectory} onClearLocalData={handleClearLocalData} onApiConnect={handleApiConnect} onApiDisconnect={handleApiDisconnect} isApiConnecting={isApiConnecting} isApiConnected={isApiConnected} userRole={userRole} onInitiatePinReset={handleInitiatePinReset} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} />}
+            {isPrintPreviewOpen && <PrintPreview logEntries={logEntries} onClose={() => setIsPrintPreviewOpen(false)} siteSettings={siteSettings} />}
+            {isCalendarModalOpen && (
                 <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 md:p-4" onClick={() => setIsCalendarModalOpen(false)}>
                     <div className="bg-[var(--theme-bg)] w-full h-full md:max-w-4xl md:h-[90vh] rounded-none md:rounded-xl shadow-2xl flex flex-col overflow-hidden animate-flex-modal-scale-in" onClick={e => e.stopPropagation()}>
-                        <CalendarView
-                            onClose={() => setIsCalendarModalOpen(false)}
-                            events={calendarEvents}
-                            onSaveEvent={handleSaveCalendarEvent}
-                            onDeleteEvent={handleDeleteCalendarEvent}
-                            photos={photos}
-                            onSavePhoto={handleSavePhoto}
-                            recordings={recordings}
-                            onSaveRecording={handleSaveRecording}
-                        />
+                        <CalendarView onClose={() => setIsCalendarModalOpen(false)} events={calendarEvents} onSaveEvent={handleSaveCalendarEvent} onDeleteEvent={handleDeleteCalendarEvent} photos={photos} onSavePhoto={handleSavePhoto} recordings={recordings} onSaveRecording={handleSaveRecording} />
                     </div>
                 </div>
             )}
             {isInfoModalOpen && <InfoModal onClose={() => setIsInfoModalOpen(false)} />}
             {isCreatorInfoOpen && <CreatorInfo onClose={() => setIsCreatorInfoOpen(false)} creatorDetails={creatorDetails} />}
-            {isInstallOptionsModalOpen && (
-                <InstallOptionsModal 
-                    onClose={() => setIsInstallOptionsModalOpen(false)}
-                    onPwaInstall={handlePwaInstallFromModal}
-                    onDownloadApk={handleDownloadApk}
-                    siteSettings={siteSettings}
-                />
-            )}
+            {isInstallOptionsModalOpen && <InstallOptionsModal onClose={() => setIsInstallOptionsModalOpen(false)} onPwaInstall={handlePwaInstallFromModal} onDownloadApk={handleDownloadApk} siteSettings={siteSettings} />}
             {isManualInstallModalOpen && <ManualInstallModal onClose={() => setIsManualInstallModalOpen(false)} />}
             {showUpdateToast && <UpdateToast onUpdate={() => window.location.reload()} />}
         </div>

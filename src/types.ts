@@ -1,5 +1,5 @@
 
-import { SiteSettings } from './constants';
+import { SiteSettings } from '../constants';
 
 // --- Type Definitions ---
 export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet' | 'calendar' | 'browser';
@@ -132,4 +132,16 @@ export interface FileSystemItem {
     size?: number;
     path: string;
     mediaSrc?: string;
+}
+
+export interface GroundingChunk {
+  web?: {
+    uri: string;
+    title: string;
+  };
+}
+
+export interface GenerationResult {
+    text: string;
+    sources?: GroundingChunk[];
 }

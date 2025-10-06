@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 
-// FIX: Implemented the useDebounce custom hook. The file was empty, causing an "is not a module" error.
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
