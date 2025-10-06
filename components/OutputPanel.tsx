@@ -4,8 +4,7 @@ import { CheckIcon } from './icons/CheckIcon';
 import { SaveIcon } from './icons/SaveIcon';
 import { ParsedProductData, Photo, Video } from '../App';
 import { UploadIcon } from './icons/UploadIcon';
-import { dataURLtoBlob } from '../utils/dataUtils';
-import { resizeImage, squareImageAndGetBlob } from '../utils/imageUtils';
+import { squareImageAndGetBlob } from '../utils/imageUtils';
 import { CropIcon } from './icons/CropIcon';
 import { XIcon } from './icons/XIcon';
 import { Spinner } from './icons/Spinner';
@@ -267,7 +266,7 @@ const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video
     );
 };
 
-
+// FIX: Export the OutputPanel component.
 export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo, onDeleteVideo }) => {
     const [editableOutput, setEditableOutput] = useState('');
     const [isCopied, setIsCopied] = useState(false);

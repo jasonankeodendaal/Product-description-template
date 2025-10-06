@@ -26,11 +26,9 @@ import { SettingsIcon } from './icons/SettingsIcon';
 import { ImageIcon } from './icons/ImageIcon';
 import { StrikethroughIcon } from './icons/StrikethroughIcon';
 import { ChecklistIcon } from './icons/ChecklistIcon';
-import { MagicIcon } from './icons/MagicIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { Spinner } from './icons/Spinner';
 import { resizeImage } from '../utils/imageUtils';
-import { SaveIcon } from './icons/SaveIcon';
 import { CheckIcon } from './icons/CheckIcon';
 // FIX: Imported useDebounce hook to resolve 'Cannot find name' error.
 import { useDebounce } from '../hooks/useDebounce';
@@ -42,7 +40,7 @@ import { NoteLockScreen } from './NoteLockScreen';
 interface NotepadProps {
     notes: Note[];
     onSave: (note: Note) => Promise<void>;
-    onUpdate: (note: Note, silent?: boolean) => Promise<void>;
+    onUpdate: (note: Note) => Promise<void>;
     onDelete: (id: string) => Promise<void>;
     noteRecordings: NoteRecording[];
     onSaveNoteRecording: (rec: NoteRecording) => Promise<void>;
@@ -58,7 +56,7 @@ interface NotepadProps {
 }
 
 // FIX: Defined a specific props interface for the NoteEditor sub-component to resolve type errors.
-interface NoteEditorProps extends Omit<NotepadProps, 'notes' | 'onSave' | 'noteToSelectId' | 'onNoteSelected'> {
+interface NoteEditorProps extends Omit<NotepadProps, 'notes' | 'onSave' | 'noteToSelectId' | 'onNoteSelected' | 'performAiAction' | 'siteSettings'> {
     note: Note;
     onClose: () => void;
 }
@@ -166,7 +164,7 @@ const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo
 )};
 
 
-const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos, siteSettings }) => {
+const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, noteRecordings, photos }) => {
     const [localNote, setLocalNote] = useState(note);
     const lastSavedNote = useRef(note);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -174,12 +172,14 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
     
     const contentRef = useRef<HTMLDivElement>(null);
     const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode, setAudioBlob } = useRecorder();
+    // FIX: Add state for camera modal visibility and mode.
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const [cameraMode, setCameraMode] = useState<'photo' | 'document'>('photo');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSettingsClosing, setIsSettingsClosing] = useState(false);
     const [isRecordingPanelOpen, setIsRecordingPanelOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const heroFileInputRef = useRef<HTMLInputElement>(null);
-    const cameraInputRef = useRef<HTMLInputElement>(null);
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [playingRecording, setPlayingRecording] = useState<NoteRecording | null>(null);
     const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
@@ -191,7 +191,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
         if (JSON.stringify(debouncedNote) !== JSON.stringify(lastSavedNote.current)) {
             const handleAutoSave = async () => {
                 setSaveState('saving');
-                await onUpdate(debouncedNote, true); // true for silent update
+                await onUpdate(debouncedNote); // true for silent update
                 lastSavedNote.current = debouncedNote;
                 setSaveState('saved');
                 setTimeout(() => setSaveState('idle'), 2000);
@@ -390,12 +390,11 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
         }
     };
     
-    const handleCameraCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            handleFileSelect(file);
-        }
-        if (event.target) event.target.value = '';
+    // FIX: This handler is for the CameraCapture modal, which provides a dataUrl string.
+    const handleCameraCapture = async (dataUrl: string) => {
+        const file = new File([dataURLtoBlob(dataUrl)], `scan-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        await handleFileSelect(file);
+        setIsCameraOpen(false);
     };
 
     const dragHandlers = {
@@ -434,12 +433,12 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
 
     return (
         <div className="h-full flex flex-col bg-[var(--theme-card-bg)] relative overflow-hidden">
+           {isCameraOpen && <CameraCapture onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} mode={cameraMode} />}
            {isSettingsOpen && <NoteSettingsPanel note={localNote} onNoteChange={updateLocalNote} onClose={handleCloseSettings} isClosing={isSettingsClosing} />}
            {playingRecording && <AudioPlayerModal recording={playingRecording} onClose={() => setPlayingRecording(null)}/>}
            {viewingPhoto && <PhotoViewerModal photo={viewingPhoto} onClose={() => setViewingPhoto(null)}/>}
            
            <input type="file" ref={heroFileInputRef} className="sr-only" accept="image/*" onChange={handleHeroImageSelect} />
-           <input type="file" ref={cameraInputRef} className="sr-only" accept="image/*" capture="environment" onChange={handleCameraCapture} />
            {localNote.heroImage ? (
                <div className="note-hero-container group">
                    <img src={localNote.heroImage} alt="Note hero" />
@@ -483,7 +482,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
                    <div className="toolbar-divider"></div>
                    <input type="file" ref={fileInputRef} className="sr-only" accept="image/*" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} />
                    <button title="Attach Image" onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-slate-700 rounded"><ImageIcon /></button>
-                   <button title="Scan Document" onClick={() => cameraInputRef.current?.click()} className="p-2 hover:bg-slate-700 rounded"><ScanIcon /></button>
+                   <button title="Scan Document" onClick={() => { setCameraMode('document'); setIsCameraOpen(true); }} className="p-2 hover:bg-slate-700 rounded"><ScanIcon /></button>
                    <button title="Record Audio Clip" onClick={() => setIsRecordingPanelOpen(p => !p)} className={`p-2 hover:bg-slate-700 rounded ${isRecordingPanelOpen ? 'active' : ''}`}><MicIcon /></button>
                    <button title="Note Settings" onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-slate-700 rounded"><SettingsIcon /></button>
                </div>
@@ -664,8 +663,6 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                 photos={props.photos}
                 onSavePhoto={props.onSavePhoto}
                 onUpdatePhoto={props.onUpdatePhoto}
-                performAiAction={props.performAiAction}
-                siteSettings={props.siteSettings}
             />;
         }
 

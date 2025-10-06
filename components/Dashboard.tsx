@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent, Video } from '../App';
 import { XIcon } from './icons/XIcon';
@@ -6,14 +5,9 @@ import { DataManagement } from './DataManagement';
 import { SiteSettingsEditor } from './SiteSettingsEditor';
 import { SiteSettings, CreatorDetails } from '../constants';
 import { DatabaseIcon } from './icons/DatabaseIcon';
-import { SettingsIcon } from './icons/SettingsIcon';
-import { InfoIcon } from './icons/InfoIcon';
-import { CodeIcon } from './icons/CodeIcon';
 import { AboutThisApp } from './AboutThisApp';
 import { SetupGuide } from './SetupGuide';
-import { AndroidIcon } from './icons/AndroidIcon';
 import { AppPublishingGuide } from './AppPublishingGuide';
-import { UserIcon } from './icons/UserIcon';
 import { HomeTile } from './HomeTile';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 
@@ -145,4 +139,3 @@ export const Dashboard: React.FC<DashboardProps> = (props) => {
     </div>
   );
 };
-      

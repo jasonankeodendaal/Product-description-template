@@ -1,6 +1,5 @@
 import React from 'react';
 import { SiteSettings } from '../constants';
-import { CloudIcon } from './icons/CloudIcon';
 import { View } from '../App';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
@@ -12,7 +11,6 @@ import { QuestionCircleIcon } from './icons/QuestionCircleIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { ClockIcon } from './icons/ClockIcon';
-import { CalendarIcon } from './icons/CalendarIcon';
 import { RotateIcon } from './icons/RotateIcon';
 import { FolderOpenIcon } from './icons/FolderOpenIcon';
 
@@ -89,7 +87,6 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     onInstallClick,
     onToggleOrientation,
     isLandscapeLocked,
-    onOpenCreatorInfo,
 }) => {
   
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';

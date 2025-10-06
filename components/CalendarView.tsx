@@ -1,12 +1,9 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CalendarEvent, Photo, Recording } from '../App';
 import { XIcon } from './icons/XIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { EventEditorModal } from './EventEditorModal';
-import { BellIcon } from './icons/BellIcon';
 import { PlusIcon } from './icons/PlusIcon';
-import { SearchIcon } from './icons/SearchIcon';
-import { HamburgerIcon } from './icons/HamburgerIcon';
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
 
 interface CalendarViewProps {
@@ -28,14 +25,6 @@ const colorMap: Record<string, { bg: string; border: string; text: string; }> = 
     pink: { bg: 'bg-pink-400', border: 'border-pink-500', text: 'text-pink-400' },
     cyan: { bg: 'bg-cyan-400', border: 'border-cyan-500', text: 'text-cyan-400' },
     red: { bg: 'bg-red-400', border: 'border-red-500', text: 'text-red-400' },
-};
-
-// Map colors from user's image to our color system
-const eventColorMapping: Record<string, string> = {
-    yellow: 'amber',
-    green: 'emerald',
-    blue: 'sky',
-    red: 'red'
 };
 
 

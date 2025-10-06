@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Photo, Video, View } from '../App';
 import { fileSystemService } from '../services/fileSystemService';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
-import { FolderIcon } from './icons/FolderIcon';
 import { PhotoIcon } from './icons/PhotoIcon';
 import { VideoIcon } from './icons/VideoIcon';
 import { FileTextIcon } from './icons/FileTextIcon';
@@ -11,17 +10,11 @@ import { TrashIcon } from './icons/TrashIcon';
 import { XIcon } from './icons/XIcon';
 import { Spinner } from './icons/Spinner';
 import { formatRelativeTime } from '../utils/formatters';
-import { ViewGridIcon } from './icons/ViewGridIcon';
-import { ViewListIcon } from './icons/ViewListIcon';
-import { ViewDetailsIcon } from './icons/ViewDetailsIcon';
-import { ViewContentIcon } from './icons/ViewContentIcon';
 import { CheckboxCheckedIcon } from './icons/CheckboxCheckedIcon';
 import { CheckboxUncheckedIcon } from './icons/CheckboxUncheckedIcon';
 import { MoreVerticalIcon } from './icons/MoreVerticalIcon';
 import { PencilIcon } from './icons/PencilIcon';
 import { PlusIcon } from './icons/PlusIcon';
-import { ArrowUpIcon } from './icons/ArrowUpIcon';
-import { ArrowDownIcon } from './icons/ArrowDownIcon';
 import { FolderOpenIcon } from './icons/FolderOpenIcon';
 
 // --- Type Definitions ---
@@ -296,13 +289,6 @@ export const FileBrowser: React.FC<FileBrowserProps> = (props) => {
                 return String(valA).localeCompare(String(valB)) * direction;
             });
     }, [contents, viewOptions.showHidden, sortConfig]);
-
-    const handleSort = (key: SortKey) => {
-        setSortConfig(prev => ({
-            key,
-            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
-        }));
-    };
 
     // --- UI Handlers ---
     useEffect(() => {

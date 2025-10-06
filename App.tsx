@@ -599,7 +599,7 @@ const App: React.FC = () => {
     
     
     // --- Reminder Service ---
-    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent = false) => {
+    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent) => {
         setCalendarEvents(prev => {
             const existing = prev.find(e => e.id === event.id);
             return existing ? prev.map(e => e.id === event.id ? event : e) : [event, ...prev];
@@ -608,7 +608,7 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveCalendarEventToDirectory(directoryHandle, event);
     }, [directoryHandle]);
 
-    const handleUpdateNote = useCallback(async (note: Note, silent = false) => {
+    const handleUpdateNote = useCallback(async (note: Note) => {
         setNotes(prev => prev.map(n => n.id === note.id ? note : n));
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
@@ -631,7 +631,7 @@ const App: React.FC = () => {
                         tag: event.id, // Prevent duplicate notifications
                     });
                     const updatedEvent = { ...event, reminderFired: true };
-                    await handleSaveCalendarEvent(updatedEvent, true); 
+                    await handleSaveCalendarEvent(updatedEvent); 
                 }
             }
         };
@@ -654,7 +654,7 @@ const App: React.FC = () => {
                         tag: note.id,
                     });
                     const updatedNote = { ...note, reminderFired: true };
-                    await handleUpdateNote(updatedNote, true);
+                    await handleUpdateNote(updatedNote);
                 }
             }
         };
@@ -787,23 +787,14 @@ const App: React.FC = () => {
         }
     }, [photos, videos, handleDeletePhoto, handleDeleteVideo]);
 
-
+    // FIX: Added missing handleSaveNote function to resolve error.
     const handleSaveNote = useCallback(async (note: Note) => {
-        setNotes(prevNotes => {
-            const existing = prevNotes.find(n => n.id === note.id);
-            let newNotes;
-            if (!existing) {
-                newNotes = [note, ...prevNotes];
-                handleSaveLogEntry({ type: 'Note Created', timestamp: new Date().toISOString() }); // Only log on creation
-            } else {
-                newNotes = prevNotes.map(n => (n.id === note.id ? note : n));
-            }
-            return newNotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        });
-        await db.saveNote(note);
-        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
+        const newNote = { ...note, id: note.id || crypto.randomUUID() };
+        setNotes(prev => [newNote, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        await db.saveNote(newNote);
+        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, newNote);
+        await handleSaveLogEntry({type: 'Note Created', timestamp: new Date().toISOString()});
     }, [directoryHandle, handleSaveLogEntry]);
-    
 
     const handleDeleteNote = useCallback(async (id: string) => {
         let originalNotes: Note[] | null = null;
@@ -1370,7 +1361,7 @@ const App: React.FC = () => {
                         storageUsage={storageUsage}
                         onLogout={handleLogout}
                         userRole={userRole}
-                        onOpenOnboarding={handleOpenOnboarding}
+                        onOpenOnboarding={() => setIsOnboardingOpen(true)}
                         onOpenCalendar={() => setIsCalendarModalOpen(true)}
                         isApiConnected={isApiConnected}
                     />
@@ -1461,7 +1452,7 @@ const App: React.FC = () => {
                     photos={photos}
                     videos={videos}
                     directoryHandle={directoryHandle}
-                    syncMode={siteSettings.syncMode}
+                    syncMode={siteSettings.syncMode || 'local'}
                     onNavigate={setCurrentView}
                     onDeletePhoto={handleDeletePhoto}
                     onDeleteVideo={handleDeleteVideo}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserRole } from '../App';
 import { CREATOR_PIN, CreatorDetails, SiteSettings } from '../constants';
@@ -16,7 +15,7 @@ interface AuthModalProps {
   onInstallClick: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSettings, creatorDetails, showInstallButton, onInstallClick }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, creatorDetails, showInstallButton, onInstallClick }) => {
   const [view, setView] = useState<'selection' | 'userLogin' | 'creatorLogin'>('selection');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
