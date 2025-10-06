@@ -274,6 +274,11 @@ const App: React.FC = () => {
     const [isLandscapeLocked, setIsLandscapeLocked] = useState(false);
     const [isOrientationApiSupported, setIsOrientationApiSupported] = useState(false);
 
+    // New state for PWA integrations
+    const [noteToSelectId, setNoteToSelectId] = useState<string | null>(null);
+    const [fileToEdit, setFileToEdit] = useState<File | null>(null);
+    const initialUrlChecked = useRef(false);
+
 
     // Effect to recalculate storage whenever data changes
     useEffect(() => {
@@ -491,6 +496,22 @@ const App: React.FC = () => {
         await loadLocalData();
     };
 
+    const handleSaveNote = useCallback(async (note: Note) => {
+        setNotes(prevNotes => {
+            const existing = prevNotes.find(n => n.id === note.id);
+            let newNotes;
+            if (!existing) {
+                newNotes = [note, ...prevNotes];
+                handleSaveLogEntry({ type: 'Note Created', timestamp: new Date().toISOString() }); // Only log on creation
+            } else {
+                newNotes = prevNotes.map(n => (n.id === note.id ? note : n));
+            }
+            return newNotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        });
+        await db.saveNote(note);
+        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
+    }, [directoryHandle, handleSaveLogEntry]);
+
     // --- Data Loading and Initialization ---
     useEffect(() => {
         // Fetch live creator details from Gist
@@ -513,16 +534,81 @@ const App: React.FC = () => {
 
         fetchCreatorDetails();
 
-        // Handle URL-based view navigation from PWA shortcuts
-        const urlParams = new URLSearchParams(window.location.search);
-        const requestedView = urlParams.get('view') as View;
-        const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet', 'browser'];
-        if (requestedView && validViews.includes(requestedView)) {
-            setCurrentView(requestedView);
-        }
-
         const initializeApp = async () => {
             try {
+                // Handle URL-based integrations ONCE
+                if (!initialUrlChecked.current) {
+                    initialUrlChecked.current = true;
+                    const urlParams = new URLSearchParams(window.location.search);
+
+                    // Handle 'note_taking' new_note_url
+                    if (urlParams.get('new-note') === 'true') {
+                        const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
+                        const newNote: Note = {
+                            id: crypto.randomUUID(),
+                            title: 'New Note',
+                            content: '<p></p>',
+                            category: 'General',
+                            tags: [],
+                            date: new Date().toISOString(),
+                            color: defaultColors[Math.floor(Math.random() * defaultColors.length)],
+                            isLocked: false,
+                            heroImage: null,
+                            paperStyle: 'paper-dark',
+                            fontStyle: 'font-sans',
+                            dueDate: null,
+                            reminderDate: null,
+                            reminderFired: false,
+                            recordingIds: [],
+                            photoIds: [],
+                        };
+                        await handleSaveNote(newNote);
+                        setNoteToSelectId(newNote.id);
+                        setCurrentView('notepad');
+                    }
+
+                    // Handle 'share_target' action
+                    if (urlParams.get('from-share') === 'true') {
+                        const title = urlParams.get('title') || 'Shared Content';
+                        const text = urlParams.get('text') || '';
+                        const url = urlParams.get('url') || '';
+                        let content = '';
+                        if (text) content += `<p>${text.replace(/\n/g, '<br>')}</p>`;
+                        if (url) content += `<p><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></p>`;
+                        
+                        const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
+                        const newNote: Note = {
+                            id: crypto.randomUUID(),
+                            title: title,
+                            content: content || '<p></p>',
+                            category: 'Shared',
+                            tags: ['shared'],
+                            date: new Date().toISOString(),
+                            color: defaultColors[Math.floor(Math.random() * defaultColors.length)],
+                            isLocked: false,
+                            heroImage: null,
+                            paperStyle: 'paper-dark',
+                            fontStyle: 'font-sans',
+                            dueDate: null,
+                            reminderDate: null,
+                            reminderFired: false,
+                            recordingIds: [],
+                            photoIds: [],
+                        };
+                        await handleSaveNote(newNote);
+                        setNoteToSelectId(newNote.id);
+                        setCurrentView('notepad');
+                    }
+                }
+
+                // Handle URL-based view navigation from PWA shortcuts
+                const urlParams = new URLSearchParams(window.location.search);
+                const requestedView = urlParams.get('view') as View;
+                const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet', 'browser'];
+                if (requestedView && validViews.includes(requestedView)) {
+                    setCurrentView(requestedView);
+                }
+
                 // Check for persisted login
                 const loginDataString = localStorage.getItem('loginData');
                 if (loginDataString) {
@@ -591,8 +677,39 @@ const App: React.FC = () => {
             }
         };
         initializeApp();
-    }, [loadLocalData]);
+    }, [loadLocalData, handleSaveNote]);
     
+    // New useEffect for launchQueue (file handling)
+    useEffect(() => {
+        if ('launchQueue' in window && (window as any).launchQueue) {
+            (window as any).launchQueue.setConsumer(async (launchParams: any) => {
+                if (launchParams.files && launchParams.files.length > 0) {
+                    const fileHandle = launchParams.files[0];
+                    const file = await fileHandle.getFile();
+                    setFileToEdit(file);
+                }
+            });
+        }
+    }, []);
+
+    // New useEffect to react to fileToEdit state change
+    useEffect(() => {
+        if (fileToEdit) {
+            const tempPhoto: Photo = {
+                id: `temp-${crypto.randomUUID()}`,
+                name: fileToEdit.name,
+                notes: 'Opened from file system',
+                date: new Date().toISOString(),
+                folder: '_temp_opened',
+                imageBlob: fileToEdit,
+                imageMimeType: fileToEdit.type,
+                tags: ['opened-file'],
+            };
+            setImageToEdit(tempPhoto);
+            setCurrentView('image-tool');
+            setFileToEdit(null); // Reset after handling
+        }
+    }, [fileToEdit]);
     
     // --- Reminder Service ---
     const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent: boolean = false) => {
@@ -782,24 +899,6 @@ const App: React.FC = () => {
             await handleDeleteVideo(video);
         }
     }, [photos, videos, handleDeletePhoto, handleDeleteVideo]);
-
-
-    const handleSaveNote = useCallback(async (note: Note) => {
-        setNotes(prevNotes => {
-            const existing = prevNotes.find(n => n.id === note.id);
-            let newNotes;
-            if (!existing) {
-                newNotes = [note, ...prevNotes];
-                handleSaveLogEntry({ type: 'Note Created', timestamp: new Date().toISOString() }); // Only log on creation
-            } else {
-                newNotes = prevNotes.map(n => (n.id === note.id ? note : n));
-            }
-            return newNotes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        });
-        await db.saveNote(note);
-        if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
-    }, [directoryHandle, handleSaveLogEntry]);
-    
 
     const handleDeleteNote = useCallback(async (id: string) => {
         let originalNotes: Note[] | null = null;
@@ -1435,6 +1534,8 @@ const App: React.FC = () => {
                     onUpdatePhoto={handleUpdatePhoto}
                     performAiAction={(prompt: string, context: string) => performAiAction(prompt, context, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey)}
                     siteSettings={siteSettings}
+                    noteToSelectId={noteToSelectId}
+                    onNoteSelected={() => setNoteToSelectId(null)}
                 />;
             case 'image-tool':
                 return <ImageTool 

@@ -19,6 +19,41 @@
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
+  "share_target": {
+    "action": "/?from-share=true",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "image/jpeg": [
+          ".jpg",
+          ".jpeg"
+        ],
+        "image/png": [
+          ".png"
+        ],
+        "image/gif": [
+          ".gif"
+        ],
+        "image/webp": [
+          ".webp"
+        ]
+      }
+    }
+  ],
+  "note_taking": {
+    "new_note_url": "/?view=notepad&new-note=true"
+  },
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
   "icons": [
     {
       "src": "/android-launchericon-48-48.png",
