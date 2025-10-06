@@ -12,8 +12,8 @@ import { SaveIcon } from './icons/SaveIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { PhotoThumbnail } from './PhotoThumbnail';
-// FIX: Changed import to be more specific to resolve module ambiguity.
-import { CameraCapture } from './CameraCapture.tsx';
+// FIX: Corrected import for CameraCapture. The explicit .tsx extension can cause module resolution issues.
+import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { Spinner } from './icons/Spinner';
 import { XIcon } from './icons/XIcon';

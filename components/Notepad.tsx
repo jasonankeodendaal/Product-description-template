@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 // FIX: SiteSettings is exported from constants.ts, not App.tsx, resolving an import error.
 import { Note, NoteRecording, Photo } from '../App';
@@ -18,6 +17,8 @@ import { WaveformPlayer } from './WaveformPlayer';
 import { formatTime } from '../utils/formatters';
 import { LiveWaveform } from './LiveWaveform';
 import { XIcon } from './icons/XIcon';
+// FIX: Corrected import path for CameraCapture from './components/CameraCapture' to './CameraCapture'.
+import { CameraCapture } from './CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { ScanIcon } from './icons/ScanIcon';
 import { BellIcon } from './icons/BellIcon';
@@ -31,6 +32,7 @@ import { Spinner } from './icons/Spinner';
 import { resizeImage } from '../utils/imageUtils';
 import { SaveIcon } from './icons/SaveIcon';
 import { CheckIcon } from './icons/CheckIcon';
+// FIX: Imported useDebounce hook to resolve 'Cannot find name' error.
 import { useDebounce } from '../hooks/useDebounce';
 import { LockIcon } from './icons/LockIcon';
 import { UnlockIcon } from './icons/UnlockIcon';
@@ -452,7 +454,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
            <header className="p-2 border-b border-[var(--theme-border)] flex items-center justify-between flex-shrink-0">
                <div className="flex items-center gap-2 flex-grow min-w-0">
                    <button onClick={onClose} className="p-2 text-[var(--theme-text-secondary)]"><ChevronLeftIcon /></button>
-                   <input type="text" value={localNote.title} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-orange)] focus:outline-none w-full truncate" />
+                   <input type="text" value={localNote.title} onBlur={() => onUpdate(localNote)} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-orange)] focus:outline-none w-full truncate" />
                </div>
                <div className="flex items-center gap-2 flex-shrink-0">
                     <div className="text-sm font-semibold transition-colors duration-200">
@@ -466,7 +468,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClo
            
            <div className="flex-grow overflow-y-auto relative" style={{ paddingBottom: '60px' }} {...dragHandlers}>
                {isDraggingOver && <div className="dropzone-overlay"><UploadIcon /><p>Drop to attach file</p></div>}
-               <div ref={contentRef} onInput={handleContentChange} contentEditable suppressContentEditableWarning className={`note-editor-content p-4 outline-none min-h-full ${paperStyles[localNote.paperStyle]} ${fontStyles[localNote.fontStyle]}`}/>
+               <div ref={contentRef} onInput={handleContentChange} onBlur={() => onUpdate(localNote)} contentEditable suppressContentEditableWarning className={`note-editor-content p-4 outline-none min-h-full ${paperStyles[localNote.paperStyle]} ${fontStyles[localNote.fontStyle]}`}/>
            </div>
            
            <footer className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur-sm border-t border-white/10 note-editor-toolbar z-10">

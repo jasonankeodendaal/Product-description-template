@@ -232,3 +232,29 @@ export const ComposerPanel: React.FC<ComposerPanelProps> = ({
                 <h2 className="text-xl font-semibold mb-4 text-[var(--theme-green)]">2. Add From Library</h2>
                 <div className="border-b border-[var(--theme-border)] mb-4">
                     <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                        <TabButton label="Photos" isActive={activeTab === 'photos'} onClick={() => setActiveTab('photos')} />
+                        <TabButton label="Videos" isActive={activeTab === 'videos'} onClick={() => setActiveTab('videos')} />
+                        <TabButton label="Recordings" isActive={activeTab === 'recordings'} onClick={() => setActiveTab('recordings')} />
+                        <TabButton label="Notes" isActive={activeTab === 'notes'} onClick={() => setActiveTab('notes')} />
+                    </nav>
+                </div>
+                <div className="h-48 overflow-y-auto">
+                    {renderTabContent()}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const TabButton: React.FC<{label: string; isActive: boolean; onClick: () => void}> = ({ label, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+            isActive
+                ? 'border-[var(--theme-green)] text-[var(--theme-green)]'
+                : 'border-transparent text-[var(--theme-text-secondary)] hover:border-gray-500 hover:text-[var(--theme-text-primary)]'
+        }`}
+    >
+        {label}
+    </button>
+);
