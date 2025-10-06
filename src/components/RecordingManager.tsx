@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Recording, Photo } from '../App';
+import type { Recording, Photo } from '../types';
 import { SiteSettings } from '../constants';
 import { useRecorder } from '../hooks/useRecorder';
 import { transcribeAudio } from '../services/geminiService';
@@ -12,8 +12,6 @@ import { SaveIcon } from './icons/SaveIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { CameraIcon } from './icons/CameraIcon';
 import { PhotoThumbnail } from './PhotoThumbnail';
-// FIX: Changed import to be more specific to resolve module ambiguity.
-import { CameraCapture } from './CameraCapture.tsx';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { Spinner } from './icons/Spinner';
 import { XIcon } from './icons/XIcon';

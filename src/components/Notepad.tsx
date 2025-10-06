@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-// FIX: Corrected the import for `SiteSettings`. It is defined in `../constants` and was being incorrectly imported from `../App`.
-import { Note, NoteRecording, Photo } from '../App';
+// FIX: Corrected type imports to reference the central types file.
+import type { Note, NoteRecording, Photo } from '../types';
 import { SiteSettings } from '../constants';
 import { useRecorder } from '../hooks/useRecorder';
 import { SearchIcon } from './icons/SearchIcon';
@@ -53,6 +53,13 @@ interface NotepadProps {
     noteToSelectId?: string | null;
     onNoteSelected?: () => void;
 }
+
+// FIX: Defined a specific props interface for the NoteEditor sub-component to resolve type errors.
+interface NoteEditorProps extends Omit<NotepadProps, 'notes' | 'onSave' | 'noteToSelectId' | 'onNoteSelected'> {
+    note: Note;
+    onClose: () => void;
+}
+
 
 // --- NoteSettingsSidebar Component (New) ---
 const NoteSettingsPanel: React.FC<{
@@ -157,7 +164,7 @@ const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo
 )};
 
 
-const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'>> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos }) => {
+const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos }) => {
     const [localNote, setLocalNote] = useState(note);
     const lastSavedNote = useRef(note);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -563,14 +570,14 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const { noteToSelectId, onNoteSelected, siteSettings } = props;
 
-    const handleSelectNote = useCallback((note: Note) => {
+    const handleSelectNote = (note: Note) => {
         if (note.isLocked && note.id !== unlockedNoteId) {
             setSelectedNote(note); // Select it to trigger the lock screen
         } else {
             setSelectedNote(note);
             setUnlockedNoteId(note.id); // Mark as unlocked for this session
         }
-    }, [unlockedNoteId]);
+    };
 
     const handleUnlockSuccess = () => {
         if (selectedNote) {
@@ -643,7 +650,21 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                        />;
             }
             // Otherwise, show the editor.
-            return <NoteEditor {...props} note={selectedNote} onClose={handleCloseEditor} />;
+            return <NoteEditor 
+                note={selectedNote} 
+                onClose={handleCloseEditor}
+                onUpdate={props.onUpdate}
+                onDelete={props.onDelete}
+                noteRecordings={props.noteRecordings}
+                onSaveNoteRecording={props.onSaveNoteRecording}
+                onUpdateNoteRecording={props.onUpdateNoteRecording}
+                onDeleteNoteRecording={props.onDeleteNoteRecording}
+                photos={props.photos}
+                onSavePhoto={props.onSavePhoto}
+                onUpdatePhoto={props.onUpdatePhoto}
+                performAiAction={props.performAiAction}
+                siteSettings={props.siteSettings}
+            />;
         }
 
         // Show placeholder on desktop if no note is selected

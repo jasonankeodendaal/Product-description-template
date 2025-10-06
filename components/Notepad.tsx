@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 // FIX: SiteSettings is exported from constants.ts, not App.tsx, resolving an import error.
 import { Note, NoteRecording, Photo } from '../App';
@@ -50,6 +51,14 @@ interface NotepadProps {
     onUpdatePhoto: (photo: Photo) => Promise<void>;
     performAiAction: (prompt: string, context: string) => Promise<any>;
     siteSettings: SiteSettings;
+    noteToSelectId?: string | null;
+    onNoteSelected?: () => void;
+}
+
+// FIX: Defined a specific props interface for the NoteEditor sub-component to resolve type errors.
+interface NoteEditorProps extends Omit<NotepadProps, 'notes' | 'onSave' | 'noteToSelectId' | 'onNoteSelected'> {
+    note: Note;
+    onClose: () => void;
 }
 
 // --- NoteSettingsSidebar Component (New) ---
@@ -155,7 +164,7 @@ const PhotoViewerModal: React.FC<{photo: Photo, onClose: () => void}> = ({ photo
 )};
 
 
-const NoteEditor: React.FC<Omit<NotepadProps, 'notes' | 'onSave'>> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos }) => {
+const NoteEditor: React.FC<NoteEditorProps> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onUpdateNoteRecording, onSavePhoto, onUpdatePhoto, performAiAction, noteRecordings, photos, siteSettings }) => {
     const [localNote, setLocalNote] = useState(note);
     const lastSavedNote = useRef(note);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -559,6 +568,7 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [unlockedNoteId, setUnlockedNoteId] = useState<string | null>(null);
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
+    const { noteToSelectId, onNoteSelected, siteSettings } = props;
 
     const handleSelectNote = (note: Note) => {
         if (note.isLocked && note.id !== unlockedNoteId) {
@@ -586,6 +596,16 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
         await props.onSave(newNote);
         handleSelectNote(newNote);
     }, [props.onSave]);
+
+    useEffect(() => {
+        if (noteToSelectId && onNoteSelected) {
+            const note = props.notes.find(n => n.id === noteToSelectId);
+            if (note) {
+                handleSelectNote(note);
+            }
+            onNoteSelected();
+        }
+    }, [noteToSelectId, props.notes, onNoteSelected]);
 
     useEffect(() => {
         if (selectedNote) {
@@ -624,13 +644,27 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
             if (selectedNote.isLocked && selectedNote.id !== unlockedNoteId) {
                 return <NoteLockScreen 
                            noteTitle={selectedNote.title} 
-                           userPin={props.siteSettings.userPin || ''}
+                           userPin={siteSettings.userPin || ''}
                            onUnlock={handleUnlockSuccess} 
                            onClose={handleCloseEditor}
                        />;
             }
             // Otherwise, show the editor.
-            return <NoteEditor {...props} note={selectedNote} onClose={handleCloseEditor} />;
+            return <NoteEditor 
+                note={selectedNote} 
+                onClose={handleCloseEditor}
+                onUpdate={props.onUpdate}
+                onDelete={props.onDelete}
+                noteRecordings={props.noteRecordings}
+                onSaveNoteRecording={props.onSaveNoteRecording}
+                onUpdateNoteRecording={props.onUpdateNoteRecording}
+                onDeleteNoteRecording={props.onDeleteNoteRecording}
+                photos={props.photos}
+                onSavePhoto={props.onSavePhoto}
+                onUpdatePhoto={props.onUpdatePhoto}
+                performAiAction={props.performAiAction}
+                siteSettings={props.siteSettings}
+            />;
         }
 
         // Show placeholder on desktop if no note is selected

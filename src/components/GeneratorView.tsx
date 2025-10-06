@@ -1,12 +1,12 @@
+
 import React from 'react';
-// FIX: Import the 'OutputPanel' component to resolve the 'Cannot find name' error.
 import { GenerationResult, OutputPanel } from './OutputPanel';
 import { TemplateManager } from './TemplateManager';
-import { Template, ParsedProductData, Photo, Recording, Note, View, Video } from '../App';
 import { SiteSettings } from '../constants';
 import { ComposerPanel } from './ComposerPanel';
 import { Hero } from './Hero';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
+import type { Template, ParsedProductData, Photo, Recording, Note, View, Video } from '../types';
 
 interface GeneratorViewProps {
     userInput: string;

@@ -14,6 +14,7 @@ export const GITHUB_APK_URL = 'https://github.com/jasonankeodendaal/Product-desc
 
 // The ID of the secret GitHub Gist containing creator_details.json
 // This should be set as an environment variable in your hosting provider (e.g., Vercel).
+// FIX: Use import.meta.env for Vite environment variables instead of process.env
 export const GIST_ID = import.meta.env.VITE_GIST_ID;
 
 export interface CreatorDetails {

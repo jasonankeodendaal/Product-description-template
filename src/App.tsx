@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
-import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
+import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
 import { GenerationResult } from './components/OutputPanel';
@@ -29,9 +29,9 @@ import { OnboardingTour } from './components/OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
-import { FileBrowser, FileSystemItem } from './components/FileBrowser';
+import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-import { Hero } from './components/Hero';
+import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -42,134 +42,6 @@ interface BeforeInstallPromptEvent extends Event {
   }>;
   prompt(): Promise<void>;
 }
-
-
-// --- Type Definitions ---
-export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet' | 'calendar' | 'browser';
-export type UserRole = 'user' | 'creator';
-
-export interface Template {
-  id: string;
-  name: string;
-  prompt: string;
-  category?: string;
-}
-
-export interface ParsedProductData {
-    brand: string;
-    sku: string;
-    name: string;
-    fullText: string;
-}
-
-export interface Recording {
-  id: string;
-  name: string;
-  date: string;
-  transcript: string;
-  notes: string;
-  audioBlob: Blob;
-  tags: string[];
-  photoIds: string[];
-  isTranscribing?: boolean;
-}
-
-export interface Photo {
-    id: string;
-    name: string;
-    notes: string;
-    date: string;
-    folder: string;
-    imageBlob: Blob;
-    imageMimeType: string;
-    tags: string[];
-    width?: number;
-    height?: number;
-}
-
-export interface Video {
-    id: string;
-    name: string;
-    notes: string;
-    date: string;
-    folder: string;
-    videoBlob: Blob;
-    videoMimeType: string;
-    tags: string[];
-    width?: number;
-    height?: number;
-}
-
-
-export interface NoteRecording {
-  id: string;
-  noteId: string;
-  name: string;
-  date: string;
-  audioBlob: Blob;
-}
-
-// Updated data model for Notepad to match new design
-export interface Note {
-    id: string;
-    title: string;
-    content: string; // Rich text content stored as an HTML string
-    category: string;
-    tags: string[];
-    date: string;
-    color: string; // e.g., 'sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'
-    isLocked: boolean;
-    // New fields for advanced editor
-    heroImage?: string | null; // Data URL for the hero image
-    paperStyle: string; // 'paper-white', 'paper-dark', 'paper-yellow-lined', 'paper-grid'
-    fontStyle: string; // 'font-sans', 'font-serif', 'font-mono'
-    dueDate?: string | null;
-    reminderDate?: string | null;
-    reminderFired?: boolean;
-    recordingIds?: string[];
-    photoIds?: string[]; // For scanned documents and other images
-}
-
-export interface LogEntry {
-    id: string;
-    type: 'Clock In' | 'Clock Out' | 'Note Created' | 'Photo Added' | 'Recording Added' | 'Manual Task';
-    timestamp: string; // For auto-events, this is the main time. For manual, it's the date.
-    task?: string;     // For manual tasks
-    startTime?: string; // ISO string for manual tasks
-    endTime?: string;   // ISO string for manual tasks
-}
-
-
-export interface CalendarEvent {
-  id: string;
-  startDateTime: string; // Full ISO string
-  endDateTime: string;   // Full ISO string
-  title: string;
-  notes: string;
-  photoId?: string;
-  recordingIds?: string[];
-  color: string; // e.g., 'sky', 'purple', 'emerald'
-  reminderOffset: number; // in minutes before the event. -1 for no reminder.
-  reminderFired: boolean;
-  createdAt: string;
-}
-
-
-export interface BackupData {
-    siteSettings: SiteSettings;
-    templates: Template[];
-    recordings: Recording[];
-    photos: Photo[];
-    videos: Video[];
-    notes: Note[];
-    noteRecordings: NoteRecording[];
-    logEntries: LogEntry[];
-    calendarEvents: CalendarEvent[];
-}
-
-type ApiRecording = Omit<Recording, 'audioBlob' | 'isTranscribing'> & { audioBase64: string, audioMimeType: string };
-type ApiPhoto = Omit<Photo, 'imageBlob'> & { imageBase64: string, imageMimeType: string };
-type ApiNoteRecording = Omit<NoteRecording, 'audioBlob'> & { audioBase64: string, audioMimeType: string };
 
 // Function to migrate old notes to the new format
 const migrateNote = (note: any): Note => {
@@ -712,7 +584,7 @@ const App: React.FC = () => {
     }, [fileToEdit]);
     
     // --- Reminder Service ---
-    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent: boolean = false) => {
+    const handleSaveCalendarEvent = useCallback(async (event: CalendarEvent, silent = false) => {
         setCalendarEvents(prev => {
             const existing = prev.find(e => e.id === event.id);
             return existing ? prev.map(e => e.id === event.id ? event : e) : [event, ...prev];
@@ -721,7 +593,7 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveCalendarEventToDirectory(directoryHandle, event);
     }, [directoryHandle]);
 
-    const handleUpdateNote = useCallback(async (note: Note, silent: boolean = false) => {
+    const handleUpdateNote = useCallback(async (note: Note, silent = false) => {
         setNotes(prev => prev.map(n => n.id === note.id ? note : n));
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);
@@ -1225,9 +1097,9 @@ const App: React.FC = () => {
             const isConnected = await apiSyncService.connect(apiUrl, apiKey);
             if(isConnected) {
                 const data = await apiSyncService.fetchAllData(apiUrl, apiKey);
-                const newRecordings = await Promise.all(data.recordings.map(async (r: ApiRecording) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
-                const newPhotos = await Promise.all(data.photos.map(async (p: ApiPhoto) => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
-                const newNoteRecordings = await Promise.all(data.noteRecordings.map(async (r: ApiNoteRecording) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
+                const newRecordings = await Promise.all(data.recordings.map(async (r: any) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
+                const newPhotos = await Promise.all(data.photos.map(async (p: any) => ({ ...p, imageBlob: apiSyncService.base64ToBlob(p.imageBase64, p.imageMimeType) })));
+                const newNoteRecordings = await Promise.all(data.noteRecordings.map(async (r: any) => ({ ...r, audioBlob: apiSyncService.base64ToBlob(r.audioBase64, r.audioMimeType) })));
 
                 const newSettings = { ...data.siteSettings, customApiEndpoint: apiUrl, customApiAuthKey: apiKey, syncMode: 'api' as const };
                 setSiteSettings(newSettings);

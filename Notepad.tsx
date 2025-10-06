@@ -15,7 +15,8 @@ import { WaveformPlayer } from './WaveformPlayer';
 import { formatTime } from '../utils/formatters';
 import { LiveWaveform } from './LiveWaveform';
 import { XIcon } from './icons/XIcon';
-import { CameraCapture } from './CameraCapture';
+// FIX: Changed import path to point to the correct CameraCapture component.
+import { CameraCapture } from './components/CameraCapture';
 import { dataURLtoBlob } from '../utils/dataUtils';
 import { ScanIcon } from './icons/ScanIcon';
 import { BellIcon } from './icons/BellIcon';
@@ -27,11 +28,6 @@ import { MagicIcon } from './icons/MagicIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { Spinner } from './icons/Spinner';
 import { resizeImage } from '../utils/imageUtils';
-import { SaveIcon } from './icons/SaveIcon';
-import { CheckIcon } from './icons/CheckIcon';
-import { useDebounce } from '../hooks/useDebounce';
-import { LockIcon } from './icons/LockIcon';
-import { UnlockIcon } from './icons/UnlockIcon';
 
 // Props definition
 interface NotepadProps {
@@ -95,22 +91,9 @@ const NoteSettingsPanel: React.FC<{
                             </select>
                             <div className="settings-color-palette">
                                 {Object.entries(solidColorMap).map(([name, color]) => (
-                                    <button key={name} type="button" onClick={() => onNoteChange(n => ({...n, color:name}))} className={`settings-color-swatch ${note.color === name ? 'selected' : ''}`} style={{ backgroundColor: color }}>
-                                        {note.color === name && <CheckIcon className="w-4 h-4 text-black" />}
-                                    </button>
+                                    <button key={name} type="button" onClick={() => onNoteChange(n => ({...n, color:name}))} className={`settings-color-swatch ${note.color === name ? 'selected' : ''}`} style={{ backgroundColor: color }}></button>
                                 ))}
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="settings-section">
-                        <LockIcon className="settings-section-icon" />
-                        <div className="settings-section-controls w-full">
-                            <label>Security</label>
-                            <button onClick={() => onNoteChange(n => ({...n, isLocked: !n.isLocked}))} className="w-full flex items-center justify-center gap-2 p-2 mt-2 rounded-md bg-gray-800 hover:bg-gray-700 border border-gray-600">
-                                {note.isLocked ? <UnlockIcon /> : <LockIcon />}
-                                <span className="font-semibold">{note.isLocked ? 'Unlock Note' : 'Lock Note'}</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -155,8 +138,6 @@ const NoteEditor: React.FC<{
     photos: Photo[];
 }> = ({ note, onUpdate, onDelete, onClose, onSaveNoteRecording, onSavePhoto, performAiAction, noteRecordings, photos }) => {
     const [localNote, setLocalNote] = useState(note);
-    const [isDirty, setIsDirty] = useState(false);
-    const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
     const contentRef = useRef<HTMLDivElement>(null);
     const { isRecording, recordingTime, audioBlob, startRecording, stopRecording, analyserNode, setAudioBlob } = useRecorder();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -169,26 +150,16 @@ const NoteEditor: React.FC<{
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [playingRecording, setPlayingRecording] = useState<NoteRecording | null>(null);
     const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
-    const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         setLocalNote(note);
-        setIsDirty(false);
-        setSaveState('idle');
         if (contentRef.current) {
             contentRef.current.innerHTML = note.content;
         }
     }, [note]);
 
     const updateLocalNote = (updater: (prevNote: Note) => Note) => {
-        setLocalNote(prev => {
-            const newState = updater(prev);
-            if (JSON.stringify(newState) !== JSON.stringify(note)) {
-                setIsDirty(true);
-                setSaveState('idle');
-            }
-            return newState;
-        });
+        setLocalNote(prev => updater(prev));
     };
     
     const handleCloseSettings = () => {
@@ -199,20 +170,6 @@ const NoteEditor: React.FC<{
         }, 300);
     };
 
-    const handleSave = async () => {
-        if (!isDirty) return;
-        setSaveState('saving');
-        try {
-            await onUpdate(localNote);
-            setIsDirty(false);
-            setSaveState('saved');
-            setTimeout(() => setSaveState('idle'), 2000);
-        } catch (e) {
-            console.error("Failed to save note:", e);
-            setSaveState('idle');
-        }
-    };
-    
     const handleContentChange = useCallback(() => {
         if (contentRef.current) {
             updateLocalNote(prev => ({ ...prev, content: contentRef.current!.innerHTML, date: new Date().toISOString() }));
@@ -265,7 +222,6 @@ const NoteEditor: React.FC<{
     const executeCommand = (command: string) => {
         document.execCommand(command, false);
         handleContentChange();
-        contentRef.current?.focus();
     };
 
     const insertHtml = (html: string) => {
@@ -369,12 +325,6 @@ const NoteEditor: React.FC<{
         editor.addEventListener('dragstart', handleDragStart); editor.addEventListener('dragover', handleDragOver); editor.addEventListener('drop', handleDrop); editor.addEventListener('dragend', handleDragEnd);
         return () => { editor.removeEventListener('dragstart', handleDragStart); editor.removeEventListener('dragover', handleDragOver); editor.removeEventListener('drop', handleDrop); editor.removeEventListener('dragend', handleDragEnd); };
     }, [handleContentChange]);
-    
-    useEffect(() => {
-        const updateToolbarState = () => { const newFormats = new Set<string>(); ['bold', 'italic', 'underline', 'strikeThrough'].forEach(cmd => { if (document.queryCommandState(cmd)) newFormats.add(cmd); }); setActiveFormats(newFormats); };
-        document.addEventListener('selectionchange', updateToolbarState);
-        return () => document.removeEventListener('selectionchange', updateToolbarState);
-    }, []);
 
     const paperStyles: Record<string, string> = { 'paper-dark': 'bg-gray-800 text-gray-200', 'paper-grid': 'bg-gray-800 text-gray-200 bg-cover bg-[linear-gradient(to_right,rgba(128,128,128,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(128,128,128,0.1)_1px,transparent_1px)] bg-[size:1.5rem_1.5rem]' };
     const fontStyles: Record<string, string> = { 'font-sans': 'font-sans', 'font-serif': 'font-lora', 'font-mono': 'font-mono' };
@@ -401,14 +351,9 @@ const NoteEditor: React.FC<{
            <header className="p-2 border-b border-[var(--theme-border)] flex items-center justify-between flex-shrink-0">
                <div className="flex items-center gap-2 flex-grow min-w-0">
                    <button onClick={onClose} className="p-2 text-[var(--theme-text-secondary)]"><ChevronLeftIcon /></button>
-                   <input type="text" value={localNote.title} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-orange)] focus:outline-none w-full truncate" />
+                   <input type="text" value={localNote.title} onBlur={() => onUpdate(localNote)} onChange={e => updateLocalNote(n => ({ ...n, title: e.target.value, date: new Date().toISOString() }))} placeholder="Note Title..." className="text-xl font-bold bg-transparent border-b-2 border-transparent focus:border-[var(--theme-orange)] focus:outline-none w-full truncate" />
                </div>
                <div className="flex items-center gap-2 flex-shrink-0">
-                    {isDirty && (
-                       <button onClick={handleSave} disabled={saveState === 'saving'} className="text-sm font-semibold py-1.5 px-4 rounded-full flex items-center gap-1.5 transition-colors duration-200 bg-orange-600 text-white hover:bg-orange-500 disabled:bg-gray-500">
-                           {saveState === 'saving' ? <><Spinner className="w-4 h-4" /> Saving...</> : saveState === 'saved' ? <><CheckIcon /> Saved</> : 'Save'}
-                       </button>
-                   )}
                    <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-[var(--theme-text-secondary)] hover:text-white relative"><SettingsIcon /></button>
                    <button onClick={() => onDelete(localNote.id)} className="p-2 text-[var(--theme-text-secondary)] hover:text-[var(--theme-red)]"><TrashIcon /></button>
                </div>
@@ -416,15 +361,15 @@ const NoteEditor: React.FC<{
            
            <div className="flex-grow overflow-y-auto relative" style={{ paddingBottom: '60px' }} {...dragHandlers}>
                {isDraggingOver && <div className="dropzone-overlay"><UploadIcon /><p>Drop to attach file</p></div>}
-               <div ref={contentRef} onInput={handleContentChange} contentEditable suppressContentEditableWarning className={`note-editor-content p-4 outline-none min-h-full ${paperStyles[localNote.paperStyle]} ${fontStyles[localNote.fontStyle]}`}/>
+               <div ref={contentRef} onInput={handleContentChange} onBlur={() => onUpdate(localNote)} contentEditable suppressContentEditableWarning className={`note-editor-content p-4 outline-none min-h-full ${paperStyles[localNote.paperStyle]} ${fontStyles[localNote.fontStyle]}`}/>
            </div>
            
            <footer className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur-sm border-t border-white/10 note-editor-toolbar z-10">
                <div className="flex items-center justify-start gap-1 flex-wrap">
-                   <button title="Bold" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('bold')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('bold') ? 'active' : ''}`}><BoldIcon /></button>
-                   <button title="Italic" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('italic')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('italic') ? 'active' : ''}`}><ItalicIcon /></button>
-                   <button title="Underline" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('underline')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('underline') ? 'active' : ''}`}><UnderlineIcon /></button>
-                   <button title="Strikethrough" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('strikeThrough')} className={`p-2 hover:bg-slate-700 rounded ${activeFormats.has('strikeThrough') ? 'active' : ''}`}><StrikethroughIcon /></button>
+                   <button title="Bold" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('bold')} className="p-2 hover:bg-slate-700 rounded"><BoldIcon /></button>
+                   <button title="Italic" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('italic')} className="p-2 hover:bg-slate-700 rounded"><ItalicIcon /></button>
+                   <button title="Underline" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('underline')} className="p-2 hover:bg-slate-700 rounded"><UnderlineIcon /></button>
+                   <button title="Strikethrough" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('strikeThrough')} className="p-2 hover:bg-slate-700 rounded"><StrikethroughIcon /></button>
                    <div className="toolbar-divider"></div>
                    <button title="Bulleted List" onMouseDown={(e) => e.preventDefault()} onClick={() => executeCommand('insertUnorderedList')} className="p-2 hover:bg-slate-700 rounded"><ListIcon /></button>
                    <button title="Checklist" onMouseDown={(e) => e.preventDefault()} onClick={handleChecklist} className="p-2 hover:bg-slate-700 rounded"><ChecklistIcon /></button>
@@ -495,27 +440,16 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
-    const lastSavedNote = useRef<Note | null>(null);
 
-    const handleSelectNote = useCallback(async (noteToSelect: Note | null) => {
-        if (selectedNote && lastSavedNote.current && JSON.stringify(selectedNote) !== JSON.stringify(lastSavedNote.current)) {
-            await props.onUpdate(selectedNote);
-        }
-        
-        setSelectedNote(noteToSelect);
-        lastSavedNote.current = noteToSelect;
-    }, [selectedNote, props.onUpdate]);
-    
-    const handleUpdate = useCallback(async (updatedNote: Note) => {
-        await props.onUpdate(updatedNote);
-        lastSavedNote.current = updatedNote;
-    }, [props.onUpdate]);
+    const handleSelectNote = (note: Note) => {
+        setSelectedNote(note);
+    };
 
     const handleAddNewNote = useCallback(async () => {
         const newNote: Note = { id: crypto.randomUUID(), title: 'New Note', content: '<p></p>', category: 'General', tags: [], date: new Date().toISOString(), color: defaultColors[Math.floor(Math.random() * defaultColors.length)], paperStyle: 'paper-dark', fontStyle: 'font-sans', heroImage: null, dueDate: null, reminderDate: null, reminderFired: false, recordingIds: [], photoIds: [], isLocked: false };
         await props.onSave(newNote);
-        handleSelectNote(newNote);
-    }, [props.onSave, handleSelectNote]);
+        setSelectedNote(newNote);
+    }, [props.onSave]);
 
     useEffect(() => {
         if (selectedNote) {
@@ -561,7 +495,7 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                      <div className="flex-grow overflow-y-auto no-scrollbar p-2 space-y-2">
                         {filteredNotes.length > 0 ? (
                             filteredNotes.map(note => (
-                                <NoteCard key={note.id} note={note} onSelect={() => handleSelectNote(note)} isSelected={selectedNote?.id === note.id} />
+                                <NoteCard key={note.id} note={note} onSelect={handleSelectNote} isSelected={selectedNote?.id === note.id} />
                             ))
                         ) : (
                             <div className="text-center p-8 text-[var(--theme-text-secondary)]">
@@ -578,9 +512,8 @@ export const Notepad: React.FC<NotepadProps> = (props) => {
                         <NoteEditor
                             {...props}
                             note={selectedNote}
-                            onUpdate={handleUpdate}
                             onDelete={handleDelete}
-                            onClose={() => handleSelectNote(null)}
+                            onClose={() => setSelectedNote(null)}
                         />
                     ) : (
                         <div className="hidden md:flex w-full h-full items-center justify-center text-center text-[var(--theme-text-secondary)] p-8">
