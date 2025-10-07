@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBackup } from '../utils/dataUtils';
 import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../types';
 import { DownloadIcon } from './icons/DownloadIcon';
@@ -8,15 +8,8 @@ import { FolderSyncIcon } from './icons/FolderSyncIcon';
 import { HardDriveIcon } from './icons/HardDriveIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { FolderIcon } from './icons/FolderIcon';
-import { TemplateIcon } from './icons/TemplateIcon';
-import { RecordingIcon } from './icons/RecordingIcon';
-import { PhotoIcon } from './icons/PhotoIcon';
-import { NotepadIcon } from './icons/NotepadIcon';
 import { SiteSettings } from '../constants';
-import { CloudIcon } from './icons/CloudIcon';
 import { Spinner } from './icons/Spinner';
-import { ClockIcon } from './icons/ClockIcon';
-import { CalendarIcon } from './icons/CalendarIcon';
 import { CodeIcon } from './icons/CodeIcon';
 import { ServerIcon } from './icons/ServerIcon';
 
@@ -116,7 +109,6 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
     } = props;
     
     const [activeTab, setActiveTab] = useState<DataManagementTab>('sync');
-    const [restoreFile, setRestoreFile] = useState<File | null>(null);
     const [restoreError, setRestoreError] = useState('');
     
     const [apiSettings, setApiSettings] = useState({
@@ -195,14 +187,12 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
         const file = e.target.files?.[0];
         if (file) {
             if (file.type === 'application/zip' || file.name.endsWith('.zip')) {
-                setRestoreFile(file);
                 setRestoreError('');
                 if (window.confirm("Are you sure you want to restore from this backup? All current data will be overwritten and the local sync folder will be disconnected.")) {
                     onRestore(file);
                 }
             } else {
                 setRestoreError('Invalid file type. Please select a .zip backup file.');
-                setRestoreFile(null);
             }
         }
         if (e.target) e.target.value = '';

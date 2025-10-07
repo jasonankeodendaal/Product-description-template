@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { InputPanel } from './InputPanel';
 import type { Template, Recording, Note, Photo } from '../types';

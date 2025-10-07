@@ -1,5 +1,5 @@
 
-import { SiteSettings } from '../constants';
+import { SiteSettings } from './constants';
 
 // --- Type Definitions ---
 export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet' | 'calendar' | 'browser';

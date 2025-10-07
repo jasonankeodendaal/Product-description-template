@@ -14,7 +14,7 @@ import { Dashboard } from './components/Dashboard';
 import { RecordingManager } from './components/RecordingManager';
 import { PhotoManager } from './components/PhotoManager';
 import { Notepad } from './components/Notepad';
-import { ImageTool } from './components/ImageTool';
+import { ImageTool } from './ImageTool';
 import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
@@ -24,14 +24,15 @@ import { MobileHeader } from './components/MobileHeader';
 import { Home } from './components/Home';
 import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
-import { TimesheetManager } from './components/TimesheetManager';
+import { TimesheetManager } from './TimesheetManager';
 import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
-import { OnboardingTour } from './components/OnboardingTour';
+import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
+import { Hero } from './components/Hero';
 import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem, GenerationResult } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
