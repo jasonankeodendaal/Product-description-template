@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
+// FIX: Corrected type import from `../App` to `../types`.
 import type { LogEntry } from '../types';
+// FIX: SiteSettings is exported from ../constants, not ../App
 import { SiteSettings } from '../constants';
 import { XIcon } from './icons/XIcon';
 import { PrintIcon } from './icons/PrintIcon';

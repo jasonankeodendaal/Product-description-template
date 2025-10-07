@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+// FIX: Corrected type imports to use the centralized `types.ts` file.
 import { CalendarEvent, Photo, Recording } from '../types';
 import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';

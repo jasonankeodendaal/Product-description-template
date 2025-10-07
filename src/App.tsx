@@ -12,7 +12,6 @@ import { Dashboard } from './components/Dashboard';
 import { RecordingManager } from './components/RecordingManager';
 import { PhotoManager } from './components/PhotoManager';
 import { Notepad } from './components/Notepad';
-// FIX: Corrected import path for ImageTool.
 import { ImageTool } from './ImageTool';
 import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
@@ -26,14 +25,14 @@ import { CalendarView } from './components/CalendarView';
 // FIX: Corrected import path for TimesheetManager.
 import { TimesheetManager } from './TimesheetManager';
 import { calculateStorageUsage } from './utils/storageUtils';
-// FIX: Corrected import path for OnboardingTour.
 import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem, GenerationResult, StorageUsage } from './types';
+// FIX: Centralized all type imports to use the dedicated types.ts file.
+import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -969,7 +968,7 @@ const App: React.FC = () => {
             const metadataFile = zip.file('metadata.json');
             if (!metadataFile) throw new Error('Invalid backup: metadata.json not found.');
             
-            const metadata: BackupData = JSON.parse(await metadataFile.async('string'));
+            const metadata: any = JSON.parse(await metadataFile.async('string'));
             
             const restoredRecordings: Recording[] = [];
             const recordingsFolder = zip.folder('assets/recordings');

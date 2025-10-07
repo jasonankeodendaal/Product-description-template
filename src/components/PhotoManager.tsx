@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+// FIX: Corrected type import from `../App` to `../types`.
 import { Photo } from '../types';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { UploadIcon } from './icons/UploadIcon';

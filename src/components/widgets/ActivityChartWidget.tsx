@@ -1,5 +1,5 @@
-
 import React, { useMemo } from 'react';
+// FIX: Changed type import from `../../App` to `../../types`.
 import type { Note, Photo, Recording, LogEntry } from '../../types';
 import { useRecharts } from '../../hooks/useRecharts';
 import { Spinner } from '../icons/Spinner';
@@ -12,6 +12,7 @@ interface ActivityChartWidgetProps {
 }
 
 export const ActivityChartWidget: React.FC<ActivityChartWidgetProps> = ({ notes, photos, recordings, logEntries }) => {
+    // FIX: The useRecharts hook returns a status object. Destructure its properties.
     const { lib: Recharts, loading, error } = useRecharts();
 
     const chartData = useMemo(() => {
@@ -43,6 +44,7 @@ export const ActivityChartWidget: React.FC<ActivityChartWidgetProps> = ({ notes,
         return data;
     }, [notes, photos, recordings, logEntries]);
     
+    // FIX: Check loading, error, and library existence before attempting to render the chart.
     if (loading || error || !Recharts) {
          return (
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 h-full shadow-lg border border-white/10 flex flex-col items-center justify-center">
@@ -52,6 +54,7 @@ export const ActivityChartWidget: React.FC<ActivityChartWidgetProps> = ({ notes,
         );
     }
     
+    // FIX: Destructure chart components from the loaded library object.
     const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } = Recharts;
 
     return (

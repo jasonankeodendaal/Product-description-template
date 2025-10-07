@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { createBackup } from '../utils/dataUtils';
-import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../types';
+// FIX: Corrected type imports to reference the central types.ts file.
+import type { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../types';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RestoreIcon } from './icons/RestoreIcon';
 import { FolderSyncIcon } from './icons/FolderSyncIcon';

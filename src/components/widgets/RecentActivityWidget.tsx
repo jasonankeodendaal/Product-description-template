@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+// FIX: Changed type import from `../../App` to `../../types`.
 import type { Note, Photo, Recording, View } from '../../types';
 import { NotepadIcon } from '../icons/NotepadIcon';
 import { PhotoIcon } from '../icons/PhotoIcon';
