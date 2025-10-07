@@ -5,8 +5,7 @@ import { BuildingIcon } from './icons/BuildingIcon';
 import { UserIcon } from './icons/UserIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import { TrashIcon } from './icons/TrashIcon';
-// FIX: Corrected type import path.
-import { UserRole } from '../types';
+import type { UserRole } from '../types';
 import { ShieldIcon } from './icons/ShieldIcon';
 import { SaveIcon } from './icons/SaveIcon';
 import { Spinner } from './icons/Spinner';
@@ -184,8 +183,11 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSett
                              <div className="flex items-center gap-4">
                                 {globalSaveSuccess && <p className="text-sm text-green-400">Updated!</p>}
                                 <button type="button" onClick={handleSaveGlobalDetails} disabled={isGlobalSaving} className="bg-sky-600 text-white font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 disabled:bg-gray-500">
-                                    {isGlobalSaving ? <Spinner /> : <SaveIcon />}
-                                    {isGlobalSaving ? "Saving..." : "Save Global Details"}
+                                    {isGlobalSaving ? (
+                                        <><Spinner /> Saving...</>
+                                    ) : (
+                                        <><SaveIcon /> Save Global Details</>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -196,4 +198,46 @@ export const SiteSettingsEditor: React.FC<SiteSettingsEditorProps> = ({ siteSett
                     <InputField id="companyName" label="Company Name" value={formData.companyName} onChange={handleFormChange} fullWidth />
                     <InputField id="slogan" label="Slogan" value={formData.slogan} onChange={handleFormChange} fullWidth />
                     <ImageUploader id="logoSrc" label="Company Logo" src={formData.logoSrc} onImageChange={handleImageChange('logoSrc')} description="Recommended: Square (e.g., 256x256px)." />
-                    <ImageUploader id="hero
+                    <ImageUploader id="heroImageSrc" label="Hero Image" src={formData.heroImageSrc} onImageChange={handleImageChange('heroImageSrc')} description="Recommended: Wide (e.g., 1600x400px)." />
+                    <ImageUploader 
+                        id="backgroundImageSrc" 
+                        label="App Background Image" 
+                        src={formData.backgroundImageSrc || null} 
+                        onImageChange={handleImageChange('backgroundImageSrc')} 
+                        description="High-res, abstract, or textured images work best."
+                        fullWidth
+                    />
+                    <InputField id="tel" label="Telephone" value={formData.tel} onChange={handleFormChange} />
+                    <InputField id="email" label="Email" value={formData.email} onChange={handleFormChange} />
+                    <InputField id="website" label="Website URL" value={formData.website} onChange={handleFormChange} fullWidth />
+                </SectionCard>
+
+                <SectionCard title="Security" icon={<ShieldIcon />}>
+                    <div className="md:col-span-2">
+                        <p className="text-sm text-[var(--theme-text-secondary)]">Reset the 4-digit PIN used to access the application.</p>
+                        <button 
+                            type="button" 
+                            onClick={onInitiatePinReset} 
+                            className="mt-3 bg-[var(--theme-card-bg)] hover:bg-[var(--theme-bg)] text-[var(--theme-text-secondary)] font-semibold py-2 px-4 rounded-md text-sm inline-flex items-center gap-2 border border-[var(--theme-border)]"
+                        >
+                            Reset Application PIN...
+                        </button>
+                    </div>
+                </SectionCard>
+            </div>
+            
+            <footer className="sticky bottom-0 -mx-6 -mb-6 mt-6 bg-[var(--theme-dark-bg)]/80 backdrop-blur-sm p-4 border-t border-[var(--theme-border)]/50">
+                <div className="flex justify-end items-center gap-4">
+                    {saveSuccess && <p className="text-sm text-[var(--theme-green)] animate-fade-in-down">Local settings saved!</p>}
+                    <button type="submit" disabled={isSaving} className="bg-[var(--theme-orange)] hover:opacity-90 text-black font-bold py-2 px-6 rounded-md transition-colors duration-200 flex items-center gap-2 disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed">
+                        {isSaving ? (
+                            <><Spinner className="h-5 w-5 text-white" />Saving...</>
+                        ) : (
+                            <><SaveIcon /> Save Local Settings</>
+                        )}
+                    </button>
+                </div>
+            </footer>
+       </form>
+    );
+};
