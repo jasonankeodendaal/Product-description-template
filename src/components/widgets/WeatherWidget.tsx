@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { SiteSettings } from '../../constants';
 import { Spinner } from '../icons/Spinner';
@@ -44,11 +45,9 @@ interface WeatherWidgetProps {
 
 export const WeatherIcon: React.FC<{ icon: WeatherData['current']['icon'], className?: string }> = ({ icon, className = "h-full w-full" }) => {
     switch (icon) {
-        // FIX: Pass className prop to icon components to resolve typing errors.
         case 'SUNNY': return <SunIcon className={className} />;
         case 'CLOUDY': return <CloudIcon isConnected={false} className={className}/>;
         case 'PARTLY_CLOUDY': return <CloudIcon isConnected={false} className={className}/>;
-        // FIX: Pass className prop to icon components to resolve typing errors.
         case 'RAIN': return <RainIcon className={className}/>;
         case 'SNOW': return <SnowIcon className={className}/>;
         case 'WIND': return <WindIcon className={className}/>;

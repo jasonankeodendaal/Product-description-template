@@ -1,3 +1,4 @@
+
 import type { Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../types';
 
 const DB_NAME = 'AiToolsDB';

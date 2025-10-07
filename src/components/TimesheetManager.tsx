@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+// FIX: Import types from the dedicated types file to avoid circular dependencies.
 import type { LogEntry, View } from '../types';
 import { formatDurationHHMMSS, formatMsToHM, formatRelativeTime, formatIsoToDate, getWeekRangeText, getMonthRangeText } from '../utils/formatters';
 import { PrintIcon } from './icons/PrintIcon';
@@ -228,7 +229,7 @@ export const TimesheetManager: React.FC<TimesheetManagerProps> = ({ logEntries, 
                             {isCalendarOpen && <MiniCalendar selectedDate={selectedDate} onDateSelect={(date) => {setSelectedDate(date); setIsCalendarOpen(false);}} highlightedDays={highlightedDays} />}
                         </div>
                         <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
-                            {['day', 'week', 'month'].map(tf => <button key={tf} onClick={() => setTimeframe(tf as 'day' | 'week' | 'month')} className={`px-3 py-1 text-sm rounded-md capitalize ${timeframe === tf ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>{tf}</button>)}
+                            {['day', 'week', 'month'].map(tf => <button key={tf} onClick={() => setTimeframe(tf as any)} className={`px-3 py-1 text-sm rounded-md capitalize ${timeframe === tf ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>{tf}</button>)}
                         </div>
                         <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
                              <button onClick={() => setLogFilter('all')} className={`px-3 py-1 text-sm rounded-md ${logFilter === 'all' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>All</button>

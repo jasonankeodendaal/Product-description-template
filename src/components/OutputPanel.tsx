@@ -3,30 +3,15 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { SaveIcon } from './icons/SaveIcon';
-import { ParsedProductData, Photo, Video } from '../types';
+import type { ParsedProductData, Photo, Video, GenerationResult, GroundingChunk } from '../types';
 import { UploadIcon } from './icons/UploadIcon';
-import { dataURLtoBlob } from '../utils/dataUtils';
-import { resizeImage, squareImageAndGetBlob } from '../utils/imageUtils';
+import { squareImageAndGetBlob } from '../utils/imageUtils';
 import { CropIcon } from './icons/CropIcon';
 import { XIcon } from './icons/XIcon';
 import { Spinner } from './icons/Spinner';
 import { generateVideoThumbnail } from '../utils/videoUtils';
 import { PlayIcon } from './icons/PlayIcon';
 import { VideoIcon } from './icons/VideoIcon';
-
-
-// Define GroundingChunk locally to remove dependency on @google/genai types on the client
-export interface GroundingChunk {
-  web?: {
-    uri: string;
-    title: string;
-  };
-}
-
-export interface GenerationResult {
-    text: string;
-    sources?: GroundingChunk[];
-}
 
 interface OutputPanelProps {
   output: GenerationResult | null;
@@ -266,7 +251,6 @@ const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video
         </div>
     );
 };
-
 
 export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo, onDeleteVideo }) => {
     const [editableOutput, setEditableOutput] = useState('');

@@ -1,5 +1,5 @@
+
 import React, { useMemo } from 'react';
-// FIX: Changed type import from `../../App` to `../../types`.
 import type { Note, Photo, Recording, LogEntry } from '../../types';
 import { useRecharts } from '../../hooks/useRecharts';
 import { Spinner } from '../icons/Spinner';

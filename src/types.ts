@@ -1,3 +1,4 @@
+
 import { SiteSettings } from './constants';
 
 // --- Type Definitions ---
@@ -74,7 +75,6 @@ export interface Note {
     date: string;
     color: string; // e.g., 'sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'
     isLocked: boolean;
-    // New fields for advanced editor
     heroImage?: string | null; // Data URL for the hero image
     paperStyle: string; // 'paper-white', 'paper-dark', 'paper-yellow-lined', 'paper-grid'
     fontStyle: string; // 'font-sans', 'font-serif', 'font-mono'
@@ -82,16 +82,16 @@ export interface Note {
     reminderDate?: string | null;
     reminderFired?: boolean;
     recordingIds?: string[];
-    photoIds?: string[]; // For scanned documents and other images
+    photoIds?: string[];
 }
 
 export interface LogEntry {
     id: string;
     type: 'Clock In' | 'Clock Out' | 'Note Created' | 'Photo Added' | 'Recording Added' | 'Manual Task';
-    timestamp: string; // For auto-events, this is the main time. For manual, it's the date.
-    task?: string;     // For manual tasks
-    startTime?: string; // ISO string for manual tasks
-    endTime?: string;   // ISO string for manual tasks
+    timestamp: string;
+    task?: string;
+    startTime?: string;
+    endTime?: string;
 }
 
 
@@ -103,8 +103,8 @@ export interface CalendarEvent {
   notes: string;
   photoId?: string;
   recordingIds?: string[];
-  color: string; // e.g., 'sky', 'purple', 'emerald'
-  reminderOffset: number; // in minutes before the event. -1 for no reminder.
+  color: string;
+  reminderOffset: number;
   reminderFired: boolean;
   createdAt: string;
 }
@@ -126,7 +126,7 @@ export interface FileSystemItem {
     name: string;
     type: 'directory' | 'file';
     kind?: 'photo' | 'video' | 'text' | 'json' | string;
-    id?: string; // For photos/videos
+    id?: string;
     dateModified?: string;
     size?: number;
     path: string;

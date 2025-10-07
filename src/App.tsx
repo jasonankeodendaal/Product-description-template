@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
@@ -22,7 +23,6 @@ import { MobileHeader } from './components/MobileHeader';
 import { Home } from './components/Home';
 import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
-// FIX: Corrected import path for TimesheetManager.
 import { TimesheetManager } from './TimesheetManager';
 import { calculateStorageUsage } from './utils/storageUtils';
 import { OnboardingTour } from './OnboardingTour';
@@ -31,8 +31,7 @@ import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-// FIX: Centralized all type imports to use the dedicated types.ts file.
-import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem } from './types';
+import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem, BackupData } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -968,7 +967,7 @@ const App: React.FC = () => {
             const metadataFile = zip.file('metadata.json');
             if (!metadataFile) throw new Error('Invalid backup: metadata.json not found.');
             
-            const metadata: any = JSON.parse(await metadataFile.async('string'));
+            const metadata: BackupData = JSON.parse(await metadataFile.async('string'));
             
             const restoredRecordings: Recording[] = [];
             const recordingsFolder = zip.folder('assets/recordings');
@@ -1105,7 +1104,7 @@ const App: React.FC = () => {
             <div className="lg:hidden"><MobileHeader siteSettings={siteSettings} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} userRole={userRole} isApiConnected={isApiConnected} /></div>
             <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
                  <div className="bg-slate-950/40 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
-                    <Header siteSettings={siteSettings} isApiConnected={isApiConnected} currentView={currentView} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} />
+                    <Header siteSettings={siteSettings} isApiConnected={isApiConnected} currentView={currentView} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} />
                     {renderView()}
                 </div>
             </main>

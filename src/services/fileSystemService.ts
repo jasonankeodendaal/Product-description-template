@@ -1,6 +1,4 @@
 
-
-// FIX: Import types from the dedicated types file to avoid circular dependencies.
 import type { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../types";
 import { SiteSettings } from "../constants";
 
@@ -31,7 +29,6 @@ const getOrCreateDirectory = async (parentHandle: FileSystemDirectoryHandle, nam
     return await parentHandle.getDirectoryHandle(name, { create: true });
 }
 
-// FIX: Moved these function definitions to the top of the file before they are called to prevent "Cannot find name" errors.
 const getOrCreateNestedDirectory = async (root: FileSystemDirectoryHandle, path: string): Promise<FileSystemDirectoryHandle> => {
     let current = root;
     const parts = path.split('/').filter(p => p.trim() !== '' && p !== '.');

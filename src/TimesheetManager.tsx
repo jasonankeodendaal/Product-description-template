@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LogEntry, View } from './types';
+import type { LogEntry, View } from './types';
 import { formatDurationHHMMSS, formatMsToHM, formatRelativeTime, formatIsoToDate, getWeekRangeText, getMonthRangeText } from './utils/formatters';
 import { PrintIcon } from './components/icons/PrintIcon';
 import { ClockIcon } from './components/icons/ClockIcon';
@@ -9,10 +9,8 @@ import { PhotoIcon } from './components/icons/PhotoIcon';
 import { RecordingIcon } from './components/icons/RecordingIcon';
 import { ClockInIcon } from './components/icons/ClockInIcon';
 import { ClockOutIcon } from './components/icons/ClockOutIcon';
-import { Spinner } from './components/icons/Spinner';
 import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
 import { ChevronRightIcon } from './components/icons/ChevronRightIcon';
-import { CalendarIcon } from './components/icons/CalendarIcon';
 import { MiniCalendar } from './components/MiniCalendar';
 
 interface TimesheetManagerProps {

@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { PlusIcon } from './icons/PlusIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
-import { Template } from '../types';
+import type { Template } from '../types';
 import { FolderIcon } from './icons/FolderIcon';
 
 interface TemplateManagerProps {
