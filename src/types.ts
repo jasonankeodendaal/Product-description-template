@@ -1,4 +1,3 @@
-
 import { SiteSettings } from './constants';
 
 // --- Type Definitions ---
@@ -144,4 +143,16 @@ export interface GroundingChunk {
 export interface GenerationResult {
     text: string;
     sources?: GroundingChunk[];
+}
+
+export interface StorageBreakdownItem {
+    name: string;
+    bytes: number;
+    count: number;
+    fill: string;
+}
+
+export interface StorageUsage {
+    total: number;
+    breakdown: StorageBreakdownItem[];
 }

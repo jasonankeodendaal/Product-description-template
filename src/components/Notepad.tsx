@@ -57,7 +57,7 @@ interface NotepadProps {
     onNoteSelected?: () => void;
 }
 
-// FIX: Defined a specific props interface for the NoteEditor sub-component to resolve type errors.
+// FIX: Corrected props interface for NoteEditor to include all necessary props.
 interface NoteEditorProps extends Omit<NotepadProps, 'notes' | 'onSave' | 'noteToSelectId' | 'onNoteSelected'> {
     note: Note;
     onClose: () => void;

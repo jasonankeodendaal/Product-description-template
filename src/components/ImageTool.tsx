@@ -1,11 +1,10 @@
-
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { UploadIcon } from '../../components/icons/UploadIcon';
-import { DownloadIcon } from '../../components/icons/DownloadIcon';
+import { UploadIcon } from './icons/UploadIcon';
+import { DownloadIcon } from './icons/DownloadIcon';
 import { squareImageAndGetBlob } from '../utils/imageUtils';
-import { XIcon } from '../../components/icons/XIcon';
-import { Spinner } from '../../components/icons/Spinner';
-import { ChevronLeftIcon } from '../../components/icons/ChevronLeftIcon';
+import { XIcon } from './icons/XIcon';
+import { Spinner } from './icons/Spinner';
+import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { waitForGlobal } from '../utils/dataUtils';
 import type { Photo, View } from '../types';
 

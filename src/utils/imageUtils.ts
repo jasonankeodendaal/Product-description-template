@@ -1,3 +1,4 @@
+
 export const resizeImage = (file: Blob, maxSize: number = 1024): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) {

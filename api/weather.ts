@@ -74,7 +74,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
     });
 
-    const weatherData = JSON.parse(response.text);
+    // FIX: Added trim() to prevent JSON parsing errors from leading/trailing whitespace.
+    const weatherData = JSON.parse(response.text.trim());
     res.status(200).json(weatherData);
 
   } catch (error) {

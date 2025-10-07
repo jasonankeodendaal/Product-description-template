@@ -1,6 +1,4 @@
-// FIX: Import `useRef` from React to resolve 'Cannot find name' error.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// FIX: Corrected import paths to be relative to the 'src' directory.
 import { Header } from './components/Header';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
@@ -14,6 +12,7 @@ import { Dashboard } from './components/Dashboard';
 import { RecordingManager } from './components/RecordingManager';
 import { PhotoManager } from './components/PhotoManager';
 import { Notepad } from './components/Notepad';
+// FIX: Corrected import path for ImageTool.
 import { ImageTool } from './ImageTool';
 import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
@@ -24,15 +23,17 @@ import { MobileHeader } from './components/MobileHeader';
 import { Home } from './components/Home';
 import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
+// FIX: Corrected import path for TimesheetManager.
 import { TimesheetManager } from './TimesheetManager';
-import { StorageUsage, calculateStorageUsage } from './utils/storageUtils';
+import { calculateStorageUsage } from './utils/storageUtils';
+// FIX: Corrected import path for OnboardingTour.
 import { OnboardingTour } from './OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem, GenerationResult } from './types';
+import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem, GenerationResult, StorageUsage } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
 interface BeforeInstallPromptEvent extends Event {
@@ -258,8 +259,6 @@ const App: React.FC = () => {
     useEffect(() => {
         const logoUrl = siteSettings.logoSrc;
         if (logoUrl) {
-            // Update standard link tags for favicons and home screen icons.
-            // This is what most devices use for the installed app icon.
             const faviconLink = document.querySelector<HTMLLinkElement>("link[rel='icon']");
             if (faviconLink) faviconLink.href = logoUrl;
 
@@ -273,7 +272,6 @@ const App: React.FC = () => {
         if (siteSettings.backgroundImageSrc) {
             document.body.style.setProperty('--app-background-image', `url(${siteSettings.backgroundImageSrc})`);
         } else {
-            // Fallback to the default from the CSS file if the user removes the custom one.
             document.body.style.removeProperty('--app-background-image');
         }
     }, [siteSettings.backgroundImageSrc]);
@@ -378,14 +376,12 @@ const App: React.FC = () => {
 
     // --- Data Loading and Initialization ---
     useEffect(() => {
-        // Fetch live creator details from Gist
         const fetchCreatorDetails = async () => {
             if (!GIST_ID) {
                 console.warn("GIST_ID is not configured. Falling back to local creator details.");
                 return;
             }
             try {
-                // Use a cache-busting query param to ensure we get the latest version
                 const response = await fetch(`https://gist.githubusercontent.com/${GIST_ID}/raw/creator_details.json?t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error('Failed to fetch creator details from Gist.');
                 const data = await response.json();
@@ -400,12 +396,10 @@ const App: React.FC = () => {
 
         const initializeApp = async () => {
             try {
-                // Handle URL-based integrations ONCE
                 if (!initialUrlChecked.current) {
                     initialUrlChecked.current = true;
                     const urlParams = new URLSearchParams(window.location.search);
 
-                    // Handle 'note_taking' new_note_url
                     if (urlParams.get('new-note') === 'true') {
                         const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
                         const newNote: Note = {
@@ -431,7 +425,6 @@ const App: React.FC = () => {
                         setCurrentView('notepad');
                     }
 
-                    // Handle 'share_target' action
                     if (urlParams.get('from-share') === 'true') {
                         const title = urlParams.get('title') || 'Shared Content';
                         const text = urlParams.get('text') || '';
@@ -465,7 +458,6 @@ const App: React.FC = () => {
                     }
                 }
 
-                // Handle URL-based view navigation from PWA shortcuts
                 const urlParams = new URLSearchParams(window.location.search);
                 const requestedView = urlParams.get('view') as View;
                 const validViews: View[] = ['home', 'generator', 'recordings', 'photos', 'notepad', 'image-tool', 'timesheet', 'browser'];
@@ -473,7 +465,6 @@ const App: React.FC = () => {
                     setCurrentView(requestedView);
                 }
 
-                // Check for persisted login
                 const loginDataString = localStorage.getItem('loginData');
                 if (loginDataString) {
                   const loginData = JSON.parse(loginDataString);
@@ -538,7 +529,6 @@ const App: React.FC = () => {
         initializeApp();
     }, [loadLocalData, handleSaveNote]);
     
-    // New useEffect for launchQueue (file handling)
     useEffect(() => {
         if ('launchQueue' in window && (window as any).launchQueue) {
             (window as any).launchQueue.setConsumer(async (launchParams: any) => {
@@ -551,7 +541,6 @@ const App: React.FC = () => {
         }
     }, []);
 
-    // New useEffect to react to fileToEdit state change
     useEffect(() => {
         if (fileToEdit) {
             const tempPhoto: Photo = {
@@ -607,7 +596,7 @@ const App: React.FC = () => {
                 }
             }
         };
-        const intervalId = setInterval(checkReminders, 60000); // Check every minute
+        const intervalId = setInterval(checkReminders, 60000);
         return () => clearInterval(intervalId);
     }, [calendarEvents, handleSaveCalendarEvent]);
 
@@ -647,7 +636,7 @@ const App: React.FC = () => {
     
     const handleInitiatePinReset = () => {
         setIsPinResetting(true);
-        setIsDashboardOpen(false); // Close dashboard to show PIN modal
+        setIsDashboardOpen(false);
     };
     
     const handleSetNewPinAfterReset = async (pin: string) => {

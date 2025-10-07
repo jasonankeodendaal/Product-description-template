@@ -45,7 +45,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               },
           },
       });
-      const data = JSON.parse(response.text);
+      // FIX: Added trim() to prevent JSON parsing errors from leading/trailing whitespace.
+      const data = JSON.parse(response.text.trim());
       return res.status(200).json(data);
 
     } catch (error) {
