@@ -1,4 +1,4 @@
-
+// FIX: Import `useRef` from React to resolve 'Cannot find name' error.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // FIX: Corrected import paths to be relative to the 'src' directory.
 import { Header } from './components/Header';
@@ -32,7 +32,6 @@ import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-import { Hero } from './components/Hero';
 import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, BackupData, FileSystemItem, GenerationResult } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
@@ -832,7 +831,7 @@ const App: React.FC = () => {
       setError(null);
       setGeneratedOutput({ text: '', sources: [] });
       try {
-        await generateProductDescription(userInput, selectedTemplate.prompt, tone, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey, (partialResult) => setGeneratedOutput(partialResult));
+        await generateProductDescription(userInput, selectedTemplate.prompt, tone, siteSettings.customApiEndpoint, siteSettings.customApiAuthKey, (partialResult: GenerationResult) => setGeneratedOutput(partialResult));
       } catch (e: any) {
         setError(e.message || 'An unknown error occurred.');
         setGeneratedOutput(null);
