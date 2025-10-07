@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useCamera } from '../hooks/useCamera';
 import { XIcon } from './icons/XIcon';

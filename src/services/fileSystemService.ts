@@ -94,7 +94,7 @@ const JSON_BACKUPS_DIR = 'JSON_Backups';
 
 // --- Generic Checks ---
 const directoryHasData = async (dirHandle: FileSystemDirectoryHandle): Promise<boolean> => {
-    for await (const entry of dirHandle.values()) return true;
+    for await (const _ of (dirHandle as any).values()) return true;
     return false;
 }
 
@@ -187,7 +187,7 @@ const loadJsonOnlyEntities = async <T extends {id: string}>(dirHandle: FileSyste
     const entityMap = new Map<string, T>();
 
     const processDir = async (dir: FileSystemDirectoryHandle) => {
-        for await (const entry of dir.values()) {
+        for await (const entry of (dir as any).values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
                     const file = await (entry as FileSystemFileHandle).getFile();
@@ -233,7 +233,7 @@ const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle)
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const jsonRecsDir = await jsonBackupRoot.getDirectoryHandle('recordings');
         const mediaDir = await dirHandle.getDirectoryHandle('recordings');
-        for await (const entry of jsonRecsDir.values()) {
+        for await (const entry of (jsonRecsDir as any).values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
@@ -250,7 +250,7 @@ const loadRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHandle)
     // Load from old structure
     try {
         const mediaDir = await dirHandle.getDirectoryHandle('recordings');
-        for await (const entry of mediaDir.values()) {
+        for await (const entry of (mediaDir as any).values()) {
              if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
@@ -282,7 +282,7 @@ const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHan
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const jsonRecsDir = await jsonBackupRoot.getDirectoryHandle('note_recordings');
         const mediaDir = await dirHandle.getDirectoryHandle('note_recordings');
-        for await (const entry of jsonRecsDir.values()) {
+        for await (const entry of (jsonRecsDir as any).values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
@@ -297,7 +297,7 @@ const loadNoteRecordingsFromDirectory = async (dirHandle: FileSystemDirectoryHan
     } catch(e) {}
     try {
         const mediaDir = await dirHandle.getDirectoryHandle('note_recordings');
-        for await (const entry of mediaDir.values()) {
+        for await (const entry of (mediaDir as any).values()) {
              if (entry.kind === 'file' && entry.name.endsWith('.json')) {
                 try {
                     const metadata = JSON.parse(await (await (entry as FileSystemFileHandle).getFile()).text());
@@ -345,7 +345,7 @@ const loadMediaFromDirectory = async <T extends Photo | Video>(dirHandle: FileSy
     const blobField = mediaType === 'photo' ? 'imageBlob' : 'videoBlob';
     const defaultExt = mediaType === 'photo' ? 'png' : 'mp4';
 
-    const processJsonEntry = async (entry: FileSystemFileHandle, jsonDir: FileSystemDirectoryHandle, dataRootDir: FileSystemDirectoryHandle) => {
+    const processJsonEntry = async (entry: FileSystemFileHandle, dataRootDir: FileSystemDirectoryHandle) => {
         try {
             const file = await entry.getFile();
             const text = await file.text();
@@ -370,9 +370,9 @@ const loadMediaFromDirectory = async <T extends Photo | Video>(dirHandle: FileSy
     try {
         const jsonBackupRoot = await dirHandle.getDirectoryHandle(JSON_BACKUPS_DIR);
         const scan = async (dir: FileSystemDirectoryHandle) => {
-            for await (const entry of dir.values()) {
+            for await (const entry of (dir as any).values()) {
                 if (entry.kind === 'directory') await scan(entry as FileSystemDirectoryHandle);
-                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir, dirHandle);
+                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dirHandle);
             }
         };
         await scan(jsonBackupRoot);
@@ -382,9 +382,9 @@ const loadMediaFromDirectory = async <T extends Photo | Video>(dirHandle: FileSy
     try {
         const scan = async (dir: FileSystemDirectoryHandle, path: string[]) => {
             if (path.length === 0 && (reservedDirs.includes(dir.name) || dir.name === JSON_BACKUPS_DIR)) return;
-            for await (const entry of dir.values()) {
+            for await (const entry of (dir as any).values()) {
                 if (entry.kind === 'directory') await scan(entry as FileSystemDirectoryHandle, [...path, entry.name]);
-                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir, dir);
+                else if (entry.kind === 'file' && entry.name.endsWith('.json')) await processJsonEntry(entry as FileSystemFileHandle, dir);
             }
         };
         await scan(dirHandle, []);
@@ -495,7 +495,7 @@ const listDirectoryContents = async (rootHandle: FileSystemDirectoryHandle, path
         const dirHandle = await getDirectoryHandleByPath(rootHandle, pathParts);
         
         const contents = [];
-        for await (const entry of dirHandle.values()) {
+        for await (const entry of (dirHandle as any).values()) {
             let details: { name: string; kind: 'file' | 'directory'; size?: number; lastModified?: number; } = {
                 name: entry.name,
                 kind: entry.kind,
