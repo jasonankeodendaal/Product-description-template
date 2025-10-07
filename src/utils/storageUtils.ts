@@ -1,5 +1,8 @@
 
-import type { Photo, Recording, Note, LogEntry, Template, CalendarEvent, Video } from '../types';
+
+// FIX: Import StorageUsage and StorageBreakdownItem to make them available in this module.
+import type { Photo, Recording, Note, LogEntry, Template, CalendarEvent, Video, StorageUsage, StorageBreakdownItem } from '../types';
+
 // FIX: Re-export types to make them available to other modules.
 export type { StorageUsage, StorageBreakdownItem } from '../types';
 

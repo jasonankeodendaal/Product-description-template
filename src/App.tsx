@@ -1104,7 +1104,8 @@ const App: React.FC = () => {
             <div className="lg:hidden"><MobileHeader siteSettings={siteSettings} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} userRole={userRole} isApiConnected={isApiConnected} /></div>
             <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
                  <div className="bg-slate-950/40 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
-                    <Header siteSettings={siteSettings} isApiConnected={isApiConnected} currentView={currentView} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} />
+                    {/* FIX: Removed duplicate onOpenCreatorInfo prop */}
+                    <Header siteSettings={siteSettings} isApiConnected={isApiConnected} currentView={currentView} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} />
                     {renderView()}
                 </div>
             </main>

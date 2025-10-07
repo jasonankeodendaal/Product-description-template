@@ -1,5 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+// FIX: Corrected type imports to reference the central types.ts file.
+import type { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../types';
 import { SiteSettings, CreatorDetails } from '../constants';
 import { ClockWidget } from './widgets/ClockWidget';
 import { WeatherWidget, WeatherData } from './widgets/WeatherWidget';
@@ -21,7 +23,6 @@ import { LogoutTile } from './tiles/LogoutTile';
 import { FileBrowserTile } from './tiles/FileBrowserTile';
 import { WeatherForecastModal } from './widgets/WeatherForecastModal';
 import { CalendarIcon } from './icons/CalendarIcon';
-import type { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../types';
 
 
 interface HomeProps {
@@ -192,3 +193,11 @@ export const Home: React.FC<HomeProps> = (props) => {
                         <HomeTile className="aspect-square" style={{ animationDelay: '500ms' }}><FileBrowserTile onNavigate={props.onNavigate} /></HomeTile>
                         <HomeTile className="aspect-square" style={{ animationDelay: '550ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
                         <HomeTile className="aspect-square" style={{ animationDelay: '600ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
+                        <HomeTile className="aspect-square" style={{ animationDelay: '650ms' }}><TourTile onOpenTour={props.onOpenOnboarding} /></HomeTile>
+                        <HomeTile className="aspect-square" style={{ animationDelay: '700ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
