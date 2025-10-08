@@ -1,6 +1,5 @@
-// FIX: The triple-slash directive can conflict with type inclusion from tsconfig.json,
-// causing "Cannot find type definition" errors. Assuming 'vite/client' is correctly
-// included in the project's tsconfig.json, this directive is unnecessary and can be removed.
+// FIX: Changed from triple-slash directive to import statement to ensure Vite client types are loaded correctly.
+import 'vite/client';
 
 interface ImportMetaEnv {
   readonly VITE_GIST_ID: string;

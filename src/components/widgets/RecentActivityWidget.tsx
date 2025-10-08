@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import type { Note, Photo, Recording, View } from '../../types';
 import { NotepadIcon } from '../icons/NotepadIcon';

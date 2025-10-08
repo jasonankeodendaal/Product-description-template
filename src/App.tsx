@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
+import { Hero } from './components/Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';

@@ -121,7 +121,10 @@ export const squareImageAndGetBlob = (
       );
     };
 
-    img.onerror = () => reject(new Error('Image load failed.'));
+    img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Image load failed.'));
+    }
     img.src = objectUrl;
   });
 };
