@@ -1,14 +1,12 @@
-
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { UploadIcon } from './components/icons/UploadIcon';
 import { DownloadIcon } from './components/icons/DownloadIcon';
-import { TrashIcon } from './components/icons/TrashIcon';
-import { Photo, View } from './types';
 import { squareImageAndGetBlob } from './utils/imageUtils';
 import { XIcon } from './components/icons/XIcon';
 import { Spinner } from './components/icons/Spinner';
 import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
 import { waitForGlobal } from './utils/dataUtils';
+import type { Photo, View } from './types';
 
 interface ImageToolProps {
   initialImage: Photo | null;

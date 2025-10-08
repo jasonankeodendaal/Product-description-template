@@ -1,6 +1,4 @@
-
 import React, { useState } from 'react';
-import { SparklesIcon } from './components/icons/SparklesIcon';
 import { RecordingIcon } from './components/icons/RecordingIcon';
 import { NotepadIcon } from './components/icons/NotepadIcon';
 import { PhotoIcon } from './components/icons/PhotoIcon';
