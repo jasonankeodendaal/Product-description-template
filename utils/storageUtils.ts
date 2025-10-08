@@ -1,18 +1,10 @@
 
 
-import { Photo, Recording, Note, LogEntry, Template, CalendarEvent, Video } from '../App';
+import type { Photo, Recording, Note, LogEntry, Template, CalendarEvent, Video } from '../src/types';
 
-export interface StorageBreakdownItem {
-    name: string;
-    bytes: number;
-    count: number;
-    fill: string;
-}
+export type { StorageUsage, StorageBreakdownItem } from '../src/types';
+import type { StorageUsage, StorageBreakdownItem } from '../src/types';
 
-export interface StorageUsage {
-    total: number;
-    breakdown: StorageBreakdownItem[];
-}
 
 const getBlobSize = (blob: Blob): number => blob.size;
 const getStringSize = (str: string): number => new Blob([str]).size;

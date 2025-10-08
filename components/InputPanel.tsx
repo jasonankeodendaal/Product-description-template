@@ -1,6 +1,6 @@
 import React from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
-import { Template } from '../App';
+import { Template } from '../src/types';
 import { XIcon } from './icons/XIcon';
 
 interface InputPanelProps {

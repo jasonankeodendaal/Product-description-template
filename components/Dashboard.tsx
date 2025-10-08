@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent, Video } from '../App';
+import { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent, Video } from '../src/types';
 import { XIcon } from './icons/XIcon';
 import { DataManagement } from './DataManagement';
 import { SiteSettingsEditor } from './SiteSettingsEditor';

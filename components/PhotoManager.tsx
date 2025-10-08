@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Photo } from '../App';
+import { Photo } from '../src/types';
 import { PhotoThumbnail } from './PhotoThumbnail';
 import { UploadIcon } from './icons/UploadIcon';
 import { CameraIcon } from './icons/CameraIcon';
@@ -189,7 +189,6 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ photos, onSave, onUp
         setSelectionMode(false);
     };
 
-    // FIX: Refactored to use Object.keys().flatMap() to avoid type inference issues with Object.values().flat() which can result in `unknown[]`.
     const allVisiblePhotoIds = useMemo(() => Object.keys(groupedPhotos).flatMap(key => groupedPhotos[key].map(p => p.id)), [groupedPhotos]);
     const handleSelectAll = () => setSelectedIds(new Set(allVisiblePhotoIds));
     const allSelected = allVisiblePhotoIds.length > 0 && selectedIds.size === allVisiblePhotoIds.length;

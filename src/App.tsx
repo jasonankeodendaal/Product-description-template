@@ -1,36 +1,38 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Header } from './components/Header';
-import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
-import { GeneratorView } from './components/GeneratorView';
-import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
-import { FullScreenLoader } from './components/FullScreenLoader';
-import { db } from './services/db';
-import { fileSystemService } from './services/fileSystemService';
-import { apiSyncService, waitForGlobal } from './utils/dataUtils';
-import { AuthModal } from './components/AuthModal';
-import { Dashboard } from './components/Dashboard';
-import { RecordingManager } from './components/RecordingManager';
-import { PhotoManager } from './components/PhotoManager';
-import { Notepad } from './components/Notepad';
-import { ImageTool } from './ImageTool';
-import { BottomNavBar } from './components/BottomNavBar';
-import { InfoModal } from './components/InfoModal';
-import { CreatorInfo } from './components/CreatorInfo';
-import { ManualInstallModal } from './components/ManualInstallModal';
-import { UpdateToast } from './components/UpdateToast';
-import { MobileHeader } from './components/MobileHeader';
-import { Home } from './components/Home';
-import { PinSetupModal } from './components/PinSetupModal';
-import { CalendarView } from './components/CalendarView';
-import { TimesheetManager } from './TimesheetManager';
-import { calculateStorageUsage } from './utils/storageUtils';
-import { OnboardingTour } from './OnboardingTour';
-import { PrintPreview } from './components/PrintPreview';
-import { InstallOptionsModal } from './components/InstallOptionsModal';
-import { InactivityManager } from './components/InactivityManager';
-import { FileBrowser } from './components/FileBrowser';
-import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
+import { Header } from '../components/Header';
+import { Hero } from '../Hero';
+import { DEFAULT_SITE_SETTINGS, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
+import { GeneratorView } from '../components/GeneratorView';
+import { generateProductDescription, getWeatherInfo, performAiAction } from '../services/geminiService';
+import { FullScreenLoader } from '../components/FullScreenLoader';
+import { db } from '../services/db';
+import { fileSystemService } from '../services/fileSystemService';
+import { apiSyncService, waitForGlobal } from '../utils/dataUtils';
+import { AuthModal } from '../components/AuthModal';
+import { Dashboard } from '../components/Dashboard';
+import { RecordingManager } from '../components/RecordingManager';
+import { PhotoManager } from '../components/PhotoManager';
+import { Notepad } from '../components/Notepad';
+import { ImageTool } from '../ImageTool';
+import { BottomNavBar } from '../components/BottomNavBar';
+import { InfoModal } from '../components/InfoModal';
+import { CreatorInfo } from '../components/CreatorInfo';
+import { ManualInstallModal } from '../components/ManualInstallModal';
+import { UpdateToast } from '../components/UpdateToast';
+import { MobileHeader } from '../components/MobileHeader';
+import { Home } from '../components/Home';
+import { PinSetupModal } from '../components/PinSetupModal';
+import { CalendarView } from '../components/CalendarView';
+import { TimesheetManager } from '../TimesheetManager';
+import { calculateStorageUsage } from '../utils/storageUtils';
+import { OnboardingTour } from '../OnboardingTour';
+import { PrintPreview } from '../components/PrintPreview';
+import { InstallOptionsModal } from '../components/InstallOptionsModal';
+import { InactivityManager } from '../components/InactivityManager';
+import { FileBrowser } from '../components/FileBrowser';
+import { FolderOpenIcon } from '../components/icons/FolderOpenIcon';
+import type { SiteSettings } from './constants';
 import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem, BackupData } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
@@ -660,9 +662,19 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteRecording = useCallback(async (id: string) => {
-        setRecordings(prev => prev.filter(r => r.id !== id));
-        await db.deleteRecording(id);
-        if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
+        let originalRecordings: Recording[] | null = null;
+        setRecordings(prev => {
+            originalRecordings = prev;
+            return prev.filter(r => r.id !== id);
+        });
+        try {
+            await db.deleteRecording(id);
+            if (directoryHandle) await fileSystemService.deleteRecordingFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalRecordings) setRecordings(originalRecordings);
+            console.error("Failed to delete recording:", e);
+            alert(`Failed to delete recording: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
     
     const handleSavePhoto = useCallback(async (photo: Photo) => {
@@ -679,9 +691,19 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeletePhoto = useCallback(async (photo: Photo) => {
-        setPhotos(prev => prev.filter(p => p.id !== photo.id));
-        await db.deletePhoto(photo.id);
-        if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
+        let originalPhotos: Photo[] | null = null;
+        setPhotos(prev => {
+            originalPhotos = prev;
+            return prev.filter(p => p.id !== photo.id);
+        });
+        try {
+            await db.deletePhoto(photo.id);
+            if (directoryHandle) await fileSystemService.deletePhotoFromDirectory(directoryHandle, photo);
+        } catch (e) {
+            if (originalPhotos) setPhotos(originalPhotos);
+            console.error("Failed to delete photo:", e);
+            alert(`Failed to delete photo: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
     
     const handleSaveVideo = useCallback(async (video: Video) => {
@@ -697,9 +719,19 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteVideo = useCallback(async (video: Video) => {
-        setVideos(prev => prev.filter(v => v.id !== video.id));
-        await db.deleteVideo(video.id);
-        if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
+        let originalVideos: Video[] | null = null;
+        setVideos(prev => {
+            originalVideos = prev;
+            return prev.filter(v => v.id !== video.id);
+        });
+        try {
+            await db.deleteVideo(video.id);
+            if (directoryHandle) await fileSystemService.deleteVideoFromDirectory(directoryHandle, video);
+        } catch (e) {
+            if (originalVideos) setVideos(originalVideos);
+            console.error("Failed to delete video:", e);
+            alert(`Failed to delete video: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     const handleDeleteFolderContents = useCallback(async (folderPath: string) => {
@@ -711,9 +743,19 @@ const App: React.FC = () => {
     }, [photos, videos, handleDeletePhoto, handleDeleteVideo]);
 
     const handleDeleteNote = useCallback(async (id: string) => {
-        setNotes(prev => prev.filter(n => n.id !== id));
-        await db.deleteNote(id);
-        if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
+        let originalNotes: Note[] | null = null;
+        setNotes(prev => {
+            originalNotes = prev;
+            return prev.filter(n => n.id !== id);
+        });
+        try {
+            await db.deleteNote(id);
+            if (directoryHandle) await fileSystemService.deleteNoteFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalNotes) setNotes(originalNotes);
+            console.error("Failed to delete note:", e);
+            alert(`Failed to delete note: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     const handleSaveNoteRecording = useCallback(async (rec: NoteRecording) => {
@@ -729,15 +771,35 @@ const App: React.FC = () => {
     }, [directoryHandle]);
 
     const handleDeleteNoteRecording = useCallback(async (id: string) => {
-        setNoteRecordings(prev => prev.filter(r => r.id !== id));
-        await db.deleteNoteRecording(id);
-        if (directoryHandle) await fileSystemService.deleteNoteRecordingFromDirectory(directoryHandle, id);
+        let originalNoteRecordings: NoteRecording[] | null = null;
+        setNoteRecordings(prev => {
+            originalNoteRecordings = prev;
+            return prev.filter(r => r.id !== id);
+        });
+        try {
+            await db.deleteNoteRecording(id);
+            if (directoryHandle) await fileSystemService.deleteNoteRecordingFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalNoteRecordings) setNoteRecordings(originalNoteRecordings);
+            console.error("Failed to delete note recording:", e);
+            alert(`Failed to delete note recording: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     const handleDeleteCalendarEvent = useCallback(async (id: string) => {
-        setCalendarEvents(prev => prev.filter(e => e.id !== id));
-        await db.deleteCalendarEvent(id);
-        if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
+        let originalEvents: CalendarEvent[] | null = null;
+        setCalendarEvents(prev => {
+            originalEvents = prev;
+            return prev.filter(e => e.id !== id);
+        });
+        try {
+            await db.deleteCalendarEvent(id);
+            if (directoryHandle) await fileSystemService.deleteCalendarEventFromDirectory(directoryHandle, id);
+        } catch (e) {
+            if (originalEvents) setCalendarEvents(originalEvents);
+            console.error("Failed to delete calendar event:", e);
+            alert(`Failed to delete calendar event: ${e instanceof Error ? e.message : String(e)}`);
+        }
     }, [directoryHandle]);
 
     const handleRenameItem = useCallback(async (item: FileSystemItem, newName: string) => {
@@ -1104,7 +1166,6 @@ const App: React.FC = () => {
             <div className="lg:hidden"><MobileHeader siteSettings={siteSettings} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} userRole={userRole} isApiConnected={isApiConnected} /></div>
             <main className="flex-1 pt-[76px] lg:pt-0 flex flex-col pb-24 lg:pb-0">
                  <div className="bg-slate-950/40 flex-1 w-full overflow-hidden flex flex-col backdrop-blur-sm">
-                    {/* FIX: Removed duplicate onOpenCreatorInfo prop */}
                     <Header siteSettings={siteSettings} isApiConnected={isApiConnected} currentView={currentView} onNavigate={setCurrentView} onOpenDashboard={() => setIsDashboardOpen(true)} onOpenInfo={() => setIsInfoModalOpen(true)} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} onToggleOrientation={handleToggleOrientation} isLandscapeLocked={isLandscapeLocked} onOpenCreatorInfo={() => setIsCreatorInfoOpen(true)} />
                     {renderView()}
                 </div>

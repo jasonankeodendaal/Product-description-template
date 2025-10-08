@@ -1,4 +1,4 @@
-import { Photo } from "../App";
+import { Photo } from "../src/types";
 
 export const resizeImage = (file: Blob, maxSize: number = 1024): Promise<string> => {
   return new Promise((resolve, reject) => {

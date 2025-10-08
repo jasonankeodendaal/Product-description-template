@@ -1,6 +1,6 @@
 import React from 'react';
 import { SiteSettings } from '../constants';
-import { View } from '../App';
+import { View } from '../src/types';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
 import { PhotoIcon } from './icons/PhotoIcon';

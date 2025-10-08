@@ -4,7 +4,8 @@ import { Hero } from './Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, CREATOR_PIN, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
-import { GenerationResult } from './components/OutputPanel';
+// FIX: GenerationResult is a type and should be imported from the types file.
+import type { GenerationResult } from './src/types';
 import { FullScreenLoader } from './components/FullScreenLoader';
 import { db } from './services/db';
 import { fileSystemService } from './services/fileSystemService';
