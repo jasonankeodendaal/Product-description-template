@@ -80,6 +80,11 @@ const migrateNote = (note: any): Note => {
     return baseNote as Note;
 };
 
+const stripHtml = (html: string) => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || "";
+};
+
 
 const App: React.FC = () => {
     // --- State ---
@@ -1105,11 +1110,6 @@ const App: React.FC = () => {
         } catch (e) { console.error("Restore failed:", e); alert(`Failed to restore backup: ${e instanceof Error ? e.message : 'Unknown error'}`);
         } finally { setIsLoading(false); }
     }, [directoryHandle, handleDisconnectDirectory]);
-
-    const stripHtml = (html: string) => {
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      return doc.body.textContent || "";
-    };
 
      const handleLogin = (role: UserRole) => {
         setUserRole(role);

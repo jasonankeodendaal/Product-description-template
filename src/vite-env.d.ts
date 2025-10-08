@@ -1,11 +1,12 @@
-// FIX: Replaced triple-slash directive with a direct import to solve the type resolution issue.
-import 'vite/client';
+// FIX: The triple-slash directive can conflict with type inclusion from tsconfig.json,
+// causing "Cannot find type definition" errors. Assuming 'vite/client' is correctly
+// included in the project's tsconfig.json, this directive is unnecessary and can be removed.
 
 interface ImportMetaEnv {
   readonly VITE_GIST_ID: string;
-  // Add other environment variables here as you need them
+  // more env variables...
 }
 
 interface ImportMeta {
-  readonly env: ImportMetaEnv;
+  readonly env: ImportMetaEnv
 }
