@@ -1,5 +1,5 @@
 
-import type { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "../types";
+import type { Recording, Template, Photo, Note, ParsedProductData, NoteRecording, LogEntry, CalendarEvent, Video } from "./types";
 import { SiteSettings } from "../constants";
 
 const getDirectoryHandle = async (): Promise<FileSystemDirectoryHandle> => {
@@ -573,8 +573,8 @@ export const fileSystemService = {
     loadNoteRecordingsFromDirectory,
     deleteNoteRecordingFromDirectory,
     saveLogEntryToDirectory,
-    loadLogEntriesFromDirectory,
     deleteLogEntryFromDirectory,
+    loadLogEntriesFromDirectory,
     saveCalendarEventToDirectory,
     loadCalendarEventsFromDirectory,
     deleteCalendarEventFromDirectory,

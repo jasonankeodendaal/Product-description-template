@@ -1,5 +1,5 @@
 
-import type { Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../types';
+import type { Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from './types';
 
 const DB_NAME = 'AiToolsDB';
 const DB_VERSION = 7; // Incremented version for schema change

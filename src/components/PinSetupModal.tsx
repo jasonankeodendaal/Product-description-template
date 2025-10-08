@@ -1,7 +1,6 @@
 
 
 import React, { useState } from 'react';
-// FIX: Corrected import to use the centralized types file.
 import type { UserRole } from '../types';
 import { CreatorDetails, SiteSettings } from '../constants';
 import { AuthBrandingPanel } from './AuthBrandingPanel';

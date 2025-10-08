@@ -30,7 +30,7 @@ export const useRecorder = () => {
   }, []);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && (mediaRecorderRef.current.state === 'recording' || mediaRecorderRef.current.state === 'paused')) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       setIsPaused(false);
@@ -38,7 +38,7 @@ export const useRecorder = () => {
         clearInterval(timerIntervalRef.current);
       }
     }
-  }, [isRecording]);
+  }, []);
   
    const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {

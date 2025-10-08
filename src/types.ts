@@ -156,3 +156,11 @@ export interface StorageUsage {
     total: number;
     breakdown: StorageBreakdownItem[];
 }
+
+export interface PrintableEntry {
+    date: string;
+    time: string;
+    type: string;
+    description: string;
+    duration: string;
+}

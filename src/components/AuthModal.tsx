@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-// FIX: Corrected type import path.
 import { UserRole } from '../types';
 import { CREATOR_PIN, CreatorDetails, SiteSettings } from '../constants';
 import { AuthBrandingPanel } from './AuthBrandingPanel';

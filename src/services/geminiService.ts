@@ -1,5 +1,5 @@
 
-import type { GenerationResult, GroundingChunk } from "../types";
+import type { GenerationResult, GroundingChunk } from "./types";
 import { blobToBase64 } from "../utils/dataUtils";
 
 // Helper to handle fetch errors and parse the JSON response.

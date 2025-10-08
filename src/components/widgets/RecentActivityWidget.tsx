@@ -1,5 +1,5 @@
+
 import React, { useMemo } from 'react';
-// FIX: Changed type import from `../../App` to `../../types`.
 import type { Note, Photo, Recording, View } from '../../types';
 import { NotepadIcon } from '../icons/NotepadIcon';
 import { PhotoIcon } from '../icons/PhotoIcon';
@@ -28,8 +28,6 @@ const stripHtml = (html: string) => {
 
 export const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({ notes, photos, recordings, onNavigate }) => {
     const recentActivity = useMemo(() => {
-        // FIX: Add 'as const' to string literals to prevent TypeScript from widening the type to 'string',
-        // which would cause an assignment error to the more specific 'ActivityItem' type.
         const combined: ActivityItem[] = [
             ...notes.map(n => ({ id: n.id, type: 'note' as const, title: n.title, timestamp: n.date, icon: <NotepadIcon />, view: 'notepad' as View })),
             ...photos.map(p => ({ id: p.id, type: 'photo' as const, title: p.name, timestamp: p.date, icon: <PhotoIcon />, view: 'photos' as View })),
