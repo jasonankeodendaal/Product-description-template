@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { LogEntry, View } from './types';
 import { formatDurationHHMMSS, formatMsToHM, formatRelativeTime, formatIsoToDate, getWeekRangeText, getMonthRangeText } from './utils/formatters';

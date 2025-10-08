@@ -1,3 +1,4 @@
+import type { Photo } from "../types";
 
 export const resizeImage = (file: Blob, maxSize: number = 1024): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -75,52 +76,4 @@ export const squareImageAndGetBlob = (sourceBlob: Blob, size: number, quality: n
 
             // Resample in steps for high quality downscaling
             while (currentCanvas.width > destWidth * 2 && currentCanvas.width > 500) {
-                const newWidth = Math.max(destWidth, Math.floor(currentCanvas.width / 2));
-                const newHeight = Math.max(destHeight, Math.floor(currentCanvas.height / 2));
-                
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
-                if (!tempCtx) return reject(new Error('Could not get temp canvas context.'));
-                
-                tempCanvas.width = newWidth;
-                tempCanvas.height = newHeight;
-                tempCtx.imageSmoothingQuality = 'high';
-                tempCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, newWidth, newHeight);
-                
-                currentCanvas = tempCanvas;
-            }
-
-            // Create the final output canvas
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = size;
-            finalCanvas.height = size;
-            const finalCtx = finalCanvas.getContext('2d');
-            if (!finalCtx) return reject(new Error('Could not get final canvas context.'));
-
-            // Fill background and draw final resampled image centered
-            finalCtx.fillStyle = '#FFFFFF';
-            finalCtx.fillRect(0, 0, size, size);
-            
-            const destX = (size - destWidth) / 2;
-            const destY = (size - destHeight) / 2;
-            
-            finalCtx.imageSmoothingQuality = 'high';
-            finalCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, destX, destY, destWidth, destHeight);
-
-            finalCanvas.toBlob(blob => {
-                if (blob) {
-                    resolve(blob);
-                } else {
-                    reject(new Error('Canvas toBlob returned null. This may happen with very large images or in certain browser configurations.'));
-                }
-            }, 'image/jpeg', quality);
-        };
-        
-        img.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            reject(new Error('Could not load image from blob. The file might be corrupted.'));
-        };
-
-        img.src = objectUrl;
-    });
-};
+                const newWidth = Math.max(

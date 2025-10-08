@@ -1,3 +1,5 @@
+// FIX: Replaced triple-slash directive with a direct import to solve the type resolution issue.
+import 'vite/client';
 
 interface ImportMetaEnv {
   readonly VITE_GIST_ID: string;

@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { SaveIcon } from './icons/SaveIcon';
-import type { ParsedProductData, Photo, Video, GenerationResult, GroundingChunk } from '../types';
+import type { ParsedProductData, Photo, Video, GenerationResult } from '../types';
 import { UploadIcon } from './icons/UploadIcon';
 import { squareImageAndGetBlob } from '../utils/imageUtils';
 import { CropIcon } from './icons/CropIcon';
@@ -252,7 +251,7 @@ const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video
     );
 };
 
-export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo, onDeleteVideo }) => {
+export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo, onDeleteVideo, onEditImage }) => {
     const [editableOutput, setEditableOutput] = useState('');
     const [isCopied, setIsCopied] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');

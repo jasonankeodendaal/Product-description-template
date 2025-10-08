@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 // FIX: Corrected type imports to reference the central types.ts file.
 import type { Template, Recording, Photo, Note, NoteRecording, LogEntry, UserRole, CalendarEvent, Video } from '../types';

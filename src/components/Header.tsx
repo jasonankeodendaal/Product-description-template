@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SiteSettings } from '../constants';
 import { CloudIcon } from './icons/CloudIcon';
@@ -90,7 +89,6 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     onInstallClick,
     onToggleOrientation,
     isLandscapeLocked,
-    onOpenCreatorInfo,
 }) => {
   
   return (
