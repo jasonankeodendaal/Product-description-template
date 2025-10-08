@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createBackup } from '../utils/dataUtils';
-import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../src/types';
+import { Template, Recording, Photo, Note, NoteRecording, LogEntry, CalendarEvent, Video } from '../App';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { RestoreIcon } from './icons/RestoreIcon';
 import { FolderSyncIcon } from './icons/FolderSyncIcon';
@@ -292,7 +292,7 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                                 </div>
                             </div>
                             <div className="flex justify-end pt-4 border-t border-white/10">
-                                <button type="button" onClick={handleApiSettingsSave} className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-lg text-sm">Save Settings</button>
+                                <button onClick={handleApiSettingsSave} className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-6 rounded-lg text-sm">Save Settings</button>
                             </div>
                         </div>
                     </SectionCard>
@@ -325,11 +325,11 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
                             </Alert>
                              <div className="flex justify-end items-center gap-3 pt-4 border-t border-white/10">
                                 {siteSettings.syncMode === 'ftp' ? (
-                                    <button type="button" onClick={handleDisconnectFtp} className="text-sm font-semibold text-red-400 hover:text-red-300">Disconnect</button>
+                                    <button onClick={handleDisconnectFtp} className="text-sm font-semibold text-red-400 hover:text-red-300">Disconnect</button>
                                 ) : (
-                                    <button type="button" onClick={() => handleSaveFtpSettings(true)} className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">Set as Active Sync</button>
+                                    <button onClick={() => handleSaveFtpSettings(true)} className="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">Set as Active Sync</button>
                                 )}
-                                <button type="button" onClick={() => handleSaveFtpSettings(false)} className="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Save Settings</button>
+                                <button onClick={() => handleSaveFtpSettings(false)} className="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg text-sm">Save Settings</button>
                             </div>
                         </div>
                     </SectionCard>
@@ -346,7 +346,7 @@ export const DataManagement: React.FC<DataManagementProps> = (props) => {
             );
             default: return null;
         }
-    };
+    }
 
     return (
         <div className="flex flex-col h-full">

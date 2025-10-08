@@ -1,8 +1,7 @@
 import React from 'react';
-import { OutputPanel } from './OutputPanel';
+import { GenerationResult, OutputPanel } from './OutputPanel';
 import { TemplateManager } from './TemplateManager';
-// FIX: Replaced imports from `../App` and `./OutputPanel` with a single source of truth for types.
-import type { Template, ParsedProductData, Photo, Recording, Note, View, Video, GenerationResult } from '../src/types';
+import { Template, ParsedProductData, Photo, Recording, Note, View, Video } from '../App';
 import { SiteSettings } from '../constants';
 import { ComposerPanel } from './ComposerPanel';
 import { Hero } from '../Hero';

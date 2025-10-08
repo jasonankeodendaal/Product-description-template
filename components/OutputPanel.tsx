@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { CopyIcon } from './icons/CopyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { SaveIcon } from './icons/SaveIcon';
-import type { ParsedProductData, Photo, Video, GenerationResult, GroundingChunk } from '../src/types';
+import { ParsedProductData, Photo, Video } from '../App';
 import { UploadIcon } from './icons/UploadIcon';
 import { squareImageAndGetBlob } from '../utils/imageUtils';
 import { CropIcon } from './icons/CropIcon';
@@ -13,11 +13,25 @@ import { PlayIcon } from './icons/PlayIcon';
 import { VideoIcon } from './icons/VideoIcon';
 
 
+// Define GroundingChunk locally to remove dependency on @google/genai types on the client
+export interface GroundingChunk {
+  web?: {
+    uri: string;
+    title: string;
+  };
+}
+
+export interface GenerationResult {
+    text: string;
+    sources?: GroundingChunk[];
+}
+
 interface OutputPanelProps {
   output: GenerationResult | null;
   isLoading: boolean;
   error: string | null;
   onSaveToFolder: (item: ParsedProductData, structuredData: Record<string, string>) => Promise<void>;
+  // FIX: Add 'ftp' to syncMode to match the type in SiteSettings, resolving a type error.
   syncMode?: 'local' | 'folder' | 'api' | 'ftp';
   photos: Photo[];
   onSavePhoto: (photo: Photo) => Promise<void>;
@@ -252,6 +266,7 @@ const LinkedVideoThumbnail: React.FC<{ video: Video; onOpenPlayer: (video: Video
     );
 };
 
+// FIX: Export the OutputPanel component.
 export const OutputPanel: React.FC<OutputPanelProps> = React.memo(({ output, isLoading, error, onSaveToFolder, syncMode, photos, onSavePhoto, onUpdatePhoto, onDeletePhoto, videos, onSaveVideo, onDeleteVideo }) => {
     const [editableOutput, setEditableOutput] = useState('');
     const [isCopied, setIsCopied] = useState(false);

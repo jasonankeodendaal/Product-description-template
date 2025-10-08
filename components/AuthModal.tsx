@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserRole } from '../src/types';
+import { UserRole } from '../App';
 import { CREATOR_PIN, CreatorDetails, SiteSettings } from '../constants';
 import { AuthBrandingPanel } from './AuthBrandingPanel';
 import { DownloadIcon } from './icons/DownloadIcon';

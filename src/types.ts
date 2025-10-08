@@ -1,3 +1,4 @@
+
 import { SiteSettings } from './constants';
 
 // --- Type Definitions ---
@@ -162,13 +163,4 @@ export interface PrintableEntry {
     type: string;
     description: string;
     duration: string;
-}
-
-export interface QueuedItem {
-  id: string;
-  name: string;
-  brand: string;
-  sku: string;
-  fullText: string;
-  csvText: string;
 }
