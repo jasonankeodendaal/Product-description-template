@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
-import { Hero } from './components/Hero';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
 import { GeneratorView } from './components/GeneratorView';
 import { generateProductDescription, getWeatherInfo, performAiAction } from './services/geminiService';
@@ -13,7 +12,7 @@ import { Dashboard } from './components/Dashboard';
 import { RecordingManager } from './components/RecordingManager';
 import { PhotoManager } from './components/PhotoManager';
 import { Notepad } from './components/Notepad';
-import { ImageTool } from './ImageTool';
+import { ImageTool } from './components/ImageTool';
 import { BottomNavBar } from './components/BottomNavBar';
 import { InfoModal } from './components/InfoModal';
 import { CreatorInfo } from './components/CreatorInfo';
@@ -23,14 +22,15 @@ import { MobileHeader } from './components/MobileHeader';
 import { Home } from './components/Home';
 import { PinSetupModal } from './components/PinSetupModal';
 import { CalendarView } from './components/CalendarView';
-import { TimesheetManager } from './TimesheetManager';
+import { TimesheetManager } from './components/TimesheetManager';
 import { calculateStorageUsage } from './utils/storageUtils';
-import { OnboardingTour } from './OnboardingTour';
+import { OnboardingTour } from './components/OnboardingTour';
 import { PrintPreview } from './components/PrintPreview';
 import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
+// FIX: Centralize type imports from `types.ts` to prevent circular dependencies with App.tsx.
 import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem, BackupData } from './types';
 
 // A type for the BeforeInstallPromptEvent, which is not yet in standard TS libs
@@ -68,8 +68,8 @@ const migrateNote = (note: any): Note => {
     };
 
     // Old canvas format (content is an object with 'elements')
-    if (typeof note.content === 'object' && note.content && note.content.elements) {
-        const textElement = note.content.elements.find((e: any) => e.type === 'text');
+    if (typeof note.content === 'object' && note.content && (note.content as any).elements) {
+        const textElement = (note.content as any).elements.find((e: any) => e.type === 'text');
         baseNote.content = textElement ? textElement.html : '<p></p>';
     } 
     // Old simple text format or already migrated format
@@ -572,7 +572,7 @@ const App: React.FC = () => {
         if (directoryHandle) await fileSystemService.saveCalendarEventToDirectory(directoryHandle, event);
     }, [directoryHandle]);
 
-    const handleUpdateNote = useCallback(async (note: Note, silent = false) => {
+    const handleUpdateNote = useCallback(async (note: Note) => {
         setNotes(prev => prev.map(n => n.id === note.id ? note : n));
         await db.saveNote(note);
         if (directoryHandle) await fileSystemService.saveNoteToDirectory(directoryHandle, note);

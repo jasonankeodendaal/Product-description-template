@@ -16,6 +16,7 @@ interface AuthModalProps {
   onInstallClick: () => void;
 }
 
+// FIX: Added missing `siteSettings` to props destructuring to match the interface and component usage.
 export const AuthModal: React.FC<AuthModalProps> = ({ onUnlock, userPin, siteSettings, creatorDetails, showInstallButton, onInstallClick }) => {
   const [view, setView] = useState<'selection' | 'userLogin' | 'creatorLogin'>('selection');
   const [pin, setPin] = useState('');

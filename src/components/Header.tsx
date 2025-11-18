@@ -1,6 +1,7 @@
 import React from 'react';
 import { SiteSettings } from '../constants';
 import { CloudIcon } from './icons/CloudIcon';
+// FIX: Centralize type imports from `types.ts` to prevent circular dependencies.
 import { View } from '../types';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { RecordingIcon } from './icons/RecordingIcon';
@@ -78,6 +79,7 @@ const StorageIndicator: React.FC<{ siteSettings: SiteSettings, isApiConnected: b
 };
 
 
+// FIX: Added `onOpenCreatorInfo` to props to align with usage in App.tsx.
 export const Header: React.FC<HeaderProps> = React.memo(({ 
     siteSettings,
     isApiConnected,
@@ -89,6 +91,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({
     onInstallClick,
     onToggleOrientation,
     isLandscapeLocked,
+    onOpenCreatorInfo
 }) => {
   
   return (

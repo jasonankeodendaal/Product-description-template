@@ -1,5 +1,3 @@
-
-
 import type { Photo, Recording, Note, LogEntry, Template, CalendarEvent, Video, StorageUsage, StorageBreakdownItem } from './types';
 
 // Re-export types to make them available to other modules.

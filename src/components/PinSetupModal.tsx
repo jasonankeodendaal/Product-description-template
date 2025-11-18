@@ -14,7 +14,8 @@ interface PinSetupModalProps {
   onInstallClick: () => void;
 }
 
-export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, siteSettings, creatorDetails }) => {
+// FIX: Add missing props to destructuring to match the interface and component usage.
+export const PinSetupModal: React.FC<PinSetupModalProps> = ({ onSetPin, mode, siteSettings, creatorDetails, showInstallButton, onInstallClick }) => {
   const [step, setStep] = useState<'name' | 'setPin'>(mode === 'setup' ? 'name' : 'setPin');
   const [name, setName] = useState('');
   const [newPin, setNewPin] = useState('');

@@ -9,6 +9,7 @@ import { DownloadIcon } from './icons/DownloadIcon';
 import { RotateIcon } from './icons/RotateIcon';
 import { UserIcon } from './icons/UserIcon';
 import { FolderOpenIcon } from './icons/FolderOpenIcon';
+// FIX: Centralize type imports from `types.ts` to prevent circular dependencies.
 import type { View, UserRole } from '../types';
 
 interface MobileHeaderProps {
