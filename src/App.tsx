@@ -31,7 +31,7 @@ import { InstallOptionsModal } from './components/InstallOptionsModal';
 import { InactivityManager } from './components/InactivityManager';
 import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
-import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem, BackupData } from './types';
+import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem } from './types';
 
 // A type for the BeforeInstallPromptEvent
 interface BeforeInstallPromptEvent extends Event {
@@ -645,7 +645,7 @@ const App: React.FC = () => {
 
 
     if (!isInitialized) return <FullScreenLoader message="Initializing..." />;
-    if (isPinResetting) return <PinSetupModal onSetPin={(pin) => handleSetNewPinAfterReset(pin)} mode="reset" siteSettings={siteSettings} creatorDetails={creatorDetails} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} />;
+    if (isPinResetting) return <PinSetupModal onSetPin={(pin, name) => handleSetNewPinAfterReset(pin)} mode="reset" siteSettings={siteSettings} creatorDetails={creatorDetails} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} />;
     if (isPinSetupModalOpen) return <PinSetupModal onSetPin={handleSetUserPin} mode="setup" siteSettings={siteSettings} creatorDetails={creatorDetails} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} />;
     if (isOnboardingOpen) return <OnboardingTour onFinish={handleFinishOnboarding} />;
     if (!isAuthenticated) return <AuthModal onUnlock={handleLogin} userPin={siteSettings.userPin} siteSettings={siteSettings} creatorDetails={creatorDetails} showInstallButton={!isAppInstalled} onInstallClick={handleInstallClick} />;
