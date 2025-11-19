@@ -1,6 +1,5 @@
 import { SiteSettings } from './constants';
 
-// --- Type Definitions ---
 export type View = 'home' | 'generator' | 'recordings' | 'photos' | 'notepad' | 'image-tool' | 'timesheet' | 'calendar' | 'browser';
 export type UserRole = 'user' | 'creator';
 
@@ -56,7 +55,6 @@ export interface Video {
     height?: number;
 }
 
-
 export interface NoteRecording {
   id: string;
   noteId: string;
@@ -68,15 +66,15 @@ export interface NoteRecording {
 export interface Note {
     id: string;
     title: string;
-    content: string; // Rich text content stored as an HTML string
+    content: string;
     category: string;
     tags: string[];
     date: string;
-    color: string; // e.g., 'sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'
+    color: string;
     isLocked: boolean;
-    heroImage?: string | null; // Data URL for the hero image
-    paperStyle: string; // 'paper-white', 'paper-dark', 'paper-yellow-lined', 'paper-grid'
-    fontStyle: string; // 'font-sans', 'font-serif', 'font-mono'
+    heroImage?: string | null;
+    paperStyle: string;
+    fontStyle: string;
     dueDate?: string | null;
     reminderDate?: string | null;
     reminderFired?: boolean;
@@ -93,11 +91,10 @@ export interface LogEntry {
     endTime?: string;
 }
 
-
 export interface CalendarEvent {
   id: string;
-  startDateTime: string; // Full ISO string
-  endDateTime: string;   // Full ISO string
+  startDateTime: string;
+  endDateTime: string;
   title: string;
   notes: string;
   photoId?: string;
@@ -107,7 +104,6 @@ export interface CalendarEvent {
   reminderFired: boolean;
   createdAt: string;
 }
-
 
 export interface BackupData {
     siteSettings: SiteSettings;
@@ -132,18 +128,6 @@ export interface FileSystemItem {
     mediaSrc?: string;
 }
 
-export interface GroundingChunk {
-  web?: {
-    uri: string;
-    title: string;
-  };
-}
-
-export interface GenerationResult {
-    text: string;
-    sources?: GroundingChunk[];
-}
-
 export interface StorageBreakdownItem {
     name: string;
     bytes: number;
@@ -156,10 +140,14 @@ export interface StorageUsage {
     breakdown: StorageBreakdownItem[];
 }
 
-export interface PrintableEntry {
-    date: string;
-    time: string;
-    type: string;
-    description: string;
-    duration: string;
+export interface GenerationResult {
+    text: string;
+    sources?: GroundingChunk[];
+}
+
+export interface GroundingChunk {
+  web?: {
+    uri: string;
+    title: string;
+  };
 }

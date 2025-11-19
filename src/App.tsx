@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { DEFAULT_SITE_SETTINGS, SiteSettings, DEFAULT_PRODUCT_DESCRIPTION_PROMPT_TEMPLATE, GITHUB_APK_URL, CREATOR_DETAILS, CreatorDetails, GIST_ID } from './constants';
@@ -33,7 +32,6 @@ import { FileBrowser } from './components/FileBrowser';
 import { FolderOpenIcon } from './components/icons/FolderOpenIcon';
 import type { View, UserRole, Template, ParsedProductData, Recording, Photo, Video, NoteRecording, Note, LogEntry, CalendarEvent, StorageUsage, GenerationResult, FileSystemItem } from './types';
 
-// A type for the BeforeInstallPromptEvent
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
@@ -43,7 +41,7 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-// Function to migrate old notes to the new format
+// Data Migration Helper
 const migrateNote = (note: any): Note => {
     const defaultColors = ['sky', 'purple', 'emerald', 'amber', 'pink', 'cyan'];
     const randomColor = () => defaultColors[Math.floor(Math.random() * defaultColors.length)];
@@ -73,7 +71,6 @@ const migrateNote = (note: any): Note => {
     } else if (typeof note.content === 'string') {
         baseNote.content = note.content.trim().startsWith('<') ? note.content : `<p>${note.content}</p>`;
     }
-
     return baseNote as Note;
 };
 
@@ -82,9 +79,7 @@ const stripHtml = (html: string) => {
   return doc.body.textContent || "";
 };
 
-
 const App: React.FC = () => {
-    // --- State ---
     const [creatorDetails, setCreatorDetails] = useState<CreatorDetails>(CREATOR_DETAILS);
     const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS);
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -627,12 +622,9 @@ const App: React.FC = () => {
     const onRestore = useCallback(async (file: File) => {
         setIsLoading(true); setLoadingMessage('Restoring...');
         try {
-            // Simplified restore logic for brevity - relies on full zip structure
-            // In a real app, ensure all error handling is robust
             const JSZip = await waitForGlobal<any>('JSZip');
             const zip = await JSZip.loadAsync(file);
             const meta = JSON.parse(await zip.file('metadata.json').async('string'));
-            // ... (restoration logic mirroring the original file)
              if (directoryHandle) await handleDisconnectDirectory();
              await db.clearAllData();
              setSiteSettings(meta.siteSettings); setTemplates(meta.templates); setNotes(meta.notes.map(migrateNote)); setLogEntries(meta.logEntries||[]); setCalendarEvents(meta.calendarEvents||[]);

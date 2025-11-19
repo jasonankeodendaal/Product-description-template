@@ -1,9 +1,7 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ai tools | AI Product Description Generator</title>
   <link rel="icon" href="/android-launchericon-48-48.png" type="image/png">
@@ -26,12 +24,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
 
-
   <style>
     :root {
       /* Dark & Orange Theme */
       --theme-bg: rgba(17, 24, 39, 0.65);
-      --theme-card-bg: rgba(31, 41, 55, 0.6); /* More transparent for glass effect */
+      --theme-card-bg: rgba(31, 41, 55, 0.6); 
       --theme-dark-bg: #000000;
       --theme-border: rgba(255, 255, 255, 0.1);
       --theme-orange: #F97316;
@@ -50,10 +47,9 @@
       -moz-osx-font-smoothing: grayscale;
       position: relative;
       overflow-x: hidden;
-      perspective: 1000px; /* Enable 3D space */
+      perspective: 1000px; 
     }
 
-    /* Realism Effects */
     .noise-bg {
         position: fixed;
         top: 0;
@@ -77,7 +73,6 @@
         background: radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.5) 100%);
     }
 
-    /* Dynamic Backgrounds */
     body::before,
     body::after {
         content: '';
@@ -105,55 +100,6 @@
         animation: move-grid 60s linear infinite;
     }
 
-    /* 3D Tile Effects */
-    .tile-3d-effect {
-        transform-style: preserve-3d;
-        will-change: transform;
-        transition: transform 0.1s ease-out;
-    }
-    
-    .holographic-sheen {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.05) 40%,
-            rgba(255, 255, 255, 0.1) 50%,
-            rgba(255, 255, 255, 0.05) 60%,
-            rgba(255, 255, 255, 0) 100%
-        );
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        mix-blend-mode: overlay;
-        z-index: 20;
-    }
-
-    .tile-3d-effect:hover .holographic-sheen {
-        opacity: 1;
-    }
-
-    .glass-panel {
-        background: rgba(20, 25, 35, 0.65);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 
-            0 4px 6px -1px rgba(0, 0, 0, 0.1), 
-            0 2px 4px -1px rgba(0, 0, 0, 0.06),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-    
-    .font-inter { font-family: 'Inter', sans-serif; }
-    .font-lora { font-family: 'Lora', serif; }
-    .font-patrick-hand { font-family: 'Patrick Hand', cursive; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
     /* Animations */
     @keyframes ken-burns { 0% { transform: scale(1); } 100% { transform: scale(1.15); } }
     @keyframes move-grid { from { background-position: 0 0, 0 0, center; } to { background-position: -40px -40px, 0 0, center; } }
@@ -166,21 +112,32 @@
     @keyframes pulse-slow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
     .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
 
-    /* ... (keep specific component styles like clock-time, drop-indicator, etc. if needed) ... */
+    .glass-panel {
+        background: rgba(20, 25, 35, 0.65);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .font-inter { font-family: 'Inter', sans-serif; }
+    .font-lora { font-family: 'Lora', serif; }
+    .font-patrick-hand { font-family: 'Patrick Hand', cursive; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .clock-time { font-size: clamp(2.5rem, 8vw, 4rem); line-height: 1; }
     .clock-date { font-size: clamp(0.8rem, 2vw, 1rem); }
   </style>
 <script type="importmap">
 {
   "imports": {
-    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.24",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
-    "vite": "https://aistudiocdn.com/vite@^7.1.9",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "googleapis": "https://aistudiocdn.com/googleapis@^161.0.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.5.6",
+    "googleapis": "https://aistudiocdn.com/googleapis@^166.0.0",
     "cookie": "https://aistudiocdn.com/cookie@^1.0.2"
   }
 }

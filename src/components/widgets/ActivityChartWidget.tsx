@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import type { Note, Photo, Recording, LogEntry } from '../../types';
 import { useRecharts } from '../../hooks/useRecharts';
-import { Spinner } from '../icons';
+import { Spinner } from '../icons/Spinner';
 
 interface ActivityChartWidgetProps {
     notes: Note[];
