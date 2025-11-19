@@ -11,7 +11,6 @@ import { ClockInIcon } from '../icons/ClockInIcon';
 import { ClockOutIcon } from '../icons/ClockOutIcon';
 import { ChevronLeftIcon } from '../icons/ChevronLeftIcon';
 import { ChevronRightIcon } from '../icons/ChevronRightIcon';
-import { CalendarIcon } from '../icons/CalendarIcon';
 import { MiniCalendar } from '../MiniCalendar';
 
 interface TimesheetWidgetProps {
@@ -176,83 +175,43 @@ export const TimesheetWidget: React.FC<TimesheetWidgetProps> = ({ logEntries, ac
     const statTitles = getStatTitles();
 
     return (
-        <div className="flex-1 flex flex-col bg-[var(--theme-bg)] backdrop-blur-2xl text-[var(--theme-text-primary)] font-inter">
-            {/* Header */}
-            <div className="flex-shrink-0 p-4 border-b border-[var(--theme-border)]/50 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => onNavigate('home')} className="flex items-center gap-2 text-sm text-[var(--theme-text-secondary)] hover:text-[var(--theme-text-primary)] font-semibold transition-colors -ml-2 p-2"><ChevronLeftIcon /><span className="hidden sm:inline">Back</span></button>
-                    <div>
-                        <h1 className="text-2xl font-bold">Activity Log & Timesheet</h1>
-                        <p className="text-sm text-[var(--theme-text-secondary)]">Track manual tasks and view automated logs.</p>
-                    </div>
-                </div>
-                <button onClick={onOpenPrintPreview} className="p-2 text-[var(--theme-text-secondary)] hover:bg-[var(--theme-card-bg)] rounded-full transition-colors"><PrintIcon /></button>
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-2 h-full shadow-lg border border-white/10 flex flex-col">
+            <div className="flex justify-between items-center mb-0.5 flex-shrink-0">
+                 <h3 className="text-white font-bold text-xs">Timesheet</h3>
+                 <button onClick={() => onNavigate('timesheet')} className="text-xs font-semibold text-gray-300 hover:text-white hover:underline">View Log →</button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
-                {/* Left Column: Timer & Stats */}
-                <div className="lg:col-span-1 space-y-4">
-                    <div className="bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-lg p-6 space-y-4">
-                        <div className="text-center"><p className="text-6xl font-bold tracking-tighter" style={{ fontFamily: 'monospace' }}>{formatDurationHHMMSS(timerDuration)}</p><p className="text-sm font-semibold text-[var(--theme-text-secondary)] uppercase">{activeTimer ? `Task: ${activeTimer.task}` : 'Manual Timer'}</p></div>
-                        <input type="text" value={activeTimer ? activeTimer.task : taskDescription} onChange={(e) => setTaskDescription(e.target.value)} disabled={!!activeTimer} placeholder="What are you working on?" className="w-full bg-[var(--theme-bg)] border border-[var(--theme-border)] rounded-md p-3 font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--theme-orange)]" />
-                         {activeTimer ? (<button onClick={onStopTimer} className="w-full py-3 bg-[var(--theme-red)] text-white font-bold rounded-md uppercase tracking-wider hover:opacity-90 transition-opacity">Stop</button>) : (<button onClick={() => onStartTimer(taskDescription || 'Untitled Task')} disabled={!taskDescription.trim()} className="w-full py-3 bg-[var(--theme-orange)] text-black font-bold rounded-md uppercase tracking-wider disabled:bg-[var(--theme-border)] disabled:cursor-not-allowed hover:opacity-90 transition-opacity">Start</button>)}
+             <div className="text-center my-0.5 flex-shrink-0">
+                <p className="text-xl md:text-2xl font-bold text-white tracking-tighter">{timeframeStats.totalMs > 0 ? formatMsToHM(timeframeStats.totalMs) : '0h 00m'}</p>
+                <p className="text-xs text-gray-400 font-semibold">Today's Hours</p>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 my-0.5 flex-shrink-0">
+                <button
+                    onClick={() => onNavigate('timesheet')} 
+                    className="flex items-center justify-center gap-1 p-1 bg-orange-600/50 hover:bg-orange-600/80 text-white rounded-lg transition-colors"
+                >
+                    <ClockInIcon className="w-4 h-4" />
+                    <span className="font-semibold text-xs">Clock In</span>
+                </button>
+                 <button
+                    onClick={() => onNavigate('timesheet')}
+                    className="flex items-center justify-center gap-1 p-1 bg-rose-600/50 hover:bg-rose-600/80 text-white rounded-lg transition-colors"
+                >
+                    <ClockOutIcon className="w-4 h-4" />
+                    <span className="font-semibold text-xs">Clock Out</span>
+                </button>
+            </div>
+            <div className="flex-grow space-y-1 overflow-y-auto no-scrollbar pr-2 -mr-2 text-xs">
+                {displayEntries.slice(0, 4).map(entry => (
+                    <div key={entry.id} className="flex justify-between items-center px-1 py-0.5 bg-white/5 rounded">
+                        <span className={`font-medium truncate max-w-[60%] ${entry.type === 'Clock In' ? 'text-emerald-400' : entry.type === 'Clock Out' ? 'text-rose-400' : 'text-gray-300'}`}>
+                            {entry.task || entry.type}
+                        </span>
+                        <span className="text-gray-400">{formatRelativeTime(entry.timestamp)}</span>
                     </div>
-
-                    <div className="bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-lg p-6">
-                         <h3 className="text-lg font-semibold text-center mb-4">Summary</h3>
-                         <div className="flex justify-around items-center">
-                            <StatCard title={statTitles.hours} value={formatMsToHM(timeframeStats.totalMs)} />
-                            <StatCard title={statTitles.tasks} value={timeframeStats.taskCount.toString()} />
-                            <StatCard title={statTitles.events} value={timeframeStats.logCount.toString()} />
-                         </div>
-                    </div>
-                </div>
-
-                {/* Right Column: Activity Log */}
-                <div className="lg:col-span-2 bg-[var(--theme-card-bg)] border border-[var(--theme-border)] rounded-lg shadow-lg flex flex-col overflow-hidden">
-                    <div className="p-2 border-b border-[var(--theme-border)] flex flex-col sm:flex-row justify-between items-center gap-2">
-                        <div className="relative flex items-center gap-1" ref={calendarRef}>
-                            <button onClick={() => handleTimeframeNavigation(-1)} className="p-2 hover:bg-slate-700 rounded-full"><ChevronLeftIcon /></button>
-                            <div className="relative">
-                                <button onClick={() => setIsCalendarOpen(p => !p)} className="bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-base font-semibold text-white rounded-lg pl-3 pr-8 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none transition-colors cursor-pointer w-full text-center min-w-[240px]">
-                                    {renderDateDisplay()}
-                                </button>
-                                {timeframe === 'day' && (
-                                     <select value={formatIsoToDate(selectedDate.toISOString())} onChange={handleDateSelectChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Select a date with entries">
-                                        {allEntryDates.map(dateStr => (<option key={dateStr} value={dateStr}>{dateStr}</option>))}
-                                     </select>
-                                )}
-                            </div>
-                             <button onClick={() => handleTimeframeNavigation(1)} disabled={isToday && timeframe==='day'} className="p-2 hover:bg-slate-700 rounded-full disabled:opacity-30 disabled:cursor-not-allowed"><ChevronRightIcon /></button>
-                             {!isToday && <button onClick={goToToday} className="text-sm font-semibold text-orange-400 hover:underline">Today</button>}
-                            {isCalendarOpen && <MiniCalendar selectedDate={selectedDate} onDateSelect={(date: Date) => {setSelectedDate(date); setIsCalendarOpen(false);}} highlightedDays={highlightedDays} />}
-                        </div>
-                        <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
-                            {['day', 'week', 'month'].map(tf => <button key={tf} onClick={() => setTimeframe(tf as 'day' | 'week' | 'month')} className={`px-3 py-1 text-sm rounded-md capitalize ${timeframe === tf ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>{tf}</button>)}
-                        </div>
-                        <div className="flex items-center gap-1 bg-[var(--theme-bg)] p-1 rounded-lg">
-                             <button onClick={() => setLogFilter('all')} className={`px-3 py-1 text-sm rounded-md ${logFilter === 'all' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>All</button>
-                             <button onClick={() => setLogFilter('manual')} className={`px-3 py-1 text-sm rounded-md ${logFilter === 'manual' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Manual</button>
-                             <button onClick={() => setLogFilter('auto')} className={`px-3 py-1 text-sm rounded-md ${logFilter === 'auto' ? 'bg-[var(--theme-orange)] text-black' : 'text-gray-400 hover:bg-white/10'}`}>Auto</button>
-                        </div>
-                    </div>
-                    <div className="flex-grow overflow-y-auto">
-                        {displayEntries.length > 0 ? (
-                            <ul className="divide-y divide-[var(--theme-border)]/50">
-                                {displayEntries.map(entry => {
-                                    const details = logTypeDetails[entry.type]; const Icon = details.icon;
-                                    return (
-                                        <li key={entry.id} className="p-4 flex items-center gap-4 hover:bg-[var(--theme-bg)]/50">
-                                            <div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--theme-bg)] ${details.color}`}><Icon /></div>
-                                            <div className="flex-grow overflow-hidden"><p className="font-semibold truncate">{entry.task || entry.type}</p>{entry.type === 'Manual Task' && entry.startTime && entry.endTime && (<p className="text-xs text-gray-400">Duration: {formatMsToHM(new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime())}</p>)}</div>
-                                            <span className="text-sm text-gray-400 flex-shrink-0">{formatRelativeTime(entry.timestamp)}</span>
-                                        </li>
-                                    )
-                                })}
-                            </ul>
-                        ) : (<div className="flex flex-col items-center justify-center h-full text-center p-4 text-[var(--theme-text-secondary)]"><ClockIcon className="w-12 h-12 mb-4" /><h3 className="text-lg font-semibold text-[var(--theme-text-primary)]">No Activity Logged</h3><p className="text-sm mt-1">There are no entries for this timeframe.</p></div>)}
-                    </div>
-                </div>
+                ))}
+                {displayEntries.length === 0 && (
+                    <div className="h-full flex items-center justify-center text-gray-500 text-xs">No log entries today.</div>
+                )}
             </div>
         </div>
     );

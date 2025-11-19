@@ -4,8 +4,8 @@ import { SiteSettings } from '../../constants';
 import { HardDriveIcon } from '../icons/HardDriveIcon';
 import { FolderSyncIcon } from '../icons/FolderSyncIcon';
 import { CloudIcon } from '../icons/CloudIcon';
-import { useRecharts } from '../../hooks/useRecharts';
 import { Spinner } from '../icons/Spinner';
+import { useRecharts } from '../../hooks/useRecharts';
 
 interface StorageWidgetProps {
     siteSettings: SiteSettings;
