@@ -1,7 +1,8 @@
-import type { Photo, Recording, Note, LogEntry, Template, CalendarEvent, Video, StorageUsage, StorageBreakdownItem } from './types';
+
+import type { Photo, Recording, Note, LogEntry, Template, CalendarEvent, Video, StorageUsage, StorageBreakdownItem } from '../types';
 
 // Re-export types to make them available to other modules.
-export type { StorageUsage, StorageBreakdownItem } from './types';
+export type { StorageUsage, StorageBreakdownItem } from '../types';
 
 const getBlobSize = (blob: Blob): number => blob.size;
 const getStringSize = (str: string): number => new Blob([str]).size;

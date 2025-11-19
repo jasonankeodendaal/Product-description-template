@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import type { Note, Photo, Recording, LogEntry } from '../../types';
 import { useRecharts } from '../../hooks/useRecharts';
