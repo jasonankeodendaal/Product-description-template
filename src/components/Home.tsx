@@ -1,6 +1,5 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-// FIX: Corrected type imports to reference the central types.ts file.
 import type { View, Note, Photo, Recording, LogEntry, CalendarEvent, UserRole } from '../types';
 import { SiteSettings, CreatorDetails } from '../constants';
 import { ClockWidget } from './widgets/ClockWidget';
@@ -23,7 +22,6 @@ import { LogoutTile } from './tiles/LogoutTile';
 import { FileBrowserTile } from './tiles/FileBrowserTile';
 import { WeatherForecastModal } from './widgets/WeatherForecastModal';
 import { CalendarIcon } from './icons/CalendarIcon';
-
 
 interface HomeProps {
     onNavigate: (view: View) => void;
@@ -73,44 +71,32 @@ const ClockCalendarWidget: React.FC<{ onOpenCalendar: () => void; events: Calend
     return (
         <button 
             onClick={onOpenCalendar}
-            className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-3 h-full shadow-lg border border-white/10 flex flex-col w-full text-left"
+            className="w-full h-full text-left flex flex-col justify-between p-3 bg-transparent"
         >
-            {/* Clock part */}
             <div className="flex-grow flex flex-col justify-center items-center text-center">
-                <p className="font-bold text-white tracking-tighter leading-none clock-time">
+                <p className="font-bold text-white tracking-tighter leading-none clock-time" style={{ fontSize: '3rem' }}>
                     {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                 </p>
-                <div className="flex items-center gap-1.5 text-gray-300 mt-2">
+                <div className="flex items-center gap-1.5 text-gray-300 mt-1">
                     <CalendarIcon className="w-4 h-4" />
-                    <p className="font-semibold clock-date">
-                        {time.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+                    <p className="font-semibold text-xs uppercase tracking-wide">
+                        {time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                 </div>
             </div>
-
-            {/* Divider */}
-            <div className="border-t border-white/10 mx-2 my-2"></div>
-
-            {/* Calendar part */}
-            <div className="flex-shrink-0 px-1">
-                 <h3 className="text-white font-bold text-xs mb-1.5">Upcoming</h3>
-                 <div className="space-y-1 overflow-hidden">
-                    {upcomingEvents.length > 0 ? (
-                        upcomingEvents.map(event => (
-                            <div key={event.id} className="flex items-center gap-2 text-xs">
-                                <span className="text-gray-300 font-mono text-xs">{formatEventTime(event.startDateTime)}</span>
-                                <p className="text-white truncate">{event.title}</p>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-gray-400 text-xs">No upcoming events this week.</p>
-                    )}
+            {upcomingEvents.length > 0 && (
+                 <div className="mt-2 pt-2 border-t border-white/10 w-full">
+                    {upcomingEvents.map(event => (
+                        <div key={event.id} className="flex items-center gap-2 text-[10px] text-gray-300">
+                            <span className="font-mono text-orange-400">{formatEventTime(event.startDateTime)}</span>
+                            <span className="truncate">{event.title}</span>
+                        </div>
+                    ))}
                 </div>
-            </div>
+            )}
         </button>
     );
 };
-
 
 export const Home: React.FC<HomeProps> = (props) => {
     const [showWelcome, setShowWelcome] = useState(() => !sessionStorage.getItem('welcomeShown'));
@@ -128,7 +114,7 @@ export const Home: React.FC<HomeProps> = (props) => {
     };
 
     return (
-        <div className="flex-1 flex flex-col font-inter relative overflow-y-auto no-scrollbar">
+        <div className="flex-1 flex flex-col font-inter relative overflow-y-auto no-scrollbar p-3 md:p-6">
              {showWelcome && (
                 <WelcomeScreen
                     userRole={props.userRole}
@@ -145,57 +131,68 @@ export const Home: React.FC<HomeProps> = (props) => {
                 />
             )}
 
-            <div className="p-2 w-full mx-auto">
+            <div className="w-full mx-auto max-w-7xl space-y-3">
                 <div className="flex-shrink-0">
                     <MessageOfTheDay />
                 </div>
                 
-                <div className="mt-2 grid grid-cols-2 md:grid-cols-6 gap-2">
-                    {/* Mobile: Combined Clock & Calendar */}
-                    <HomeTile className="col-span-2 row-span-2 md:hidden" style={{ animationDelay: '50ms' }}>
-                        <ClockCalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
-                    </HomeTile>
-                    <HomeTile className="col-span-1 aspect-square md:hidden" style={{ animationDelay: '100ms' }}>
-                        <StorageBreakdownWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} isApiConnected={props.isApiConnected} />
-                    </HomeTile>
-                     <HomeTile className="col-span-1 aspect-square md:hidden" style={{ animationDelay: '150ms' }}>
-                        <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} onOpenForecast={handleOpenForecast} />
-                    </HomeTile>
-                    <HomeTile className="col-span-2 md:hidden" style={{ animationDelay: '200ms' }}>
-                        <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />
-                    </HomeTile>
+                {/* 
+                   GRID LAYOUT STRATEGY:
+                   Mobile (Default): 2 columns. Dense packing.
+                   Tablet (MD): 4 columns.
+                   Desktop (LG/XL): 6 columns.
+                */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 auto-rows-[minmax(100px,auto)]">
                     
-                    {/* --- Desktop Layout --- */}
-                    <HomeTile className="hidden md:block md:col-span-3 md:row-span-2" style={{ animationDelay: '50ms' }}>
-                        <ClockWidget />
-                    </HomeTile>
-                    <HomeTile className="hidden md:block md:col-span-3 md:row-span-2" style={{ animationDelay: '100ms' }}>
-                        <StorageBreakdownWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} isApiConnected={props.isApiConnected} />
-                    </HomeTile>
-                    <HomeTile className="hidden md:block md:col-span-4" style={{ animationDelay: '150ms' }}>
-                        <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} onOpenForecast={handleOpenForecast} />
-                    </HomeTile>
-                     <HomeTile className="hidden md:block md:col-span-2" style={{ animationDelay: '200ms' }}>
-                        <CalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
-                    </HomeTile>
-                    <HomeTile className="hidden md:block md:col-span-6" style={{ animationDelay: '250ms' }}>
-                        <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />
-                    </HomeTile>
+                    {/* --- Primary Widgets --- */}
                     
-                    
-                    <div className="col-span-full mt-2 mb-1 pl-1 text-lg font-bold text-white/90">Tools & Actions</div>
+                    {/* Clock & Calendar: Spans 2x2 on mobile, 2x2 on desktop */}
+                    <HomeTile className="col-span-2 row-span-2 md:col-span-2 md:row-span-2" style={{ animationDelay: '50ms' }}>
+                         <div className="hidden md:block h-full w-full">
+                             <ClockWidget />
+                         </div>
+                         <div className="block md:hidden h-full w-full">
+                            <ClockCalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
+                         </div>
+                    </HomeTile>
 
-                    <div className="col-span-full grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
-                        <HomeTile className="aspect-square" style={{ animationDelay: '300ms' }}><GeneratorTile onNavigate={props.onNavigate} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '350ms' }}><RecordingsTile onNavigate={props.onNavigate} count={props.recordings.length} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '400ms' }}><PhotosTile onNavigate={props.onNavigate} count={props.photos.length} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '450ms' }}><NotepadTile onNavigate={props.onNavigate} count={props.notes.length} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '500ms' }}><FileBrowserTile onNavigate={props.onNavigate} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '550ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '600ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '650ms' }}><TourTile onOpenTour={props.onOpenOnboarding} /></HomeTile>
-                        <HomeTile className="aspect-square" style={{ animationDelay: '700ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
-                    </div>
+                    {/* Weather: 1x1 on mobile, 2x1 on desktop */}
+                    <HomeTile className="col-span-1 row-span-1 md:col-span-2 md:row-span-1" style={{ animationDelay: '100ms' }}>
+                        <WeatherWidget getWeatherInfo={props.getWeatherInfo} siteSettings={props.siteSettings} onOpenForecast={handleOpenForecast} />
+                    </HomeTile>
+                    
+                    {/* Storage: 1x1 on mobile, 2x1 on desktop */}
+                    <HomeTile className="col-span-1 row-span-1 md:col-span-2 md:row-span-1" style={{ animationDelay: '150ms' }}>
+                        <StorageBreakdownWidget storageUsage={props.storageUsage} siteSettings={props.siteSettings} isApiConnected={props.isApiConnected} />
+                    </HomeTile>
+
+                    {/* Timesheet: Spans 2 columns on mobile, 4 on desktop */}
+                    <HomeTile className="col-span-2 md:col-span-4 lg:col-span-4" style={{ animationDelay: '200ms' }}>
+                         <TimesheetWidget logEntries={props.logEntries} onSaveLogEntry={props.onSaveLogEntry} onNavigate={props.onNavigate} />
+                    </HomeTile>
+
+                    {/* Calendar (Desktop Only) */}
+                    <HomeTile className="hidden md:block md:col-span-2" style={{ animationDelay: '250ms' }}>
+                         <CalendarWidget onOpenCalendar={props.onOpenCalendar} events={props.calendarEvents} />
+                    </HomeTile>
+
+                    {/* --- Tool Grid (Dense) --- */}
+                    <div className="col-span-2 md:col-span-6 mt-2 mb-1 text-sm font-bold text-white/50 uppercase tracking-wider pl-1">Tools</div>
+
+                    {/* Primary Tools */}
+                    <HomeTile className="aspect-square" style={{ animationDelay: '300ms' }}><GeneratorTile onNavigate={props.onNavigate} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '350ms' }}><NotepadTile onNavigate={props.onNavigate} count={props.notes.length} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '400ms' }}><RecordingsTile onNavigate={props.onNavigate} count={props.recordings.length} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '450ms' }}><PhotosTile onNavigate={props.onNavigate} count={props.photos.length} /></HomeTile>
+                    
+                    {/* Utilities */}
+                    <HomeTile className="aspect-square" style={{ animationDelay: '500ms' }}><FileBrowserTile onNavigate={props.onNavigate} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '550ms' }}><ImageToolTile onNavigate={props.onNavigate} /></HomeTile>
+                    
+                    {/* System */}
+                    <HomeTile className="aspect-square" style={{ animationDelay: '600ms' }}><DashboardTile onOpenDashboard={props.onOpenDashboard} /></HomeTile>
+                    <HomeTile className="aspect-square" style={{ animationDelay: '700ms' }}><LogoutTile onLogout={props.onLogout} /></HomeTile>
+
                 </div>
             </div>
         </div>
