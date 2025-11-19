@@ -2,14 +2,16 @@
 import React, { useEffect, useState } from 'react';
 import { SiteSettings } from '../../constants';
 import { StorageUsage } from '../../types';
-import { HardDriveIcon } from '../icons/HardDriveIcon';
-import { FolderSyncIcon } from '../icons/FolderSyncIcon';
-import { CloudIcon } from '../icons/CloudIcon';
-import { PhotoIcon } from '../icons/PhotoIcon';
-import { RecordingIcon } from '../icons/RecordingIcon';
-import { NotepadIcon } from '../icons/NotepadIcon';
-import { CalendarIcon } from '../icons/CalendarIcon';
-import { ClockIcon } from '../icons/ClockIcon';
+import { 
+    HardDriveIcon, 
+    FolderSyncIcon, 
+    CloudIcon, 
+    PhotoIcon, 
+    RecordingIcon, 
+    NotepadIcon, 
+    CalendarIcon, 
+    ClockIcon 
+} from '../icons';
 
 const formatBytes = (bytes: number, decimals = 1): string => {
     if (bytes === 0) return '0 Bytes';

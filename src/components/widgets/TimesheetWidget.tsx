@@ -2,15 +2,17 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { LogEntry, View } from '../../types';
 import { formatDurationHHMMSS, formatMsToHM, formatRelativeTime, formatIsoToDate, getWeekRangeText, getMonthRangeText } from '../../utils/formatters';
-import { PrintIcon } from '../icons/PrintIcon';
-import { ClockIcon } from '../icons/ClockIcon';
-import { NotepadIcon } from '../icons/NotepadIcon';
-import { PhotoIcon } from '../icons/PhotoIcon';
-import { RecordingIcon } from '../icons/RecordingIcon';
-import { ClockInIcon } from '../icons/ClockInIcon';
-import { ClockOutIcon } from '../icons/ClockOutIcon';
-import { ChevronLeftIcon } from '../icons/ChevronLeftIcon';
-import { ChevronRightIcon } from '../icons/ChevronRightIcon';
+import { 
+    PrintIcon, 
+    ClockIcon, 
+    NotepadIcon, 
+    PhotoIcon, 
+    RecordingIcon, 
+    ClockInIcon, 
+    ClockOutIcon, 
+    ChevronLeftIcon, 
+    ChevronRightIcon 
+} from '../icons';
 import { MiniCalendar } from '../MiniCalendar';
 
 interface TimesheetWidgetProps {

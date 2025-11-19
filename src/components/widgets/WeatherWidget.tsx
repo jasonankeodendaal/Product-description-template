@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { SiteSettings } from '../../constants';
-import { Spinner } from '../icons/Spinner';
-import { SunIcon } from '../icons/SunIcon';
-import { CloudIcon } from '../icons/CloudIcon';
-import { RainIcon } from '../icons/RainIcon';
-import { SnowIcon } from '../icons/SnowIcon';
-import { WindIcon } from '../icons/WindIcon';
-import { RefreshIcon } from '../icons/RefreshIcon';
-import { ArrowDownIcon } from '../icons/ArrowDownIcon';
-import { ArrowUpIcon } from '../icons/ArrowUpIcon';
-import { HumidityIcon } from '../icons/HumidityIcon';
+import { 
+    Spinner, 
+    SunIcon, 
+    CloudIcon, 
+    RainIcon, 
+    SnowIcon, 
+    WindIcon, 
+    RefreshIcon, 
+    ArrowDownIcon, 
+    ArrowUpIcon, 
+    HumidityIcon 
+} from '../icons';
 
 interface DailyForecast {
     date: string;

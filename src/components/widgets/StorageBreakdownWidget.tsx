@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { StorageUsage } from '../../types';
 import { SiteSettings } from '../../constants';
-import { HardDriveIcon } from '../icons/HardDriveIcon';
-import { FolderSyncIcon } from '../icons/FolderSyncIcon';
-import { CloudIcon } from '../icons/CloudIcon';
+import { HardDriveIcon, FolderSyncIcon, CloudIcon } from '../icons';
 
 interface StorageBreakdownWidgetProps {
     storageUsage: StorageUsage;

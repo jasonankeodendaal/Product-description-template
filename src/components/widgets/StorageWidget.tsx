@@ -1,10 +1,7 @@
 
 import React from 'react';
 import { SiteSettings } from '../../constants';
-import { HardDriveIcon } from '../icons/HardDriveIcon';
-import { FolderSyncIcon } from '../icons/FolderSyncIcon';
-import { CloudIcon } from '../icons/CloudIcon';
-import { Spinner } from '../icons/Spinner';
+import { HardDriveIcon, FolderSyncIcon, CloudIcon, Spinner } from '../icons';
 import { useRecharts } from '../../hooks/useRecharts';
 
 interface StorageWidgetProps {
